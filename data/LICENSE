@@ -1,0 +1,19 @@
+Data in this directory: Creative Commons Attribution-ShareAlike 3.0 (CC BY-SA 3.0)
+================================================================================
+
+The corpora under data/ are DERIVED WORKS of the Natural Questions dataset
+(Kwiatkowski et al., 2019), whose documents are Wikipedia articles. Wikipedia
+text is licensed CC BY-SA 3.0, and Natural Questions is distributed under the
+same terms. Because CC BY-SA is a "share-alike" (copyleft) licence, these
+derived files must remain under CC BY-SA 3.0 and CANNOT be relicensed under the
+MIT licence that covers this repository's source code.
+
+You are free to share and adapt these files, provided you:
+  - ATTRIBUTE the source (Natural Questions + Wikipedia) — see ../SOURCES.md;
+  - license any redistributed derivative under CC BY-SA 3.0 (SHARE-ALIKE).
+
+Full licence text: https://creativecommons.org/licenses/by-sa/3.0/
+
+The code that produced these files (src/, scripts/) is separately MIT-licensed;
+see ../LICENSE. This CC BY-SA notice governs the DATA CONTENT only, not the
+extraction code.

@@ -1,0 +1,23 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.python-version
+
+# HuggingFace / model caches
+.cache/
+*.lock
+
+# Large raw NQ cache — rebuilt by scripts/h1/build_nq_cache.py, never committed
+data/**/matched_train.json
+data/**/matched_validation.json
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Rendered notebook exports (regenerate from .ipynb)
+notebooks/**/*.html
+
+# OS
+.DS_Store
