@@ -35,6 +35,8 @@ Each directory holds `adapter_model.safetensors` and `adapter_config.json`.
 from peft import PeftModel
 from transformers import AutoModelForSequenceClassification
 
-base = AutoModelForSequenceClassification.from_pretrained("mixedbread-ai/mxbai-rerank-base-v1")
+base = AutoModelForSequenceClassification.from_pretrained(
+    "mixedbread-ai/mxbai-rerank-base-v1"
+)
 model = PeftModel.from_pretrained(base, "adapters/mxbai")
 ```

@@ -21,6 +21,7 @@ dependencies = [
 
 [project.optional-dependencies]
 notebooks = ["ipykernel>=7.3.0"]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "ruff>=0.9", "pre-commit>=4.0"]
 
 [build-system]
 requires = ["hatchling"]
@@ -36,3 +37,35 @@ torch = [{ index = "pytorch-cuda" }]
 name = "pytorch-cuda"
 url = "https://download.pytorch.org/whl/cu124"
 explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+
+[tool.coverage.run]
+source = ["src/fsr"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors (PEP 8)
+    "W",   # pycodestyle warnings (PEP 8)
+    "D",   # pydocstyle (PEP 257)
+    "F",   # pyflakes
+    "I",   # import ordering
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # bugbear
+    "SIM", # simplify
+    "RUF",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/test_*.py" = ["D100", "D101", "D102", "D103"]
