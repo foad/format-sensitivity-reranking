@@ -43,7 +43,10 @@ testpaths = ["tests"]
 pythonpath = ["src", "."]
 
 [tool.coverage.run]
-source = ["src/fsr"]
+source = ["src/fsr", "scripts"]
+
+[tool.coverage.report]
+exclude_also = ['if __name__ == "__main__":']
 
 [tool.ruff]
 line-length = 88
