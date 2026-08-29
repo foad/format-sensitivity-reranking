@@ -30,3 +30,40 @@ class CharTokenizer:
         if kwargs.get("return_offsets_mapping"):
             out["offset_mapping"] = [(i, i + 1) for i in range(len(text))]
         return out
+
+
+class Encoding(dict):
+    """A tokenizer output that accepts the device move a scorer performs."""
+
+    def to(self, device: str) -> Encoding:
+        """Return the encoding unchanged."""
+        return self
+
+
+class PairTokenizer:
+    """A tokenizer that encodes query and passage pairs into a tensor batch."""
+
+    def __call__(self, queries, passages=None, **kwargs) -> Encoding:
+        """Return an encoding whose batch size matches the queries."""
+        import torch
+
+        return Encoding(input_ids=torch.zeros(len(queries), 4, dtype=torch.long))
+
+
+class LogitModel:
+    """A model that returns deterministic logits of a chosen shape."""
+
+    def __init__(self, shape: tuple[int, ...] = (1,)) -> None:
+        """Store the logit shape this model returns."""
+        self.shape = shape
+
+    def __call__(self, **kwargs) -> Any:
+        """Return a namespace holding the logits for this batch."""
+        import types
+
+        import torch
+
+        batch = kwargs["input_ids"].shape[0]
+        generator = torch.Generator().manual_seed(batch * 7 + len(self.shape))
+        size = (batch, *self.shape) if self.shape else (batch,)
+        return types.SimpleNamespace(logits=torch.rand(size, generator=generator))

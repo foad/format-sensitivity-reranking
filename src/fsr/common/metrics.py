@@ -17,6 +17,7 @@ DEFAULT_SAMPLE_SIZE = 20_000
 DEFAULT_N_BOOT = 10_000
 DEFAULT_SEED = 0
 DEFAULT_CI = 0.95
+MIN_RANK_STABILITY_RECORDS = 2
 
 ScoresPerFormat = Mapping[str, Sequence[float]]
 
@@ -151,9 +152,18 @@ def rank_stability(
         One entry for each pair, the smallest Spearman rho with the pair that
         gives it, and the largest flip rate with the pair that gives it. An
         extreme is NaN and its pair is None when no pair has a defined value.
+
+    Raises:
+        ValueError: If the scores hold fewer than MIN_RANK_STABILITY_RECORDS
+            records. A single record yields no orderable pair to sample.
     """
-    rng = np.random.default_rng(seed)
     n = len(next(iter(scores_per_fmt.values())))
+    if n < MIN_RANK_STABILITY_RECORDS:
+        raise ValueError(
+            f"rank stability needs at least {MIN_RANK_STABILITY_RECORDS} records, "
+            f"got {n}"
+        )
+    rng = np.random.default_rng(seed)
     i_arr = rng.integers(0, n, sample_size)
     j_arr = rng.integers(0, n, sample_size)
     mask = i_arr != j_arr
@@ -178,6 +188,8 @@ def rank_stability(
 
 def format_sensitivity_summary(
     scores_per_fmt: ScoresPerFormat,
+    sample_size: int = DEFAULT_SAMPLE_SIZE,
+    seed: int = DEFAULT_SEED,
     *,
     formats: Sequence[str] = FORMAT_NAMES,
 ) -> dict[str, Any]:
@@ -185,6 +197,8 @@ def format_sensitivity_summary(
 
     Args:
         scores_per_fmt: The per-record scores, by format name.
+        sample_size: The number of record pairs to sample for rank stability.
+        seed: The seed for the record-pair sample.
         formats: The format names to pair. The default is FORMAT_NAMES.
 
     Returns:
@@ -194,7 +208,7 @@ def format_sensitivity_summary(
     per_fmt = per_format_summary(scores_per_fmt)
     pairwise, max_d, max_d_pair = pairwise_cohen_d(scores_per_fmt, formats=formats)
     ranks, min_rho, min_rho_pair, max_flip, max_flip_pair = rank_stability(
-        scores_per_fmt, formats=formats
+        scores_per_fmt, sample_size, seed, formats=formats
     )
     fmt_by_mean = sorted(per_fmt.keys(), key=lambda f: -per_fmt[f]["mean"])
     mean_abs_d = float(np.mean([abs(p["cohen_d"]) for p in pairwise]))

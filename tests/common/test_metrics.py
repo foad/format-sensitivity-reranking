@@ -9,6 +9,7 @@ import pytest
 
 import fsr.common.metrics as metrics_module
 from fsr.common.metrics import (
+    MIN_RANK_STABILITY_RECORDS,
     _extreme,
     _percentile_ci,
     bootstrap_ci_of_max_abs_d,
@@ -153,6 +154,16 @@ class TestRankStability:
         assert max_flip == 100.0
         assert max_flip_pair == "a vs c"
 
+    def test_rejects_a_single_record(self):
+        with pytest.raises(ValueError, match="at least 2 records"):
+            rank_stability({"a": [1.0], "b": [2.0]}, formats=PAIR)
+
+    def test_accepts_two_records(self):
+        out, _, _, _, _ = rank_stability(
+            {"a": [1.0, 2.0], "b": [2.0, 4.0]}, sample_size=50, formats=PAIR
+        )
+        assert len(out) == 1
+
     def test_is_deterministic_for_a_given_seed(self):
         first = rank_stability(MONOTONE, sample_size=200, seed=7, formats=TRIPLE)
         second = rank_stability(MONOTONE, sample_size=200, seed=7, formats=TRIPLE)
@@ -184,6 +195,14 @@ class TestRankStability:
 
 
 class TestFormatSensitivitySummary:
+    def test_rejects_a_single_record(self):
+        single = {f: [1.0] for f in TRIPLE}
+        with pytest.raises(ValueError, match="at least 2 records"):
+            format_sensitivity_summary(single, formats=TRIPLE)
+
+    def test_the_minimum_record_count_is_two(self):
+        assert MIN_RANK_STABILITY_RECORDS == 2
+
     def test_summary_holds_every_reported_field(self):
         summary = format_sensitivity_summary(MONOTONE, formats=TRIPLE)["summary"]
         assert sorted(summary) == [
