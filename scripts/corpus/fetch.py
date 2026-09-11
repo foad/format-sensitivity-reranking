@@ -1,11 +1,11 @@
-"""Build a cache of Natural Questions examples answered inside an infobox.
+"""Fetch the Natural Questions examples that are answered inside an infobox.
 
 Streams a Natural Questions split and keeps each example whose first
 annotator's long answer falls inside an infobox. Writes one JSON file per split
 to `data/nq/matched_{split}.json`.
 
 Each record stores the raw infobox HTML and the raw post-infobox HTML.
-`scripts/h1/parse_nq_cache.py` extracts the metadata pairs and the body from
+`scripts/corpus/parse.py` extracts the metadata pairs and the body from
 those fields.
 """
 
@@ -17,7 +17,7 @@ from pathlib import Path
 
 from datasets import load_dataset
 
-from fsr.h1.infobox import find_infobox_ranges, in_any_range
+from fsr.corpus.infobox import find_infobox_ranges, in_any_range
 
 DEFAULT_OUT_DIR = Path("data") / "nq"
 
@@ -82,7 +82,7 @@ def match_example(ex: dict) -> dict | None:
     }
 
 
-def build_cache(split: str, out_path: Path, n_limit: int) -> None:
+def fetch_split(split: str, out_path: Path, n_limit: int) -> None:
     """Stream one split and write its infobox-answered examples to out_path.
 
     Args:
@@ -150,7 +150,7 @@ def main() -> None:
         if out_path.exists():
             print(f"Skipping {split}: cache already exists at {out_path}")
             continue
-        build_cache(split, out_path, args.n_limit)
+        fetch_split(split, out_path, args.n_limit)
 
 
 if __name__ == "__main__":

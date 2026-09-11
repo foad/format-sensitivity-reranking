@@ -1,11 +1,11 @@
-"""Tests for scripts.h1.build_nq_cache."""
+"""Tests for scripts.corpus.fetch."""
 
 from __future__ import annotations
 
 import json
 
 import pytest
-from scripts.h1 import build_nq_cache as mod
+from scripts.corpus import fetch as mod
 
 OPEN = '<table class="infobox">'
 CLOSE = "</table>"
@@ -124,11 +124,11 @@ class TestMatchExample:
         assert "body" not in record
 
 
-class TestBuildCache:
+class TestFetchSplit:
     def _run(self, monkeypatch, examples, tmp_path, n_limit=0):
         monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter(examples))
         out = tmp_path / "matched_train.json"
-        mod.build_cache("train", out, n_limit)
+        mod.fetch_split("train", out, n_limit)
         return json.loads(out.read_text())
 
     def test_writes_only_matching_examples(self, monkeypatch, tmp_path):
@@ -153,7 +153,7 @@ class TestBuildCache:
     def test_creates_the_output_directory(self, monkeypatch, tmp_path):
         monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter([example()]))
         out = tmp_path / "nested" / "dir" / "matched_train.json"
-        mod.build_cache("train", out, 0)
+        mod.fetch_split("train", out, 0)
         assert out.exists()
 
     def test_writes_an_empty_record_list_when_nothing_matches(

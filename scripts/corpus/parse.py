@@ -11,7 +11,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from fsr.h1.wikitext import (
+from fsr.corpus.wikitext import (
     DEFAULT_BODY_CHARS,
     DEFAULT_MIN_BODY_CHARS,
     DEFAULT_MIN_INFOBOX_CHARS,

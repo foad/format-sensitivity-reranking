@@ -1,11 +1,11 @@
-"""Tests for scripts.h1.parse_nq_cache."""
+"""Tests for scripts.corpus.parse."""
 
 from __future__ import annotations
 
 import json
 
 import pytest
-from scripts.h1 import parse_nq_cache as mod
+from scripts.corpus import parse as mod
 
 PARA = "A sufficiently long paragraph of real article prose goes here for tests."
 # Long enough to clear the 200-character min_infobox gate.

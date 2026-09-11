@@ -1,8 +1,8 @@
-"""Tests for fsr.h1.wikitext."""
+"""Tests for fsr.corpus.wikitext."""
 
 from __future__ import annotations
 
-from fsr.h1.wikitext import (
+from fsr.corpus.wikitext import (
     DISPLAYNONE_SPAN_OPEN_RE,
     NOPRINT_SPAN_OPEN_RE,
     clean_cell,

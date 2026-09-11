@@ -1,4 +1,4 @@
-"""Test setup for the H1 pipeline scripts."""
+"""Test setup for the corpus build scripts."""
 
 from __future__ import annotations
 

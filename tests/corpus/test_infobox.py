@@ -1,4 +1,4 @@
-"""Tests for fsr.h1.infobox."""
+"""Tests for fsr.corpus.infobox."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import re
 
 import pytest
 
-from fsr.h1.infobox import INFOBOX_OPEN, find_infobox_ranges, in_any_range
+from fsr.corpus.infobox import INFOBOX_OPEN, find_infobox_ranges, in_any_range
 
 OPEN = b'<table class="infobox vcard">'
 CLOSE = b"</table>"
