@@ -1,6 +1,13 @@
 # src/fsr/
 
-Format Sensitivity Reranking python package.
+Library code for the format-sensitivity study.
 
-- `fsr/h1/`: characterisation. Corpus construction, format renderers, model scoring, statistical measures (paired Cohen's *d*, Spearman rho, rank-flip rate).
-- `fsr/h2/`: mitigation. Composite loss, LoRA training, jina and mxbai head handling (including the tanh patch), scoring, evaluation metrics.
+| Module | Contents |
+|---|---|
+| `formats.py` | The five metadata renderers under study, and the `FORMATS` registry. |
+| `passages.py` | The tokenizer contract, body-token budgeting, and semantic truncation. |
+| `scoring.py` | Cross-encoder scoring primitives and the XLM-RoBERTa compatibility patch. |
+| `metrics.py` | Format-sensitivity statistics, reciprocal ranks, and bootstrap intervals. |
+| `corpus/` | Infobox location and Wikipedia text extraction. |
+| `models/` | Model loading, and vendor-specific architecture patches for jina and mxbai. |
+| `training/` | Batch construction and the composite ranking-plus-invariance objective. |

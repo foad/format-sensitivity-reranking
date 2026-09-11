@@ -1,4 +1,4 @@
-"""Tests for fsr.h2.train_utils."""
+"""Tests for fsr.training.batch."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from fsr.h2.train_utils import (
+from fsr.training.batch import (
     TrainRecord,
     _var_across_formats,
     compute_loss,

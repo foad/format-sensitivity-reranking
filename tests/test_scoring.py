@@ -1,4 +1,4 @@
-"""Tests for fsr.common.scoring."""
+"""Tests for fsr.scoring."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import torch
 import transformers.models.xlm_roberta.modeling_xlm_roberta as xlm_mod
 from tests.fakes import LogitModel, PairTokenizer
 
-from fsr.common.scoring import MAX_TOKENS, extract_score_from_logits, score_batch
+from fsr.scoring import MAX_TOKENS, extract_score_from_logits, score_batch
 
 PAIRS = [(f"q{i}", f"p{i}") for i in range(7)]
 

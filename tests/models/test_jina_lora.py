@@ -1,4 +1,4 @@
-"""Tests for fsr.h2.jina_lora."""
+"""Tests for fsr.models.jina_lora."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import torch.nn as nn
 from peft import LoraConfig
 from peft.tuners.lora.layer import Linear as PeftLoraLinear
 
-from fsr.h2.jina_lora import JinaWqkvLora, _is_linear_residual, patch_jina_lora
+from fsr.models.jina_lora import JinaWqkvLora, _is_linear_residual, patch_jina_lora
 
 IN_DIM = 64
 OUT_DIM = 192

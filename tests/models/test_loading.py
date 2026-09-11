@@ -1,11 +1,11 @@
-"""Tests for fsr.h2.loading."""
+"""Tests for fsr.models.loading."""
 
 from __future__ import annotations
 
 import pytest
 import torch
 
-from fsr.h2 import loading as mod
+from fsr.models import loading as mod
 
 
 class Loaded:

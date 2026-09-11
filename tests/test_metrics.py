@@ -1,4 +1,4 @@
-"""Tests for fsr.common.metrics."""
+"""Tests for fsr.metrics."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import math
 import numpy as np
 import pytest
 
-import fsr.common.metrics as metrics_module
-from fsr.common.metrics import (
+import fsr.metrics as metrics_module
+from fsr.metrics import (
     MIN_RANK_STABILITY_RECORDS,
     _extreme,
     _percentile_ci,

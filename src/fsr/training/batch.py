@@ -9,8 +9,8 @@ from typing import Any
 import torch
 from torch.nn.functional import logsigmoid
 
-from fsr.common.rendering import FORMATS
-from fsr.common.scoring import MAX_TOKENS, extract_score_from_logits
+from fsr.formats import FORMATS
+from fsr.scoring import MAX_TOKENS, extract_score_from_logits
 
 
 @dataclass

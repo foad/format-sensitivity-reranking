@@ -10,7 +10,7 @@ from typing import Any
 import numpy as np
 from scipy import stats
 
-from .rendering import FORMAT_NAMES
+from fsr.formats import FORMAT_NAMES
 
 COHEN_D_EPSILON = 1e-12
 DEFAULT_SAMPLE_SIZE = 20_000

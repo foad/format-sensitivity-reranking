@@ -8,7 +8,7 @@ import torch
 from peft import PeftModel
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-from fsr.h2.jina_lora import patch_jina_lora
+from fsr.models.jina_lora import patch_jina_lora
 
 DEFAULT_DTYPE = torch.float32
 

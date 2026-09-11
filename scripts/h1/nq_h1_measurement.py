@@ -26,13 +26,10 @@ import numpy as np
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-from fsr.common.metrics import format_sensitivity_summary
-from fsr.common.rendering import (
-    FORMATS,
-    MIN_BODY_TOKENS,
-    prepare_records_with_body,
-)
-from fsr.common.scoring import score_batch
+from fsr.formats import FORMATS
+from fsr.metrics import format_sensitivity_summary
+from fsr.passages import MIN_BODY_TOKENS, prepare_records_with_body
+from fsr.scoring import score_batch
 
 DEFAULT_IN_DIR = Path("data") / "nq"
 DEFAULT_OUT_DIR = Path("data") / "nq" / "h1_measurement"

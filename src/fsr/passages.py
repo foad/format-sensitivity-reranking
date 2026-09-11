@@ -1,10 +1,16 @@
-"""Format renderers, body-token budgeting, and semantic truncation."""
+"""Passage assembly: the tokenizer contract, body budgeting, and truncation.
+
+The five formats are not equally verbose. Budgeting each record against its
+most verbose rendering, using the most token-hungry tokenizer in the roster,
+gives every model byte-identical body text in every format.
+"""
 
 from __future__ import annotations
 
-import json
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping
 from typing import Any, Protocol
+
+from fsr.formats import FORMATS, MetadataPairs, Renderer
 
 MAX_TOKENS = 512
 BUFFER_TOKENS = 5
@@ -13,9 +19,6 @@ MIN_BODY_TOKENS = 20
 SENTENCE_TERMINATORS = frozenset(".!?")
 SENTENCE_SEARCH_CHARS = 500
 MIN_WORD_BOUNDARY_CHARS = 20
-
-MetadataPairs = Sequence[tuple[str, str]]
-Renderer = Callable[[MetadataPairs, str], str]
 
 
 class Tokenizer(Protocol):
@@ -35,44 +38,6 @@ class Tokenizer(Protocol):
             requests offsets.
         """
         ...
-
-
-def render_yaml(md: MetadataPairs, body: str) -> str:
-    """Render the metadata as a YAML front-matter block above the body."""
-    return "---\n" + "\n".join(f"{k}: {v}" for k, v in md) + "\n---\n" + body
-
-
-def render_json(md: MetadataPairs, body: str) -> str:
-    """Render the metadata as a single-line JSON object above the body.
-
-    A repeated key keeps only its last value.
-    """
-    return json.dumps(dict(md)) + "\n" + body
-
-
-def render_toml(md: MetadataPairs, body: str) -> str:
-    """Render the metadata as TOML key-value lines above the body."""
-    return "\n".join(f'{k} = "{v}"' for k, v in md) + "\n" + body
-
-
-def render_inline_kv(md: MetadataPairs, body: str) -> str:
-    """Render the metadata as space-separated key=value pairs above the body."""
-    return " ".join(f"{k}={v}" for k, v in md) + "\n" + body
-
-
-def render_markdown(md: MetadataPairs, body: str) -> str:
-    """Render the metadata as bold-key Markdown lines above the body."""
-    return "\n".join(f"**{k}**: {v}" for k, v in md) + "\n\n" + body
-
-
-FORMATS: dict[str, Renderer] = {
-    "yaml": render_yaml,
-    "json": render_json,
-    "toml": render_toml,
-    "inline_kv": render_inline_kv,
-    "markdown": render_markdown,
-}
-FORMAT_NAMES = tuple(FORMATS.keys())
 
 
 def compute_body_budget(

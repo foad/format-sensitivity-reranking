@@ -15,9 +15,14 @@ The study runs in two phases:
 ## Repository layout
 
 ```
-src/fsr/         # library code: corpus building, scoring, LoRA
-  h1/            #   H1 (characterisation)
-  h2/            #   H2 (mitigation)
+src/fsr/         # library code
+  formats.py     #   the five metadata renderers under study
+  passages.py    #   tokenizer contract, body budgeting, truncation
+  scoring.py     #   cross-encoder scoring primitives
+  metrics.py     #   format-sensitivity statistics and intervals
+  corpus/        #   infobox location and text extraction
+  models/        #   model loading and vendor-specific patches
+  training/      #   batch construction and the composite objective
 scripts/         # runnable pipeline entry points
 notebooks/       # analysis notebooks
 data/            # refined corpus

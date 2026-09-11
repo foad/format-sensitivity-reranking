@@ -1,4 +1,4 @@
-"""Tests for fsr.h2.mxbai_tanh_patch."""
+"""Tests for fsr.models.mxbai_tanh_patch."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from fsr.h2.mxbai_tanh_patch import apply_mxbai_tanh_patch
+from fsr.models.mxbai_tanh_patch import apply_mxbai_tanh_patch
 
 IN_FEATURES = 16
 
