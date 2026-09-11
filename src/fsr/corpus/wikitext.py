@@ -6,6 +6,8 @@ import html
 import re
 from collections import Counter
 
+from fsr.corpus.config import DEFAULT
+
 TAG_RE = re.compile(r"<[^>]+>")
 WS_RE = re.compile(r"\s+")
 
@@ -44,14 +46,6 @@ EDITSECTION_RE = re.compile(
     re.DOTALL | re.IGNORECASE,
 )
 P_RE = re.compile(r"<p\b[^>]*>(.*?)</p>", re.DOTALL | re.IGNORECASE)
-
-MAX_KEY_CHARS = 80
-MAX_VALUE_CHARS = 400
-MIN_PARAGRAPH_CHARS = 30
-DEFAULT_BODY_CHARS = 3000
-DEFAULT_MIN_PAIRS = 3
-DEFAULT_MIN_BODY_CHARS = 100
-DEFAULT_MIN_INFOBOX_CHARS = 200
 
 
 def strip_nested_tables(html_slice: str) -> str:
@@ -149,8 +143,8 @@ def clean_key(k: str) -> str:
 def parse_infobox(
     html_slice: str,
     *,
-    max_key_chars: int = MAX_KEY_CHARS,
-    max_value_chars: int = MAX_VALUE_CHARS,
+    max_key_chars: int = DEFAULT.max_key_chars,
+    max_value_chars: int = DEFAULT.max_value_chars,
 ) -> tuple[list[tuple[str, str]], Counter]:
     """Extract the key-value pairs from one infobox.
 
@@ -195,9 +189,9 @@ def parse_infobox(
 
 def extract_body(
     post_infobox_html: str,
-    target_chars: int = DEFAULT_BODY_CHARS,
+    target_chars: int = DEFAULT.body_chars,
     *,
-    min_paragraph_chars: int = MIN_PARAGRAPH_CHARS,
+    min_paragraph_chars: int = DEFAULT.min_paragraph_chars,
 ) -> str:
     """Extract the article prose that follows the infobox.
 
@@ -237,9 +231,9 @@ def extract_body(
 def quality_check(
     parsed: dict,
     source: dict,
-    min_pairs: int = DEFAULT_MIN_PAIRS,
-    min_body: int = DEFAULT_MIN_BODY_CHARS,
-    min_infobox: int = DEFAULT_MIN_INFOBOX_CHARS,
+    min_pairs: int = DEFAULT.min_pairs,
+    min_body: int = DEFAULT.min_body_chars,
+    min_infobox: int = DEFAULT.min_infobox_chars,
 ) -> list[str]:
     """Return the quality flags raised by one parsed record.
 

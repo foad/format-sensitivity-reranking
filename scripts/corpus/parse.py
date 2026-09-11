@@ -11,15 +11,8 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from fsr.corpus.wikitext import (
-    DEFAULT_BODY_CHARS,
-    DEFAULT_MIN_BODY_CHARS,
-    DEFAULT_MIN_INFOBOX_CHARS,
-    DEFAULT_MIN_PAIRS,
-    extract_body,
-    parse_infobox,
-    quality_check,
-)
+from fsr.corpus.config import DEFAULT
+from fsr.corpus.wikitext import extract_body, parse_infobox, quality_check
 
 DEFAULT_IN_DIR = Path("data") / "nq"
 DEFAULT_OUT_DIR = Path("data") / "nq"
@@ -29,10 +22,10 @@ DRY_RUN_BODY_CHARS = 1000
 
 def parse_record(
     rec: dict,
-    target_body_chars: int = DEFAULT_BODY_CHARS,
-    min_pairs: int = DEFAULT_MIN_PAIRS,
-    min_body: int = DEFAULT_MIN_BODY_CHARS,
-    min_infobox: int = DEFAULT_MIN_INFOBOX_CHARS,
+    target_body_chars: int = DEFAULT.body_chars,
+    min_pairs: int = DEFAULT.min_pairs,
+    min_body: int = DEFAULT.min_body_chars,
+    min_infobox: int = DEFAULT.min_infobox_chars,
 ) -> tuple[dict, Counter]:
     """Parse one cache record and apply the quality gate.
 
@@ -64,10 +57,10 @@ def parse_record(
 
 def parse_records(
     raw_records: list[dict],
-    target_body_chars: int = DEFAULT_BODY_CHARS,
-    min_pairs: int = DEFAULT_MIN_PAIRS,
-    min_body: int = DEFAULT_MIN_BODY_CHARS,
-    min_infobox: int = DEFAULT_MIN_INFOBOX_CHARS,
+    target_body_chars: int = DEFAULT.body_chars,
+    min_pairs: int = DEFAULT.min_pairs,
+    min_body: int = DEFAULT.min_body_chars,
+    min_infobox: int = DEFAULT.min_infobox_chars,
 ) -> tuple[list[dict], Counter, Counter]:
     """Parse every cache record and total the parser and quality counts.
 
@@ -144,10 +137,10 @@ def main() -> None:
         default=["train", "validation"],
         choices=["train", "validation"],
     )
-    ap.add_argument("--target-body-chars", type=int, default=DEFAULT_BODY_CHARS)
-    ap.add_argument("--min-pairs", type=int, default=DEFAULT_MIN_PAIRS)
-    ap.add_argument("--min-body", type=int, default=DEFAULT_MIN_BODY_CHARS)
-    ap.add_argument("--min-infobox", type=int, default=DEFAULT_MIN_INFOBOX_CHARS)
+    ap.add_argument("--target-body-chars", type=int, default=DEFAULT.body_chars)
+    ap.add_argument("--min-pairs", type=int, default=DEFAULT.min_pairs)
+    ap.add_argument("--min-body", type=int, default=DEFAULT.min_body_chars)
+    ap.add_argument("--min-infobox", type=int, default=DEFAULT.min_infobox_chars)
     ap.add_argument("--in-dir", type=Path, default=DEFAULT_IN_DIR)
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     ap.add_argument(
