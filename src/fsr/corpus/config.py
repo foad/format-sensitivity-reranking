@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 NQ_DATASET = "google-research-datasets/natural_questions"
+NQ_REVISION = "e8103d566bef4154c2c12b17c6095ec5275840cc"
 
 
 @dataclass(frozen=True)
@@ -18,6 +19,9 @@ class CorpusConfig:
 
     Attributes:
         dataset: The Hugging Face dataset to stream.
+        dataset_revision: The dataset revision to pin, as a commit SHA, tag, or
+            branch. The default is the revision the published corpus was built
+            from. None resolves to the default branch at build time.
         body_chars: The length at which body collection stops.
         min_paragraph_chars: The shortest paragraph kept during extraction.
         max_key_chars: The longest metadata key kept.
@@ -33,6 +37,7 @@ class CorpusConfig:
     """
 
     dataset: str = NQ_DATASET
+    dataset_revision: str | None = NQ_REVISION
 
     body_chars: int = 3000
     min_paragraph_chars: int = 30

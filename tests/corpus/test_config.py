@@ -6,7 +6,7 @@ import dataclasses
 
 import pytest
 
-from fsr.corpus.config import DEFAULT, NQ_DATASET, CorpusConfig
+from fsr.corpus.config import DEFAULT, NQ_DATASET, NQ_REVISION, CorpusConfig
 
 
 class TestPublishedDefaults:
@@ -14,6 +14,7 @@ class TestPublishedDefaults:
         "field,expected",
         [
             ("dataset", NQ_DATASET),
+            ("dataset_revision", NQ_REVISION),
             ("body_chars", 3000),
             ("min_paragraph_chars", 30),
             ("max_key_chars", 80),
@@ -30,6 +31,10 @@ class TestPublishedDefaults:
     )
     def test_the_published_value(self, field, expected):
         assert getattr(DEFAULT, field) == expected
+
+    def test_the_pinned_revision_is_a_full_commit_sha(self):
+        assert len(NQ_REVISION) == 40
+        assert all(c in "0123456789abcdef" for c in NQ_REVISION)
 
     def test_the_test_share_is_the_remainder(self):
         assert DEFAULT.frac_test == pytest.approx(0.10)

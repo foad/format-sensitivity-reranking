@@ -138,6 +138,57 @@ class TestFetchSplit:
         assert data["n_matched"] == 2
         assert [r["id"] for r in data["records"]] == ["a", "b"]
 
+    def test_passes_the_dataset_and_revision_to_the_loader(self, monkeypatch, tmp_path):
+        seen = {}
+
+        def loader(name, **kwargs):
+            seen["name"] = name
+            seen.update(kwargs)
+            return iter([example()])
+
+        monkeypatch.setattr(mod, "load_dataset", loader)
+        mod.fetch_split(
+            "train", tmp_path / "m.json", 0, dataset="vendor/ds", revision="abc123"
+        )
+        assert seen["name"] == "vendor/ds"
+        assert seen["revision"] == "abc123"
+        assert seen["streaming"] is True
+
+    def test_defaults_to_the_configured_dataset(self, monkeypatch, tmp_path):
+        seen = {}
+
+        def loader(name, **kwargs):
+            seen["name"] = name
+            seen.update(kwargs)
+            return iter([example()])
+
+        monkeypatch.setattr(mod, "load_dataset", loader)
+        mod.fetch_split("train", tmp_path / "m.json", 0)
+        assert seen["name"] == mod.DEFAULT.dataset
+        assert seen["revision"] == mod.DEFAULT.dataset_revision
+
+    def test_records_the_dataset_and_revision_in_the_output(
+        self, monkeypatch, tmp_path
+    ):
+        monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter([example()]))
+        out = tmp_path / "matched_train.json"
+        mod.fetch_split("train", out, 0, dataset="vendor/ds", revision="abc123")
+        data = json.loads(out.read_text())
+        assert data["dataset"] == "vendor/ds"
+        assert data["dataset_revision"] == "abc123"
+
+    def test_reports_an_unpinned_revision(self, monkeypatch, tmp_path, capsys):
+        monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter([example()]))
+        mod.fetch_split("train", tmp_path / "m.json", 0, revision=None)
+        assert "unpinned" in capsys.readouterr().out
+
+    def test_reports_the_pinned_revision_by_default(
+        self, monkeypatch, tmp_path, capsys
+    ):
+        monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter([example()]))
+        mod.fetch_split("train", tmp_path / "m.json", 0)
+        assert mod.DEFAULT.dataset_revision in capsys.readouterr().out
+
     def test_records_the_split_name(self, monkeypatch, tmp_path):
         assert self._run(monkeypatch, [example()], tmp_path)["split"] == "train"
 
