@@ -126,7 +126,7 @@ class TestMatchExample:
 
 class TestBuildCache:
     def _run(self, monkeypatch, examples, tmp_path, n_limit=0):
-        monkeypatch.setattr(mod, "load_dataset", lambda *a, **k: iter(examples))
+        monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter(examples))
         out = tmp_path / "matched_train.json"
         mod.build_cache("train", out, n_limit)
         return json.loads(out.read_text())
@@ -151,7 +151,7 @@ class TestBuildCache:
         assert self._run(monkeypatch, examples, tmp_path, n_limit=0)["n_matched"] == 6
 
     def test_creates_the_output_directory(self, monkeypatch, tmp_path):
-        monkeypatch.setattr(mod, "load_dataset", lambda *a, **k: iter([example()]))
+        monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter([example()]))
         out = tmp_path / "nested" / "dir" / "matched_train.json"
         mod.build_cache("train", out, 0)
         assert out.exists()
@@ -173,7 +173,7 @@ class TestBuildCache:
 
 class TestMain:
     def test_builds_each_requested_split(self, monkeypatch, tmp_path):
-        monkeypatch.setattr(mod, "load_dataset", lambda *a, **k: iter([example()]))
+        monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter([example()]))
         monkeypatch.setattr(
             "sys.argv",
             ["prog", "--splits", "train", "validation", "--out-dir", str(tmp_path)],
@@ -186,7 +186,7 @@ class TestMain:
         existing = tmp_path / "matched_train.json"
         existing.write_text("{}")
 
-        def fail(*args, **kwargs):
+        def fail(*_args, **_kwargs):
             raise AssertionError("load_dataset must not be called")
 
         monkeypatch.setattr(mod, "load_dataset", fail)

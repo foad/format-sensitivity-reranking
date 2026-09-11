@@ -114,7 +114,7 @@ class TestPairwiseCohenD:
     def test_a_scipy_value_error_becomes_a_p_value_of_one(self, monkeypatch):
         # SciPy 1.18 does not raise for any input this module passes, so the
         # fallback is only reachable by forcing the error.
-        def raise_value_error(*args, **kwargs):
+        def raise_value_error(*_args, **_kwargs):
             raise ValueError("forced")
 
         monkeypatch.setattr(metrics_module.stats, "wilcoxon", raise_value_error)

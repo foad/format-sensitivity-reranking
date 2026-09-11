@@ -35,7 +35,7 @@ class CharTokenizer:
 class Encoding(dict):
     """A tokenizer output that accepts the device move a scorer performs."""
 
-    def to(self, device: str) -> Encoding:
+    def to(self, _device: str) -> Encoding:
         """Return the encoding unchanged."""
         return self
 
@@ -43,7 +43,7 @@ class Encoding(dict):
 class PairTokenizer:
     """A tokenizer that encodes query and passage pairs into a tensor batch."""
 
-    def __call__(self, queries, passages=None, **kwargs) -> Encoding:
+    def __call__(self, queries, _passages=None, **_kwargs) -> Encoding:
         """Return an encoding whose batch size matches the queries."""
         import torch
 

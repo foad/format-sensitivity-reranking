@@ -64,6 +64,7 @@ select = [
     "UP",  # pyupgrade
     "B",   # bugbear
     "SIM", # simplify
+    "ARG", # unused arguments
     "RUF",
 ]
 

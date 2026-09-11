@@ -176,14 +176,16 @@ class TestForward:
         class Variant:
             """A stand-in for a PEFT LoRA variant."""
 
-            def forward(self, layer, *, active_adapter, x, result, **kwargs):
+            def forward(self, _layer, *, active_adapter, x, result, **_kwargs):
                 """Record the call and return a marker tensor."""
                 seen["adapter"] = active_adapter
+                seen["x_shape"] = tuple(x.shape)
                 return torch.full_like(result, 7.0)
 
         wrapper.lora_variant[ADAPTER] = Variant()
         y, _ = wrapper(inputs())
         assert seen["adapter"] == ADAPTER
+        assert seen["x_shape"] == (2, 10, IN_DIM)
         assert torch.equal(y, torch.full_like(y, 7.0))
 
     def test_rejects_a_base_layer_that_returns_a_tensor(self):

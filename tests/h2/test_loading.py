@@ -46,7 +46,7 @@ def capture(monkeypatch):
 class TestLoadTokenizer:
     def test_returns_the_tokenizer(self, monkeypatch):
         monkeypatch.setattr(
-            mod.AutoTokenizer, "from_pretrained", lambda *a, **k: "TOKENIZER"
+            mod.AutoTokenizer, "from_pretrained", lambda *_a, **_k: "TOKENIZER"
         )
         assert mod.load_tokenizer("some/model") == "TOKENIZER"
 
@@ -54,7 +54,7 @@ class TestLoadTokenizer:
     def test_forwards_the_trust_flag(self, monkeypatch, trust):
         seen = {}
 
-        def loader(name, **kwargs):
+        def loader(_name, **kwargs):
             seen.update(kwargs)
             return "TOKENIZER"
 
@@ -65,7 +65,7 @@ class TestLoadTokenizer:
     def test_trusts_remote_code_by_default(self, monkeypatch):
         seen = {}
 
-        def loader(name, **kwargs):
+        def loader(_name, **kwargs):
             seen.update(kwargs)
             return "TOKENIZER"
 
@@ -75,7 +75,8 @@ class TestLoadTokenizer:
 
 
 class TestLoadModel:
-    def test_moves_the_model_to_the_device_and_evaluates(self, capture):
+    @pytest.mark.usefixtures("capture")
+    def test_moves_the_model_to_the_device_and_evaluates(self):
         model = mod.load_model("some/model", "cpu")
         assert model.device == "cpu"
         assert model.evaluated is True
@@ -115,7 +116,7 @@ class TestLoadModel:
     def test_retries_without_eager_attention_on_a_type_error(self, monkeypatch):
         calls = []
 
-        def loader(name, **kwargs):
+        def loader(_name, **kwargs):
             calls.append(dict(kwargs))
             if "attn_implementation" in kwargs:
                 raise TypeError("unexpected keyword")
@@ -129,14 +130,16 @@ class TestLoadModel:
         assert len(calls) == 2
         assert "attn_implementation" not in calls[1]
 
-    def test_does_not_load_an_adapter_by_default(self, capture, monkeypatch):
-        def fail(*args, **kwargs):
+    @pytest.mark.usefixtures("capture")
+    def test_does_not_load_an_adapter_by_default(self, monkeypatch):
+        def fail(*_args, **_kwargs):
             raise AssertionError("PeftModel.from_pretrained must not be called")
 
         monkeypatch.setattr(mod.PeftModel, "from_pretrained", fail)
         mod.load_model("some/model", "cpu")
 
-    def test_loads_and_patches_an_adapter(self, capture, monkeypatch):
+    @pytest.mark.usefixtures("capture")
+    def test_loads_and_patches_an_adapter(self, monkeypatch):
         seen = {}
 
         def from_pretrained(model, path):
@@ -145,7 +148,7 @@ class TestLoadModel:
 
         monkeypatch.setattr(mod.PeftModel, "from_pretrained", from_pretrained)
         monkeypatch.setattr(
-            mod, "patch_jina_lora", lambda m: seen.setdefault("patched", True)
+            mod, "patch_jina_lora", lambda _m: seen.setdefault("patched", True)
         )
         model = mod.load_model("some/model", "cpu", lora_adapter_path="adapters/mxbai")
         assert seen["path"] == "adapters/mxbai"

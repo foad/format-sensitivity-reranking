@@ -24,7 +24,7 @@ def record(rec_id="1", body="budgeted body text"):
 
 class TestTryLoadTokenizer:
     def test_returns_none_and_reports_a_failure(self, monkeypatch, capsys):
-        def fail(*args, **kwargs):
+        def fail(*_args, **_kwargs):
             raise OSError("no such model")
 
         monkeypatch.setattr(mod.AutoTokenizer, "from_pretrained", fail)
@@ -33,14 +33,14 @@ class TestTryLoadTokenizer:
 
     def test_returns_the_tokenizer_on_success(self, monkeypatch):
         monkeypatch.setattr(
-            mod.AutoTokenizer, "from_pretrained", lambda *a, **k: "TOKENIZER"
+            mod.AutoTokenizer, "from_pretrained", lambda *_a, **_k: "TOKENIZER"
         )
         assert mod.try_load_tokenizer("some/model", True) == "TOKENIZER"
 
     def test_forwards_the_trust_flag(self, monkeypatch):
         seen = {}
 
-        def capture(name, **kwargs):
+        def capture(_name, **kwargs):
             seen.update(kwargs)
             return "TOKENIZER"
 
@@ -65,7 +65,7 @@ class TestTryLoadModel:
         monkeypatch.setattr(
             mod.AutoModelForSequenceClassification,
             "from_pretrained",
-            lambda *a, **k: self.Loaded(),
+            lambda *_a, **_k: self.Loaded(),
         )
         model = mod.try_load_model("some/model", "cpu", True)
         assert model.device == "cpu"
@@ -74,7 +74,7 @@ class TestTryLoadModel:
     def test_requests_eager_attention_when_asked(self, monkeypatch):
         seen = {}
 
-        def capture(name, **kwargs):
+        def capture(_name, **kwargs):
             seen.update(kwargs)
             return self.Loaded()
 
@@ -87,7 +87,7 @@ class TestTryLoadModel:
     def test_retries_without_eager_attention_on_a_type_error(self, monkeypatch):
         calls = []
 
-        def capture(name, **kwargs):
+        def capture(_name, **kwargs):
             calls.append(dict(kwargs))
             if "attn_implementation" in kwargs:
                 raise TypeError("unexpected keyword")
@@ -101,7 +101,7 @@ class TestTryLoadModel:
         assert "attn_implementation" not in calls[1]
 
     def test_returns_none_when_the_retry_also_fails(self, monkeypatch, capsys):
-        def capture(name, **kwargs):
+        def capture(_name, **kwargs):
             if "attn_implementation" in kwargs:
                 raise TypeError("unexpected keyword")
             raise OSError("corrupt weights")
@@ -113,7 +113,7 @@ class TestTryLoadModel:
         assert "model load failed" in capsys.readouterr().out
 
     def test_returns_none_on_a_non_type_error(self, monkeypatch, capsys):
-        def fail(*args, **kwargs):
+        def fail(*_args, **_kwargs):
             raise OSError("no such model")
 
         monkeypatch.setattr(
@@ -180,7 +180,7 @@ class TestRunMode:
 
     def _patch_loaders(self, monkeypatch, model=None):
         monkeypatch.setattr(
-            mod, "try_load_model", lambda *a, **k: model or LogitModel()
+            mod, "try_load_model", lambda *_a, **_k: model or LogitModel()
         )
 
     def test_writes_results_for_each_model(self, monkeypatch, tmp_path):
@@ -219,7 +219,7 @@ class TestRunMode:
         assert data["models_failed"][0]["stage"] == "tokenizer_load"
 
     def test_records_a_model_load_failure(self, monkeypatch, tmp_path):
-        monkeypatch.setattr(mod, "try_load_model", lambda *a, **k: None)
+        monkeypatch.setattr(mod, "try_load_model", lambda *_a, **_k: None)
         toks = {"model/a": PairTokenizer()}
         mod.run_mode(
             "metadata_only",
@@ -237,7 +237,7 @@ class TestRunMode:
     def test_records_a_scoring_failure_without_stopping(self, monkeypatch, tmp_path):
         self._patch_loaders(monkeypatch)
 
-        def boom(*args, **kwargs):
+        def boom(*_args, **_kwargs):
             raise RuntimeError("cuda oom")
 
         monkeypatch.setattr(mod, "score_batch", boom)
@@ -375,17 +375,19 @@ class TestMain:
         (tmp_path / "parsed_train.json").write_text(json.dumps({"records": records}))
         return tmp_path
 
-    def _patch(self, monkeypatch, tmp_path):
-        monkeypatch.setattr(mod, "try_load_tokenizer", lambda *a, **k: PairTokenizer())
-        monkeypatch.setattr(mod, "try_load_model", lambda *a, **k: LogitModel())
+    def _patch(self, monkeypatch, _tmp_path):
+        monkeypatch.setattr(
+            mod, "try_load_tokenizer", lambda *_a, **_k: PairTokenizer()
+        )
+        monkeypatch.setattr(mod, "try_load_model", lambda *_a, **_k: LogitModel())
         # Scores must vary, or every rank correlation is undefined.
         monkeypatch.setattr(
-            mod, "score_batch", lambda *a, **k: [i * 0.1 for i in range(len(a[2]))]
+            mod, "score_batch", lambda *a, **_k: [i * 0.1 for i in range(len(a[2]))]
         )
         monkeypatch.setattr(
             mod,
             "prepare_records_with_body",
-            lambda recs, toks: (
+            lambda recs, _toks: (
                 [{**r, "truncated_body": "b", "body_budget_tokens": 400} for r in recs],
                 {"dropped": 0, "tightest_counts": {"m/a": len(recs)}},
             ),
@@ -508,7 +510,7 @@ class TestMain:
     def test_exits_when_no_tokenizer_loads(self, monkeypatch, tmp_path):
         self._corpus(tmp_path)
         self._patch(monkeypatch, tmp_path)
-        monkeypatch.setattr(mod, "try_load_tokenizer", lambda *a, **k: None)
+        monkeypatch.setattr(mod, "try_load_tokenizer", lambda *_a, **_k: None)
         monkeypatch.setattr(
             "sys.argv",
             [
