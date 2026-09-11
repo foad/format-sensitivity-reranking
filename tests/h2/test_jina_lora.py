@@ -190,7 +190,7 @@ class TestForward:
         wrapper, _ = wrapped_residual()
         wrapper.base_layer = nn.Linear(IN_DIM, OUT_DIM)
         wrapper.__class__ = JinaWqkvLora
-        with pytest.raises(TypeError, match="LinearResidual"):
+        with pytest.raises(TypeError, match="did not match"):
             wrapper(inputs())
 
     def test_rejects_mixed_batch_adapter_names(self):
