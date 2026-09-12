@@ -29,8 +29,8 @@ class Tokenizer(Protocol):
 
         Args:
             text: The text to tokenize.
-            **kwargs: Tokenizer options. This module passes
-                add_special_tokens, return_offsets_mapping, and truncation.
+            **kwargs: Tokenizer options, including add_special_tokens,
+                return_offsets_mapping, and truncation.
 
         Returns:
             A mapping that contains input_ids. The mapping also contains

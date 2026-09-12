@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 
-import pytest
 from scripts.corpus import fetch as mod
+
+from fsr.corpus import nq
 
 OPEN = '<table class="infobox">'
 CLOSE = "</table>"
@@ -37,96 +38,9 @@ def example(
     }
 
 
-class TestShortAnswerTexts:
-    def test_returns_the_first_annotators_strings(self):
-        ann = {"short_answers": [{"text": ["1946", "in 1946"]}, {"text": ["other"]}]}
-        assert mod.short_answer_texts(ann) == ["1946", "in 1946"]
-
-    def test_drops_empty_strings(self):
-        ann = {"short_answers": [{"text": ["1946", "", None]}]}
-        assert mod.short_answer_texts(ann) == ["1946"]
-
-    @pytest.mark.parametrize(
-        "ann",
-        [
-            {},
-            {"short_answers": []},
-            {"short_answers": "not a list"},
-            {"short_answers": ["not a dict"]},
-            {"short_answers": [{"text": "not a list"}]},
-            {"short_answers": [{}]},
-        ],
-    )
-    def test_returns_nothing_for_a_missing_or_malformed_field(self, ann):
-        assert mod.short_answer_texts(ann) == []
-
-
-class TestMatchExample:
-    def test_builds_a_record_for_a_matching_example(self):
-        record = mod.match_example(example(short_answers=[{"text": ["1946"]}]))
-        assert record == {
-            "id": "42",
-            "title": "Person",
-            "question": "when was the person born",
-            "infobox_html_raw": INFOBOX,
-            "post_infobox_html_raw": "<p>Lead prose.</p></body></html>",
-            "short_answers": ["1946"],
-        }
-
-    def test_rejects_a_document_with_no_infobox(self):
-        assert mod.match_example(example(html="<html><p>No table.</p></html>")) is None
-
-    def test_rejects_a_long_answer_outside_the_infobox(self):
-        outside = [{"start_byte": IB_END + 1, "end_byte": IB_END + 5}]
-        assert mod.match_example(example(long_answer=outside)) is None
-
-    @pytest.mark.parametrize(
-        "long_answer",
-        [
-            [],
-            "not a list",
-            ["not a dict"],
-            [{"end_byte": 10}],
-            [{"start_byte": -1, "end_byte": 10}],
-        ],
-    )
-    def test_rejects_a_missing_or_malformed_long_answer(self, long_answer):
-        assert mod.match_example(example(long_answer=long_answer)) is None
-
-    def test_uses_the_first_annotators_long_answer_only(self):
-        answers = [
-            {"start_byte": IB_START, "end_byte": IB_END},
-            {"start_byte": 0, "end_byte": 1},
-        ]
-        assert mod.match_example(example(long_answer=answers)) is not None
-
-    def test_an_example_without_short_answers_still_matches(self):
-        record = mod.match_example(example())
-        assert record is not None
-        assert record["short_answers"] == []
-
-    def test_coerces_a_non_string_id(self):
-        assert mod.match_example(example(ex_id=7))["id"] == "7"
-
-    def test_supplies_an_empty_id_when_absent(self):
-        ex = example()
-        del ex["id"]
-        assert mod.match_example(ex)["id"] == ""
-
-    def test_supplies_an_empty_title_when_absent(self):
-        ex = example()
-        del ex["document"]["title"]
-        assert mod.match_example(ex)["title"] == ""
-
-    def test_carries_no_parsed_pairs_or_body(self):
-        record = mod.match_example(example())
-        assert "pairs" not in record
-        assert "body" not in record
-
-
 class TestFetchSplit:
     def _run(self, monkeypatch, examples, tmp_path, n_limit=0):
-        monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter(examples))
+        monkeypatch.setattr(nq, "load_dataset", lambda *_a, **_k: iter(examples))
         out = tmp_path / "matched_train.json"
         mod.fetch_split("train", out, n_limit)
         return json.loads(out.read_text())
@@ -146,7 +60,7 @@ class TestFetchSplit:
             seen.update(kwargs)
             return iter([example()])
 
-        monkeypatch.setattr(mod, "load_dataset", loader)
+        monkeypatch.setattr(nq, "load_dataset", loader)
         mod.fetch_split(
             "train", tmp_path / "m.json", 0, dataset="vendor/ds", revision="abc123"
         )
@@ -162,7 +76,7 @@ class TestFetchSplit:
             seen.update(kwargs)
             return iter([example()])
 
-        monkeypatch.setattr(mod, "load_dataset", loader)
+        monkeypatch.setattr(nq, "load_dataset", loader)
         mod.fetch_split("train", tmp_path / "m.json", 0)
         assert seen["name"] == mod.DEFAULT.dataset
         assert seen["revision"] == mod.DEFAULT.dataset_revision
@@ -170,7 +84,7 @@ class TestFetchSplit:
     def test_records_the_dataset_and_revision_in_the_output(
         self, monkeypatch, tmp_path
     ):
-        monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter([example()]))
+        monkeypatch.setattr(nq, "load_dataset", lambda *_a, **_k: iter([example()]))
         out = tmp_path / "matched_train.json"
         mod.fetch_split("train", out, 0, dataset="vendor/ds", revision="abc123")
         data = json.loads(out.read_text())
@@ -178,14 +92,14 @@ class TestFetchSplit:
         assert data["dataset_revision"] == "abc123"
 
     def test_reports_an_unpinned_revision(self, monkeypatch, tmp_path, capsys):
-        monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter([example()]))
+        monkeypatch.setattr(nq, "load_dataset", lambda *_a, **_k: iter([example()]))
         mod.fetch_split("train", tmp_path / "m.json", 0, revision=None)
         assert "unpinned" in capsys.readouterr().out
 
     def test_reports_the_pinned_revision_by_default(
         self, monkeypatch, tmp_path, capsys
     ):
-        monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter([example()]))
+        monkeypatch.setattr(nq, "load_dataset", lambda *_a, **_k: iter([example()]))
         mod.fetch_split("train", tmp_path / "m.json", 0)
         assert mod.DEFAULT.dataset_revision in capsys.readouterr().out
 
@@ -202,7 +116,7 @@ class TestFetchSplit:
         assert self._run(monkeypatch, examples, tmp_path, n_limit=0)["n_matched"] == 6
 
     def test_creates_the_output_directory(self, monkeypatch, tmp_path):
-        monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter([example()]))
+        monkeypatch.setattr(nq, "load_dataset", lambda *_a, **_k: iter([example()]))
         out = tmp_path / "nested" / "dir" / "matched_train.json"
         mod.fetch_split("train", out, 0)
         assert out.exists()
@@ -224,7 +138,7 @@ class TestFetchSplit:
 
 class TestMain:
     def test_builds_each_requested_split(self, monkeypatch, tmp_path):
-        monkeypatch.setattr(mod, "load_dataset", lambda *_a, **_k: iter([example()]))
+        monkeypatch.setattr(nq, "load_dataset", lambda *_a, **_k: iter([example()]))
         monkeypatch.setattr(
             "sys.argv",
             ["prog", "--splits", "train", "validation", "--out-dir", str(tmp_path)],
@@ -240,7 +154,7 @@ class TestMain:
         def fail(*_args, **_kwargs):
             raise AssertionError("load_dataset must not be called")
 
-        monkeypatch.setattr(mod, "load_dataset", fail)
+        monkeypatch.setattr(nq, "load_dataset", fail)
         monkeypatch.setattr(
             "sys.argv", ["prog", "--splits", "train", "--out-dir", str(tmp_path)]
         )

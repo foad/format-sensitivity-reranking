@@ -89,8 +89,8 @@ def pairwise_cohen_d(
     difference is zero.
 
     Args:
-        scores_per_fmt: The per-record scores, by format name. The scores must
-            be aligned across formats.
+        scores_per_fmt: The per-record scores, by format name, aligned across
+            formats.
         formats: The format names to pair. The default is FORMAT_NAMES.
 
     Returns:

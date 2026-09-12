@@ -1,12 +1,8 @@
-"""Fetch the Natural Questions examples that are answered inside an infobox.
+"""Write the raw cache of Natural Questions examples answered inside an infobox.
 
-Streams a Natural Questions split and keeps each example whose first
-annotator's long answer falls inside an infobox. Writes one JSON file per split
-to `data/nq/matched_{split}.json`.
-
-Each record stores the raw infobox HTML and the raw post-infobox HTML.
-`scripts/corpus/parse.py` extracts the metadata pairs and the body from
-those fields.
+Each record holds the raw infobox HTML and the raw post-infobox HTML. The cache
+is large. `scripts/corpus/parse.py` reads Natural Questions directly by default.
+Run this stage to re-parse without re-streaming.
 """
 
 from __future__ import annotations
@@ -15,72 +11,10 @@ import argparse
 import json
 from pathlib import Path
 
-from datasets import load_dataset
-
 from fsr.corpus.config import DEFAULT
-from fsr.corpus.infobox import find_infobox_ranges, in_any_range
+from fsr.corpus.nq import ScanStats, iter_matched
 
 DEFAULT_OUT_DIR = Path("data") / "nq"
-
-
-def short_answer_texts(annotations: dict) -> list[str]:
-    """Return the first annotator's short-answer strings.
-
-    Args:
-        annotations: The annotations field of a Natural Questions example.
-
-    Returns:
-        The non-empty answer strings. The list is empty when the example has no
-        short answer.
-    """
-    sa_ann = annotations.get("short_answers", [])
-    if not (isinstance(sa_ann, list) and sa_ann):
-        return []
-    first_sa = sa_ann[0]
-    if not isinstance(first_sa, dict):
-        return []
-    texts = first_sa.get("text", [])
-    if not isinstance(texts, list):
-        return []
-    return [t for t in texts if t]
-
-
-def match_example(ex: dict) -> dict | None:
-    """Build a cache record for one example, or reject the example.
-
-    An example matches when its HTML contains an infobox and the first
-    annotator's long answer falls inside that infobox.
-
-    Args:
-        ex: One Natural Questions example.
-
-    Returns:
-        The cache record, or None when the example does not match.
-    """
-    html_bytes = ex["document"]["html"].encode("utf-8", errors="replace")
-    ranges = find_infobox_ranges(html_bytes)
-    if not ranges:
-        return None
-
-    longs = ex["annotations"].get("long_answer", [])
-    if not (isinstance(longs, list) and longs):
-        return None
-    first_long = longs[0]
-    if not (isinstance(first_long, dict) and first_long.get("start_byte", -1) >= 0):
-        return None
-
-    ls, le = int(first_long["start_byte"]), int(first_long["end_byte"])
-    if not in_any_range(ls, le, ranges):
-        return None
-
-    return {
-        "id": str(ex.get("id", "")),
-        "title": ex["document"].get("title", ""),
-        "question": ex["question"]["text"],
-        "infobox_html_raw": html_bytes[ls:le].decode("utf-8", errors="replace"),
-        "post_infobox_html_raw": html_bytes[le:].decode("utf-8", errors="replace"),
-        "short_answers": short_answer_texts(ex["annotations"]),
-    }
 
 
 def fetch_split(
@@ -99,35 +33,16 @@ def fetch_split(
         dataset: The Hugging Face dataset to stream.
         revision: The dataset revision to pin. None uses the default branch.
     """
-    pinned = revision or "unpinned"
-    print(
-        f"Streaming {dataset}@{pinned} split={split} (limit={n_limit or 'no limit'})..."
-    )
-    ds = load_dataset(dataset, split=split, streaming=True, revision=revision)
-
-    matched = []
-    seen = 0
-    for ex in ds:
-        seen += 1
-        if n_limit and seen > n_limit:
-            break
-
-        record = match_example(ex)
-        if record is not None:
-            matched.append(record)
-
-        if seen % 1000 == 0:
-            print(f"  scanned {seen:,}, matched {len(matched):,}")
-
-    print(f"Done: scanned {seen:,}, matched {len(matched):,}")
+    stats = ScanStats()
+    matched = list(iter_matched(split, n_limit, dataset, revision, stats))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(
         json.dumps(
             {
                 "split": split,
-                "n_scanned": seen,
-                "n_matched": len(matched),
+                "n_scanned": stats.scanned,
+                "n_matched": stats.matched,
                 "dataset": dataset,
                 "dataset_revision": revision,
                 "records": matched,
@@ -140,7 +55,7 @@ def fetch_split(
 
 
 def main() -> None:
-    """Build the cache for each requested split."""
+    """Write the raw cache for each requested split."""
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--splits",

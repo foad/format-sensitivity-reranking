@@ -20,6 +20,25 @@ INFOBOX = (
 BODY_HTML = f"<p>{PARA}</p><p>{PARA}</p><p>{PARA}</p>"
 
 
+def stream_example():
+    """Return one Natural Questions example that matches."""
+    prefix = "<html><body>"
+    ib_start = len(prefix)
+    ib_end = ib_start + len(INFOBOX)
+    return {
+        "id": "1",
+        "document": {
+            "html": prefix + INFOBOX + BODY_HTML + "</body></html>",
+            "title": "Title",
+        },
+        "question": {"text": "question"},
+        "annotations": {
+            "long_answer": [{"start_byte": ib_start, "end_byte": ib_end}],
+            "short_answers": [{"text": ["1946"]}],
+        },
+    }
+
+
 def cache_record(rec_id="1", infobox=INFOBOX, body=BODY_HTML, short_answers=None):
     rec = {
         "id": rec_id,
@@ -68,25 +87,25 @@ class TestParseRecord:
 
 class TestParseRecords:
     def test_parses_every_record(self):
-        parsed, _, _ = mod.parse_records([cache_record("1"), cache_record("2")])
+        parsed, _, _, _ = mod.parse_records([cache_record("1"), cache_record("2")])
         assert [r["id"] for r in parsed] == ["1", "2"]
 
     def test_totals_the_parser_counts(self):
         bad = '<table class="infobox"><tr><th></th><td>x</td></tr></table>'
-        _, parser_totals, _ = mod.parse_records(
+        _, parser_totals, _, _ = mod.parse_records(
             [cache_record(infobox=bad), cache_record(infobox=bad)]
         )
         assert parser_totals["empty_dropped"] == 2
 
     def test_totals_the_quality_flags(self):
-        _, _, quality_totals = mod.parse_records(
+        _, _, quality_totals, _ = mod.parse_records(
             [cache_record(infobox="<table></table>", body="")] * 3
         )
         assert quality_totals["too_few_pairs"] == 3
         assert quality_totals["body_too_short"] == 3
 
     def test_handles_an_empty_input(self):
-        parsed, parser_totals, quality_totals = mod.parse_records([])
+        parsed, parser_totals, quality_totals, _ = mod.parse_records([])
         assert parsed == []
         assert parser_totals == {}
         assert quality_totals == {}
@@ -110,7 +129,7 @@ class TestStrictGateAvailable:
 
 class TestWriteDryRun:
     def test_writes_one_block_per_sample(self, tmp_path):
-        parsed, _, _ = mod.parse_records([cache_record("1"), cache_record("2")])
+        parsed, _, _, _ = mod.parse_records([cache_record("1"), cache_record("2")])
         out = tmp_path / "dry.txt"
         mod.write_dry_run(out, parsed, [cache_record("1"), cache_record("2")], 2)
         text = out.read_text()
@@ -118,7 +137,7 @@ class TestWriteDryRun:
         assert "'Born': '1946'" in text
 
     def test_marks_a_passing_record(self, tmp_path):
-        parsed, _, _ = mod.parse_records([cache_record()])
+        parsed, _, _, _ = mod.parse_records([cache_record()])
         out = tmp_path / "dry.txt"
         mod.write_dry_run(out, parsed, [cache_record()], 1)
         assert "(passed)" in out.read_text()
@@ -126,13 +145,13 @@ class TestWriteDryRun:
     def test_notes_a_truncated_body(self, tmp_path):
         long_body = "".join(f"<p>{PARA}</p>" for _ in range(60))
         rec = cache_record(body=long_body)
-        parsed, _, _ = mod.parse_records([rec])
+        parsed, _, _, _ = mod.parse_records([rec])
         out = tmp_path / "dry.txt"
         mod.write_dry_run(out, parsed, [rec], 1)
         assert "more chars truncated in this dump" in out.read_text()
 
     def test_creates_the_output_directory(self, tmp_path):
-        parsed, _, _ = mod.parse_records([cache_record()])
+        parsed, _, _, _ = mod.parse_records([cache_record()])
         out = tmp_path / "nested" / "dry.txt"
         mod.write_dry_run(out, parsed, [cache_record()], 1)
         assert out.exists()
@@ -153,6 +172,8 @@ class TestMain:
                 "prog",
                 "--splits",
                 "train",
+                "--source",
+                "cache",
                 "--in-dir",
                 str(tmp_path),
                 "--out-dir",
@@ -192,6 +213,56 @@ class TestMain:
         mod.main()
         assert "does not exist" in capsys.readouterr().out
         assert not (tmp_path / "parsed_train.json").exists()
+
+    def test_the_stream_source_needs_no_cache_file(self, monkeypatch, tmp_path):
+        from fsr.corpus import nq
+
+        monkeypatch.setattr(
+            nq, "load_dataset", lambda *_a, **_k: iter([stream_example()])
+        )
+        monkeypatch.setattr(
+            "sys.argv",
+            ["prog", "--splits", "train", "--out-dir", str(tmp_path)],
+        )
+        mod.main()
+        data = json.loads((tmp_path / "parsed_train.json").read_text())
+        assert data["source"] == "stream"
+        assert data["source_cache"] is None
+        assert data["n_records"] == 1
+
+    def test_the_cache_source_records_its_file(self, monkeypatch, tmp_path):
+        self._cache(tmp_path)
+        self._argv(monkeypatch, tmp_path)
+        mod.main()
+        data = json.loads((tmp_path / "parsed_train.json").read_text())
+        assert data["source"] == "cache"
+        assert data["source_cache"] == "matched_train.json"
+
+    def test_a_stream_dry_run_still_reports_the_raw_infobox_size(
+        self, monkeypatch, tmp_path
+    ):
+        from fsr.corpus import nq
+
+        monkeypatch.setattr(
+            nq, "load_dataset", lambda *_a, **_k: iter([stream_example()])
+        )
+        dry = tmp_path / "dry.txt"
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "prog",
+                "--splits",
+                "train",
+                "--out-dir",
+                str(tmp_path),
+                "--dry-run",
+                "1",
+                "--dry-run-out",
+                str(dry),
+            ],
+        )
+        mod.main()
+        assert "raw_infobox_bytes:" in dry.read_text()
 
     def test_a_dry_run_writes_samples_and_stops(self, monkeypatch, tmp_path):
         self._cache(tmp_path)
