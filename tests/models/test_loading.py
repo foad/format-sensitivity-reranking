@@ -131,6 +131,36 @@ class TestLoadModel:
         assert "attn_implementation" not in calls[1]
 
     @pytest.mark.usefixtures("capture")
+    def test_patches_the_head_when_asked(self, monkeypatch):
+        seen = {}
+        monkeypatch.setattr(
+            mod, "apply_mxbai_tanh_patch", lambda m: seen.setdefault("patched", m)
+        )
+        model = mod.load_model("some/model", "cpu", tanh_head=True)
+        assert seen["patched"] is model
+
+    @pytest.mark.usefixtures("capture")
+    def test_leaves_the_head_alone_by_default(self, monkeypatch):
+        def fail(_model):
+            raise AssertionError("apply_mxbai_tanh_patch must not be called")
+
+        monkeypatch.setattr(mod, "apply_mxbai_tanh_patch", fail)
+        mod.load_model("some/model", "cpu")
+
+    @pytest.mark.usefixtures("capture")
+    def test_patches_the_head_before_the_adapter_attaches(self, monkeypatch):
+        order = []
+        monkeypatch.setattr(
+            mod, "apply_mxbai_tanh_patch", lambda _m: order.append("patch")
+        )
+        monkeypatch.setattr(
+            mod.PeftModel, "from_pretrained", lambda m, _p: order.append("adapter") or m
+        )
+        monkeypatch.setattr(mod, "patch_jina_lora", lambda _m: None)
+        mod.load_model("some/model", "cpu", lora_adapter_path="a", tanh_head=True)
+        assert order == ["patch", "adapter"]
+
+    @pytest.mark.usefixtures("capture")
     def test_does_not_load_an_adapter_by_default(self, monkeypatch):
         def fail(*_args, **_kwargs):
             raise AssertionError("PeftModel.from_pretrained must not be called")
