@@ -5,12 +5,12 @@ Companion code and artefacts for the MSc dissertation *Evaluating and Mitigating
 The study runs in two phases:
 
 - **H1 (characterisation).** Does a pointwise cross-encoder reranker score the same passage differently when its metadata is serialised as YAML, JSON, TOML, inline key-value, or Markdown? Measured across six models on a refined Natural Questions corpus.
-- **H2 (mitigation).** Can a LoRA adapter trained with a composite ranking-plus-invariance objective (`L_total = L_rank + lambda*L_inv`) reduce that sensitivity without harming ranking quality? Evaluated on three format-sensitive models with a five-fold hold-one-out design over the five formats.
+- **H2 (mitigation).** Can a LoRA adapter trained with a composite ranking-plus-invariance objective (`L_total = L_rank + lambda*L_inv`) reduce that sensitivity without harming ranking quality? Evaluated on six model variants with a five-fold hold-one-out design over the five formats, under a fixed training budget.
 
 ## Key results
 
 - Format choice shifts scores by up to **Cohen's |d| = ~0.94** on three of six models (MiniLM-L6, mxbai, jina). The two BGE models stay near-invariant (|d| < 0.5). Full results in [`docs/h1-results.md`](docs/h1-results.md).
-- A per-model composite-objective LoRA cuts in-distribution max |d| while preserving MRR. Out-of-distribution transfer to unseen formats is architecture-conditional. Full results in [`docs/h2-results.md`](docs/h2-results.md).
+- Sensitivity is measured on two axes: **max |d|** on scores, and **conditional inconsistency**, the share of queries whose gold passage ranks first under some formats but not all. A per-model composite-objective LoRA reduces both on the models that respond, and the two axes agree under mitigation. Full results in [`docs/h2-results.md`](docs/h2-results.md).
 
 ## Repository layout
 
@@ -52,7 +52,7 @@ H1 scores six models:
  - [`mixedbread-ai/mxbai-rerank-base-v1`](https://huggingface.co/mixedbread-ai/mxbai-rerank-base-v1)
  - [`jinaai/jina-reranker-v2-base-multilingual`](https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual)
 
-H2 fine-tunes the three format-sensitive models: `MiniLM-L6`, `mxbai`, `jina`.
+H2 fine-tunes six variants: `MiniLM-L6`, `MiniLM-L12`, `bge-reranker-base`, `mxbai`, `mxbai` with a jina-matched tanh classifier head, and `jina`.
 
 ## Licensing
 

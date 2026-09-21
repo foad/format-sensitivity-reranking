@@ -7,8 +7,8 @@ Analysis notebooks that produce the figures and tables.
 - `h1_ablation_metadata_only.ipynb`: metadata-only ablation.
 
 ## `h2/`
-- `h2_analysis.ipynb`: primary results, cross-model synthesis.
-- `h2_analysis_{minilm,mxbai,jina}.ipynb`: per-model Phase-1 and Phase-2 results.
+- `h2_cross_model.ipynb`: primary six-variant result on both axes.
+- `h2_sweep.ipynb`: per-model Phase-1 lambda selection and Phase-2 folds, parameterised by model.
 - `h2_ablation_nonbox.ipynb`: capability preservation on non-infobox prose.
-- `h2_confounds.ipynb`: confound testing (sigma-decomposition, penultimate hidden-state, negative-side stability).
-- `h2_mxbai_tanh.ipynb`: tanh symmetric test (architecture-conditional invariance).
+- `h2_confounds.ipynb`: range compression, fold symmetry, and negative-side stability.
+- `h2_mxbai_tanh.ipynb`: the tanh classifier head, length-matched.
