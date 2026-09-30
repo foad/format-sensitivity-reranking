@@ -84,6 +84,14 @@ class TestParseRecord:
         parsed, _ = mod.parse_record(cache_record(), min_pairs=99)
         assert parsed["quality_flags"] == ["too_few_pairs"]
 
+    def test_carries_the_source_short_answers(self):
+        parsed, _ = mod.parse_record(cache_record(short_answers=["1946"]))
+        assert parsed["short_answers"] == ["1946"]
+
+    def test_omits_short_answers_when_the_source_has_none(self):
+        parsed, _ = mod.parse_record(cache_record())
+        assert "short_answers" not in parsed
+
 
 class TestParseRecords:
     def test_parses_every_record(self):

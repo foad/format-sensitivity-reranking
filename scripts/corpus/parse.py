@@ -52,6 +52,8 @@ def parse_record(
         "pairs": pairs,
         "body": body,
     }
+    if "short_answers" in rec:
+        parsed["short_answers"] = rec["short_answers"]
     parsed["quality_flags"] = quality_check(
         parsed, rec, min_pairs, min_body, min_infobox
     )
