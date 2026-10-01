@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -10,6 +11,7 @@ import pytest
 from scripts.corpus import build_corpus as mod
 
 from fsr.corpus.config import DEFAULT
+from fsr.corpus.run_record import RUN_NAME
 
 DATA_ROOT = Path("data") / "nq"
 
@@ -78,6 +80,19 @@ class TestPlan:
             assert (mod.SCRIPT_DIR / stage.script).exists()
 
 
+class TestRequireClean:
+    def test_passes_a_clean_tree(self):
+        assert mod.require_clean({"revision": "abc", "dirty": False}) is None
+
+    def test_rejects_a_dirty_tree(self):
+        with pytest.raises(SystemExit, match="abc has uncommitted changes"):
+            mod.require_clean({"revision": "abc", "dirty": True})
+
+    def test_rejects_an_unknown_revision(self):
+        with pytest.raises(SystemExit, match="could not be read"):
+            mod.require_clean(None)
+
+
 class TestRunStage:
     def test_runs_the_script_in_its_own_process(self, monkeypatch, capsys):
         seen = {}
@@ -105,6 +120,13 @@ class TestRunStage:
 
 
 class TestMain:
+    @pytest.fixture(autouse=True)
+    def _no_git(self, monkeypatch):
+        monkeypatch.setattr(
+            "fsr.corpus.run_record.git_state",
+            lambda _p: {"revision": "a", "dirty": False},
+        )
+
     def _argv(self, monkeypatch, tmp_path, *extra):
         monkeypatch.setattr("sys.argv", ["prog", "--data-root", str(tmp_path), *extra])
 
@@ -140,3 +162,50 @@ class TestMain:
         assert names(seen)[0] == "fetch"
         assert "--force" in args_of(seen, "parse")
         assert "5" in args_of(seen, "negatives")
+
+    def test_writes_a_run_record(self, monkeypatch, tmp_path):
+        self._codes(monkeypatch, {})
+        self._argv(monkeypatch, tmp_path)
+        mod.main()
+        data = json.loads((tmp_path / RUN_NAME).read_text())
+        assert [s["name"] for s in data["stages"]] == [
+            "parse",
+            "split",
+            "negatives",
+            "validate",
+        ]
+        assert data["command"] == ["prog", "--data-root", str(tmp_path)]
+        assert data["git"] == {"revision": "a", "dirty": False}
+        assert data["finished"] is not None
+        assert all(s["exit_code"] == 0 for s in data["stages"])
+        assert all(s["seconds"] >= 0 for s in data["stages"])
+
+    def test_a_failed_build_leaves_its_record(self, monkeypatch, tmp_path):
+        self._codes(monkeypatch, {"split": 2})
+        self._argv(monkeypatch, tmp_path)
+        with pytest.raises(SystemExit):
+            mod.main()
+        data = json.loads((tmp_path / RUN_NAME).read_text())
+        assert [(s["name"], s["exit_code"]) for s in data["stages"]] == [
+            ("parse", 0),
+            ("split", 2),
+        ]
+        assert data["finished"] is None
+
+    def test_require_clean_stops_before_any_stage(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(
+            "fsr.corpus.run_record.git_state",
+            lambda _p: {"revision": "abc", "dirty": True},
+        )
+        ran = self._codes(monkeypatch, {})
+        self._argv(monkeypatch, tmp_path, "--require-clean")
+        with pytest.raises(SystemExit, match="uncommitted changes"):
+            mod.main()
+        assert ran == []
+        assert not (tmp_path / RUN_NAME).exists()
+
+    def test_require_clean_allows_a_clean_tree(self, monkeypatch, tmp_path):
+        ran = self._codes(monkeypatch, {})
+        self._argv(monkeypatch, tmp_path, "--require-clean")
+        mod.main()
+        assert ran == ["parse", "split", "negatives", "validate"]

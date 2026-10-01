@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import dataclass, field
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
+from fsr.corpus.files import digest_file, write_atomic
+
 SCHEMA_VERSION = 1
-DIGEST_CHUNK_BYTES = 1 << 20
 UNKNOWN_VERSION = "unknown"
 
 
@@ -20,22 +20,6 @@ def package_version() -> str:
         return version("format-sensitivity-reranking")
     except PackageNotFoundError:
         return UNKNOWN_VERSION
-
-
-def digest_file(path: Path) -> str:
-    """Return the SHA-256 digest of a file, read in chunks.
-
-    Args:
-        path: The file to digest.
-
-    Returns:
-        The digest as lowercase hexadecimal.
-    """
-    h = hashlib.sha256()
-    with path.open("rb") as fh:
-        while chunk := fh.read(DIGEST_CHUNK_BYTES):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 @dataclass
@@ -169,8 +153,7 @@ class Manifest:
 
     def save(self, path: Path) -> None:
         """Write the manifest as indented JSON, creating parent directories."""
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(self.to_dict(), indent=2) + "\n")
+        write_atomic(path, json.dumps(self.to_dict(), indent=2) + "\n")
 
     @classmethod
     def load(cls, path: Path) -> Manifest:

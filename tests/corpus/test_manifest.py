@@ -14,7 +14,6 @@ from fsr.corpus.manifest import (
     Manifest,
     Output,
     Stage,
-    digest_file,
     package_version,
 )
 
@@ -33,27 +32,6 @@ def manifest_with(stage="fetch", records=3):
     m = Manifest(config=CONFIG)
     m.record(stage, [Output(path="nq/a.json", sha256="ab", bytes=2, records=records)])
     return m
-
-
-class TestDigestFile:
-    def test_matches_hashlib(self, tmp_path):
-        path = written(tmp_path, payload=b"content")
-        assert digest_file(path) == hashlib.sha256(b"content").hexdigest()
-
-    def test_digests_a_file_larger_than_one_chunk(self, tmp_path):
-        payload = b"x" * (1 << 21)
-        path = written(tmp_path, payload=payload)
-        assert digest_file(path) == hashlib.sha256(payload).hexdigest()
-
-    def test_digests_an_empty_file(self, tmp_path):
-        assert (
-            digest_file(written(tmp_path, payload=b"")) == hashlib.sha256().hexdigest()
-        )
-
-    def test_differs_for_differing_content(self, tmp_path):
-        a = written(tmp_path, "a.json", b"one")
-        b = written(tmp_path, "b.json", b"two")
-        assert digest_file(a) != digest_file(b)
 
 
 class TestPackageVersion:

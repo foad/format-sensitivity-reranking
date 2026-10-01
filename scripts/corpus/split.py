@@ -21,6 +21,7 @@ from fsr.corpus.cli import (
     take,
 )
 from fsr.corpus.config import DEFAULT
+from fsr.corpus.files import write_atomic
 from fsr.corpus.splitting import split_by_article, strict_gated
 
 
@@ -50,7 +51,8 @@ def load_passed(path: Path) -> list[dict]:
 def write_split(out_dir: Path, name: str, records: list[dict], seed: int) -> Path:
     """Write one split file and return its path."""
     path = out_dir / f"{name}.json"
-    path.write_text(
+    write_atomic(
+        path,
         json.dumps(
             {
                 "split": name,
@@ -59,7 +61,7 @@ def write_split(out_dir: Path, name: str, records: list[dict], seed: int) -> Pat
                 "records": records,
             },
             ensure_ascii=False,
-        )
+        ),
     )
     return path
 
@@ -106,7 +108,7 @@ def main() -> None:
         **splits.counts,
     }
     meta_path = out_dir / META_NAME
-    meta_path.write_text(json.dumps(meta, indent=2))
+    write_atomic(meta_path, json.dumps(meta, indent=2))
     recorded[meta_path] = None
     print(f"\nmeta: {json.dumps(meta, indent=2)}")
 

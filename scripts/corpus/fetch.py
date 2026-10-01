@@ -18,6 +18,7 @@ from fsr.corpus.cli import (
     skip_existing,
 )
 from fsr.corpus.config import DEFAULT
+from fsr.corpus.files import write_atomic
 from fsr.corpus.nq import ScanStats, iter_matched
 
 
@@ -43,8 +44,8 @@ def fetch_split(
     stats = ScanStats()
     matched = list(iter_matched(split, limit, dataset, revision, stats))
 
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(
+    write_atomic(
+        out_path,
         json.dumps(
             {
                 "split": split,
@@ -55,7 +56,7 @@ def fetch_split(
                 "records": matched,
             },
             indent=2,
-        )
+        ),
     )
     report_written(out_path, len(matched))
     return len(matched)

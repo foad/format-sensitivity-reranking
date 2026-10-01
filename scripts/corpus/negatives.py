@@ -23,6 +23,7 @@ from fsr.corpus.cli import (
     take,
 )
 from fsr.corpus.config import DEFAULT
+from fsr.corpus.files import write_atomic
 from fsr.corpus.negatives import build_negatives
 from fsr.corpus.splitting import strict_gated
 
@@ -79,7 +80,8 @@ def main() -> None:
     )
     print(f"\nQueries needing a random fill: {filled_count:,} / {len(queries):,}")
 
-    out_path.write_text(
+    write_atomic(
+        out_path,
         json.dumps(
             {
                 "seed": args.seed,
@@ -89,7 +91,7 @@ def main() -> None:
                 "random_fill_count": filled_count,
                 "negatives": negatives,
             }
-        )
+        ),
     )
     report_written(out_path, len(negatives))
     record_stage(

@@ -21,6 +21,7 @@ from fsr.corpus.cli import (
     take,
 )
 from fsr.corpus.config import DEFAULT
+from fsr.corpus.files import write_atomic
 from fsr.corpus.nq import ScanStats, iter_matched
 from fsr.corpus.wikitext import extract_body, parse_infobox, quality_check
 
@@ -282,8 +283,8 @@ def main() -> None:
             print("(No parsed_*.json written. Re-run without --dry-run.)")
             return
 
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(
+        write_atomic(
+            out_path,
             json.dumps(
                 {
                     "split": split,
@@ -301,7 +302,7 @@ def main() -> None:
                     "records": parsed_records,
                 },
                 indent=2,
-            )
+            ),
         )
         report_written(out_path, len(parsed_records))
         record_stage(

@@ -5,11 +5,13 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from fsr.corpus.cli import add_data_root_arg
 from fsr.corpus.config import DEFAULT
+from fsr.corpus.run_record import RUN_NAME, RunRecord, now
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
@@ -68,6 +70,22 @@ def plan(
     return stages
 
 
+def require_clean(git: dict | None) -> None:
+    """Stop the build unless the code comes from a clean working tree.
+
+    Args:
+        git: The repository state, or None when it could not be read.
+
+    Raises:
+        SystemExit: If the tree holds uncommitted changes, or if the state is
+            unknown.
+    """
+    if git is None:
+        raise SystemExit("--require-clean: the code revision could not be read")
+    if git["dirty"]:
+        raise SystemExit(f"--require-clean: {git['revision']} has uncommitted changes")
+
+
 def run_stage(stage: Stage) -> int:
     """Run one stage in its own process and return its exit code.
 
@@ -88,7 +106,8 @@ def main() -> None:
     """Run every stage and stop at the first failure.
 
     Raises:
-        SystemExit: If a stage exits non-zero.
+        SystemExit: If a stage exits non-zero, or if --require-clean is given
+            and the working tree is not clean.
     """
     ap = argparse.ArgumentParser(description=__doc__)
     add_data_root_arg(ap)
@@ -107,14 +126,31 @@ def main() -> None:
         help="Write the raw cache first, and parse from it instead of streaming",
     )
     ap.add_argument("--cache-k", type=int, default=DEFAULT.cache_k)
+    ap.add_argument(
+        "--require-clean",
+        action="store_true",
+        help="Refuse to build unless the working tree holds no uncommitted changes",
+    )
     args = ap.parse_args()
 
     stages = plan(args.data_root, args.limit, args.force, args.fetch, args.cache_k)
+    record = RunRecord.begin(sys.argv, SCRIPT_DIR)
+    if args.require_clean:
+        require_clean(record.git)
+    run_path = args.data_root / RUN_NAME
+
     for stage in stages:
+        started, clock = now(), time.monotonic()
         code = run_stage(stage)
+        record.add(stage.name, code, started, time.monotonic() - clock)
+        record.save(run_path)
         if code != 0:
             raise SystemExit(f"{stage.name} failed with exit code {code}")
+
+    record.complete()
+    record.save(run_path)
     print(f"\nCorpus build complete: {', '.join(s.name for s in stages)}")
+    print(f"Wrote {run_path}")
 
 
 if __name__ == "__main__":

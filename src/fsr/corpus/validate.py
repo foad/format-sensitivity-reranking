@@ -9,7 +9,8 @@ from collections.abc import Mapping, Sequence
 from itertools import combinations
 from pathlib import Path
 
-from fsr.corpus.manifest import Manifest, digest_file
+from fsr.corpus.files import digest_file
+from fsr.corpus.manifest import Manifest
 
 PARTITIONED = ("train", "dev", "test")
 SAMPLE_SIZE = 3

@@ -10,6 +10,6 @@ Library code for the format-sensitivity study.
 | `metrics.py` | Score-axis statistics: Cohen's d across formats, reciprocal ranks, bootstrap intervals. |
 | `within_query.py` | Answer-axis statistics: conditional inconsistency and within-query rank disturbance over one query's candidate list. |
 | `answer_location.py` | Classification of a corpus record by where its short answer appears. |
-| `corpus/` | Infobox location, Wikipedia text extraction, the build parameters, and the corpus consistency checks. |
+| `corpus/` | Infobox location, Wikipedia text extraction, the build parameters, the consistency checks, and the build and run records. |
 | `models/` | Model loading, and vendor-specific architecture patches for jina and mxbai. |
 | `training/` | Batch construction and the composite ranking-plus-invariance objective. |
