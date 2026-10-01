@@ -1,0 +1,113 @@
+{
+  "schema": 1,
+  "fsr_version": "1.0.0",
+  "config": {
+    "dataset": "google-research-datasets/natural_questions",
+    "dataset_revision": "e8103d566bef4154c2c12b17c6095ec5275840cc",
+    "body_chars": 3000,
+    "min_paragraph_chars": 30,
+    "max_key_chars": 80,
+    "max_value_chars": 400,
+    "min_pairs": 3,
+    "min_body_chars": 100,
+    "min_infobox_chars": 200,
+    "split_seed": 42,
+    "frac_train": 0.8,
+    "frac_dev": 0.1,
+    "negatives_seed": 42,
+    "cache_k": 25,
+    "frac_test": 0.09999999999999995
+  },
+  "stages": [
+    {
+      "name": "fetch_train",
+      "outputs": [
+        {
+          "path": "matched_train.json",
+          "sha256": "654f73035c0ba324e9073a42ab1a190c3a8465ce55f6568fc82c4b2c6941ba2e",
+          "bytes": 2883597173,
+          "records": 11072
+        }
+      ]
+    },
+    {
+      "name": "fetch_validation",
+      "outputs": [
+        {
+          "path": "matched_validation.json",
+          "sha256": "367ef48663e4e1e76224c7ae9dfab0bdc65365ee1708773f9df381eeabc8c46b",
+          "bytes": 60984431,
+          "records": 251
+        }
+      ]
+    },
+    {
+      "name": "parse_train",
+      "outputs": [
+        {
+          "path": "parsed_train.json",
+          "sha256": "689f17c7237a4dff2a67c586f3bfc51a7a7a475b5bd08745b070538f326d0ec2",
+          "bytes": 43888772,
+          "records": 11072
+        }
+      ]
+    },
+    {
+      "name": "parse_validation",
+      "outputs": [
+        {
+          "path": "parsed_validation.json",
+          "sha256": "311fb05beca9fa39f5363cd74487e5ff6d537e4d842d6e7d7e866f17cc447ae3",
+          "bytes": 976795,
+          "records": 251
+        }
+      ]
+    },
+    {
+      "name": "split",
+      "outputs": [
+        {
+          "path": "splits/train.json",
+          "sha256": "86abe02aded764b450a9c9f08e9b8972afdda3961ffc2e41f7c433d78693f5cc",
+          "bytes": 23606875,
+          "records": 6580
+        },
+        {
+          "path": "splits/dev.json",
+          "sha256": "c8c28eec98ed8ec8f51e6c2359e7ce235f540ca03cd8e77d3a63575d48bd76b3",
+          "bytes": 2788100,
+          "records": 787
+        },
+        {
+          "path": "splits/test.json",
+          "sha256": "e31dfc8a1429c78467870621d4e971f895afbb7f85efc0a7bc08b30d64247e48",
+          "bytes": 2946474,
+          "records": 821
+        },
+        {
+          "path": "splits/nq_val.json",
+          "sha256": "112b1ad7e7c4f0476fd473cf7081dd205d4d408a567cce4917f24573b8ca6db2",
+          "bytes": 612931,
+          "records": 171
+        },
+        {
+          "path": "splits/meta.json",
+          "sha256": "95168d9bec431df9b752c2f00d1c20b889210846a91a7dfed5a759dc10b44ae4",
+          "bytes": 266,
+          "records": null
+        }
+      ]
+    },
+    {
+      "name": "negatives",
+      "outputs": [
+        {
+          "path": "splits/bm25_negatives.json",
+          "sha256": "8aa75c8ac97b17c921c59f26f418c46b1292dffcbd6e070b5c57dd3222fe78ea",
+          "bytes": 5097073,
+          "records": 8359
+        }
+      ]
+    }
+  ]
+}
