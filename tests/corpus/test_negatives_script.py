@@ -62,7 +62,7 @@ class TestCheckCorpusSize:
         mod.check_corpus_size([record(i) for i in range(5)], cache_k=4)
 
     def test_rejects_a_corpus_with_too_few_titles(self):
-        with pytest.raises(SystemExit, match="--cache-k 2"):
+        with pytest.raises(SystemExit, match="at most 2 negatives per query"):
             mod.check_corpus_size([record(i) for i in range(3)], cache_k=4)
 
     def test_counts_distinct_titles_not_records(self):
@@ -79,7 +79,7 @@ class TestMain:
             ["prog", "--data-root", str(data_root), "--cache-k", "3", *extra],
         )
         mod.main()
-        return split_dir(data_root) / mod.OUT_NAME
+        return split_dir(data_root) / cli.NEGATIVES_NAME
 
     def test_writes_the_negatives_cache(self, monkeypatch, tmp_path):
         data = json.loads(self._run(monkeypatch, tmp_path).read_text())
@@ -124,7 +124,7 @@ class TestMain:
         manifest = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
         stage = manifest["stages"][0]
         assert stage["name"] == "negatives"
-        assert stage["outputs"][0]["path"] == f"{cli.SPLIT_SUBDIR}/{mod.OUT_NAME}"
+        assert stage["outputs"][0]["path"] == f"{cli.SPLIT_SUBDIR}/{cli.NEGATIVES_NAME}"
         assert stage["outputs"][0]["records"] == sum(SPLIT_SIZES.values())
         assert manifest["config"]["negatives_seed"] == 7
         assert manifest["config"]["cache_k"] == 3

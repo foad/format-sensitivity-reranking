@@ -12,6 +12,8 @@ import json
 from pathlib import Path
 
 from fsr.corpus.cli import (
+    META_NAME,
+    SPLIT_NAMES,
     add_common_args,
     record_stage,
     skip_existing,
@@ -20,9 +22,6 @@ from fsr.corpus.cli import (
 )
 from fsr.corpus.config import DEFAULT
 from fsr.corpus.splitting import split_by_article, strict_gated
-
-SPLIT_NAMES = ("train", "dev", "test", "nq_val")
-META_NAME = "meta.json"
 
 
 def load_passed(path: Path) -> list[dict]:

@@ -1,4 +1,4 @@
-"""Shared command-line behaviour of the corpus build stages."""
+"""The file layout and the command-line behaviour shared by the build stages."""
 
 from __future__ import annotations
 
@@ -13,22 +13,30 @@ from fsr.corpus.manifest import Manifest, Output
 DEFAULT_DATA_ROOT = Path("data") / "nq"
 SPLIT_SUBDIR = "splits"
 MANIFEST_NAME = "manifest.json"
+META_NAME = "meta.json"
+NEGATIVES_NAME = "bm25_negatives.json"
+SPLIT_NAMES = ("train", "dev", "test", "nq_val")
 
 
-def add_common_args(ap: argparse.ArgumentParser, limit_help: str) -> None:
-    """Add the arguments that every stage accepts.
-
-    Args:
-        ap: The parser to add to.
-        limit_help: The help text for --limit, which counts different things
-            in a stage that streams and a stage that reads a file.
-    """
+def add_data_root_arg(ap: argparse.ArgumentParser) -> None:
+    """Add the argument that names the corpus directory."""
     ap.add_argument(
         "--data-root",
         type=Path,
         default=DEFAULT_DATA_ROOT,
         help="Directory holding the corpus files and the manifest",
     )
+
+
+def add_common_args(ap: argparse.ArgumentParser, limit_help: str) -> None:
+    """Add the arguments that every build stage accepts.
+
+    Args:
+        ap: The parser to add to.
+        limit_help: The help text for --limit, which counts different things
+            in a stage that streams and a stage that reads a file.
+    """
+    add_data_root_arg(ap)
     ap.add_argument("--limit", type=int, default=0, help=limit_help)
     ap.add_argument(
         "--force", action="store_true", help="Rebuild outputs that already exist"

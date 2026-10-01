@@ -13,6 +13,8 @@ import json
 from pathlib import Path
 
 from fsr.corpus.cli import (
+    NEGATIVES_NAME,
+    SPLIT_NAMES,
     add_common_args,
     record_stage,
     report_written,
@@ -23,9 +25,6 @@ from fsr.corpus.cli import (
 from fsr.corpus.config import DEFAULT
 from fsr.corpus.negatives import build_negatives
 from fsr.corpus.splitting import strict_gated
-
-SPLIT_NAMES = ("train", "dev", "test", "nq_val")
-OUT_NAME = "bm25_negatives.json"
 
 
 def load_queries(split_path: Path, names: tuple[str, ...] = SPLIT_NAMES) -> list[dict]:
@@ -64,7 +63,7 @@ def main() -> None:
     args = ap.parse_args()
 
     split_path = split_dir(args.data_root)
-    out_path = split_path / OUT_NAME
+    out_path = split_path / NEGATIVES_NAME
     if skip_existing("negatives", [out_path], args.force):
         return
 
