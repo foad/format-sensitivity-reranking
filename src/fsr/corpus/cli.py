@@ -74,8 +74,11 @@ def skip_existing(name: str, outputs: Sequence[Path], force: bool) -> bool:
     """
     if force or not outputs or not all(p.exists() for p in outputs):
         return False
-    listed = ", ".join(str(p) for p in outputs)
-    print(f"Skipping {name}: {listed} already present. Use --force to rebuild.")
+    if len(outputs) == 1:
+        present = f"{outputs[0]} is"
+    else:
+        present = f"{len(outputs)} outputs in {outputs[0].parent} are"
+    print(f"Skipping {name}: {present} already present. Use --force to rebuild.")
     return True
 
 

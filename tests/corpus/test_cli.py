@@ -87,7 +87,15 @@ class TestSkipExisting:
     def test_a_stage_with_no_outputs_never_skips(self):
         assert cli.skip_existing("parse", [], force=False) is False
 
-    def test_names_every_output(self, tmp_path, capsys):
+    def test_names_a_single_output(self, tmp_path, capsys):
+        out = tmp_path / "a.json"
+        out.write_text("{}")
+        cli.skip_existing("parse", [out], force=False)
+        printed = capsys.readouterr().out
+        assert f"{out} is already present" in printed
+        assert "--force" in printed
+
+    def test_counts_several_outputs(self, tmp_path, capsys):
         outs = []
         for name in ("a.json", "b.json"):
             p = tmp_path / name
@@ -95,8 +103,7 @@ class TestSkipExisting:
             outs.append(p)
         cli.skip_existing("split", outs, force=False)
         printed = capsys.readouterr().out
-        assert "a.json, " in printed
-        assert "b.json" in printed
+        assert f"2 outputs in {tmp_path} are already present" in printed
         assert "--force" in printed
 
 

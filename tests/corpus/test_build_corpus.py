@@ -1,0 +1,142 @@
+"""Tests for scripts.corpus.build_corpus."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+from scripts.corpus import build_corpus as mod
+
+from fsr.corpus.config import DEFAULT
+
+DATA_ROOT = Path("data") / "nq"
+
+
+def names(stages):
+    return [s.name for s in stages]
+
+
+def args_of(stages, name):
+    return next(s.args for s in stages if s.name == name)
+
+
+class TestPlan:
+    def test_runs_four_stages_by_default(self):
+        assert names(mod.plan(DATA_ROOT)) == ["parse", "split", "negatives", "validate"]
+
+    def test_fetch_is_added_first(self):
+        stages = mod.plan(DATA_ROOT, fetch=True)
+        assert names(stages) == ["fetch", "parse", "split", "negatives", "validate"]
+
+    def test_parse_reads_the_cache_when_fetch_runs(self):
+        stages = mod.plan(DATA_ROOT, fetch=True)
+        assert "--source" in args_of(stages, "parse")
+        assert "cache" in args_of(stages, "parse")
+
+    def test_parse_streams_by_default(self):
+        assert "--source" not in args_of(mod.plan(DATA_ROOT), "parse")
+
+    def test_every_stage_takes_the_data_root(self):
+        for stage in mod.plan(DATA_ROOT, fetch=True):
+            assert stage.args[:2] == ["--data-root", str(DATA_ROOT)]
+
+    def test_the_limit_reaches_the_scanning_stages_only(self):
+        stages = mod.plan(DATA_ROOT, limit=50, fetch=True)
+        assert "--limit" in args_of(stages, "fetch")
+        assert "--limit" not in args_of(stages, "parse")
+        assert "--limit" not in args_of(stages, "split")
+
+    def test_the_limit_reaches_parse_when_it_streams(self):
+        stages = mod.plan(DATA_ROOT, limit=50)
+        assert args_of(stages, "parse")[-2:] == ["--limit", "50"]
+
+    def test_no_limit_argument_without_a_limit(self):
+        for stage in mod.plan(DATA_ROOT):
+            assert "--limit" not in stage.args
+
+    def test_force_reaches_every_build_stage(self):
+        stages = mod.plan(DATA_ROOT, force=True, fetch=True)
+        for name in ("fetch", "parse", "split", "negatives"):
+            assert "--force" in args_of(stages, name)
+
+    def test_validate_never_takes_force(self):
+        stages = mod.plan(DATA_ROOT, force=True)
+        assert args_of(stages, "validate") == ["--data-root", str(DATA_ROOT)]
+
+    def test_cache_k_reaches_the_negatives_stage(self):
+        stages = mod.plan(DATA_ROOT, cache_k=4)
+        assert args_of(stages, "negatives")[2:4] == ["--cache-k", "4"]
+
+    def test_cache_k_defaults_to_the_published_value(self):
+        stages = mod.plan(DATA_ROOT)
+        assert args_of(stages, "negatives")[3] == str(DEFAULT.cache_k)
+
+    def test_each_stage_names_its_script(self):
+        for stage in mod.plan(DATA_ROOT, fetch=True):
+            assert (mod.SCRIPT_DIR / stage.script).exists()
+
+
+class TestRunStage:
+    def test_runs_the_script_in_its_own_process(self, monkeypatch, capsys):
+        seen = {}
+
+        def fake_run(command, check):
+            seen["command"] = command
+            seen["check"] = check
+            return subprocess.CompletedProcess(command, 0)
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+        assert mod.run_stage(mod.Stage("split", "split.py", ["--force"])) == 0
+        assert seen["command"][0] == sys.executable
+        assert seen["command"][1] == str(mod.SCRIPT_DIR / "split.py")
+        assert seen["command"][2] == "--force"
+        assert seen["check"] is False
+        assert "=== split" in capsys.readouterr().out
+
+    def test_returns_the_exit_code(self, monkeypatch):
+        monkeypatch.setattr(
+            subprocess,
+            "run",
+            lambda command, **_kwargs: subprocess.CompletedProcess(command, 3),
+        )
+        assert mod.run_stage(mod.Stage("parse", "parse.py")) == 3
+
+
+class TestMain:
+    def _argv(self, monkeypatch, tmp_path, *extra):
+        monkeypatch.setattr("sys.argv", ["prog", "--data-root", str(tmp_path), *extra])
+
+    def _codes(self, monkeypatch, codes):
+        ran = []
+
+        def fake_run_stage(stage):
+            ran.append(stage.name)
+            return codes.get(stage.name, 0)
+
+        monkeypatch.setattr(mod, "run_stage", fake_run_stage)
+        return ran
+
+    def test_runs_every_stage(self, monkeypatch, tmp_path, capsys):
+        ran = self._codes(monkeypatch, {})
+        self._argv(monkeypatch, tmp_path)
+        mod.main()
+        assert ran == ["parse", "split", "negatives", "validate"]
+        assert "Corpus build complete" in capsys.readouterr().out
+
+    def test_stops_at_the_first_failure(self, monkeypatch, tmp_path):
+        ran = self._codes(monkeypatch, {"split": 2})
+        self._argv(monkeypatch, tmp_path)
+        with pytest.raises(SystemExit, match="split failed with exit code 2"):
+            mod.main()
+        assert ran == ["parse", "split"]
+
+    def test_passes_the_arguments_through(self, monkeypatch, tmp_path):
+        seen = []
+        monkeypatch.setattr(mod, "run_stage", lambda stage: seen.append(stage) or 0)
+        self._argv(monkeypatch, tmp_path, "--fetch", "--force", "--cache-k", "5")
+        mod.main()
+        assert names(seen)[0] == "fetch"
+        assert "--force" in args_of(seen, "parse")
+        assert "5" in args_of(seen, "negatives")

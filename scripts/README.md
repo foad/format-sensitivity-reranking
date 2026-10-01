@@ -5,10 +5,12 @@ Pipeline entry points, run via `uv run`
 See [`../docs/reproduction.md`](../docs/reproduction.md) for exact commands and outputs.
 
 ## `corpus/`
+ - `build_corpus.py`: run every stage below in order, then validate. Stops at the first stage that fails.
  - `fetch.py`: stream Natural Questions and cache the raw infobox HTML. Optional.
  - `parse.py`: extract `(k, v)` pairs and body text, apply the quality gate. Reads the stream directly by default.
  - `split.py`: article-level 80/10/10 partition.
  - `negatives.py`: BM25 hard-negative mining.
+ - `validate.py`: check the built corpus for issues.
 
 ## `h1/`
  - `nq_h1_measurement.py --split train`: score six models across two modes (with_body, metadata_only).
