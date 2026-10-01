@@ -9,9 +9,12 @@ __pycache__/
 .cache/
 *.lock
 
-# Large raw NQ cache — rebuilt by scripts/h1/build_nq_cache.py, never committed
-data/**/matched_train.json
-data/**/matched_validation.json
+# Built corpus and results
+data/nq/*
+!data/nq/manifest.json
+
+# Smoke test data
+data/smoke/
 
 # Notebook checkpoints
 .ipynb_checkpoints/

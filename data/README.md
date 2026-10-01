@@ -1,23 +1,30 @@
 # data/
 
-Derived corpora and result artefacts.
+The built corpus and the result artefacts.
 
 Licensed CC BY-SA 3.0 (see [`LICENSE`](LICENSE))
 
-## Provided data
+Download them from the release and unpack into `data/`, or build them manually.
 
-| Path | Contents | Rebuilt by |
+| Path | Contents | Built by |
 |---|---|---|
-| `nq/parsed_{train,validation}.json` | Parsed infobox `(k,v)` pairs + extracted body + quality flags | `scripts/corpus/parse.py` |
-| `nq/h1_measurement/*.json` | Per-model per-format raw scores + summary stats (H1) | `scripts/h1/nq_h1_measurement.py` |
-| `nq/splits/` | Article-level 80/10/10 splits | `scripts/corpus/split.py` |
-| `nq/manifest.json` | The build parameters, and a digest of every file each stage wrote | every corpus stage |
-| `nq/run.json` | The command, the code revision, and the timing and exit code of each stage | `scripts/corpus/build_corpus.py` |
+| `nq/parsed_{train,validation}.json` | Infobox `(k,v)` pairs, body text, and quality flags | `scripts/corpus/parse.py` |
+| `nq/splits/` | Article-level 80/10/10 splits, and the BM25 hard negatives | `scripts/corpus/split.py`, `negatives.py` |
+| `nq/h1_measurement/*.json` | Per-model per-format scores and summary statistics | `scripts/h1/nq_h1_measurement.py` |
 | `nq/h2_compare/`, `h2_selection/`, `h2_tanh_ablation/` | H2 result JSONs | H2 sweep scripts |
+| `nq/matched_{train,validation}.json` | The raw Wikipedia HTML cache (2.9 GB). Only needed to re-parse without re-streaming. | `scripts/corpus/fetch.py` |
 
-## Optional data
+## Building manually
 
-Not needed to reproduce the main results or to use an adapter.
+The dataset revision is pinned so a build reproduces the same corpus. See
+[`../docs/reproduction.md`](../docs/reproduction.md).
 
-- `nq/matched_{train,validation}.json`: the raw NQ and Wikipedia HTML cache (~2.9 GB), the input to parsing. Only to rebuild the corpora from raw, with `scripts/corpus/fetch.py`.
- - Seed: `0`
+## Checking a download
+
+`nq/manifest.json` records the build parameters and the size, record count
+and SHA-256 of every file, so a downloaded corpus can be checked against
+the one the results came from:
+
+```bash
+uv run python scripts/corpus/validate.py
+```
