@@ -58,10 +58,14 @@ class TestPlan:
         for stage in mod.plan(DATA_ROOT):
             assert "--limit" not in stage.args
 
-    def test_force_reaches_every_build_stage(self):
+    def test_force_reaches_every_derived_stage(self):
         stages = mod.plan(DATA_ROOT, force=True, fetch=True)
-        for name in ("fetch", "parse", "split", "negatives"):
+        for name in ("parse", "split", "negatives"):
             assert "--force" in args_of(stages, name)
+
+    def test_force_never_refetches_the_raw_cache(self):
+        stages = mod.plan(DATA_ROOT, force=True, fetch=True)
+        assert "--force" not in args_of(stages, "fetch")
 
     def test_validate_never_takes_force(self):
         stages = mod.plan(DATA_ROOT, force=True)

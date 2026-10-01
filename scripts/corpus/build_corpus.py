@@ -43,7 +43,7 @@ def plan(
     Args:
         data_root: The directory holding the corpus files and the manifest.
         limit: The cap on examples scanned. 0 scans every example.
-        force: Whether each stage rebuilds outputs that are already present.
+        force: Whether each derived stage rebuilds outputs that are already present.
         fetch: Whether to write the raw cache first and parse from it.
         cache_k: How many negatives to mine for each query.
 
@@ -56,7 +56,7 @@ def plan(
 
     stages = []
     if fetch:
-        stages.append(Stage("fetch", "fetch.py", [*limited, *rebuild]))
+        stages.append(Stage("fetch", "fetch.py", limited))
         stages.append(
             Stage("parse", "parse.py", [*root, "--source", "cache", *rebuild])
         )
