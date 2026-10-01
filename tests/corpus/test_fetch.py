@@ -6,7 +6,8 @@ import json
 
 from scripts.corpus import fetch as mod
 
-from fsr.corpus import nq
+from fsr.corpus import cli, nq
+from fsr.corpus.config import DEFAULT
 
 OPEN = '<table class="infobox">'
 CLOSE = "</table>"
@@ -141,7 +142,7 @@ class TestMain:
         monkeypatch.setattr(nq, "load_dataset", lambda *_a, **_k: iter([example()]))
         monkeypatch.setattr(
             "sys.argv",
-            ["prog", "--splits", "train", "validation", "--out-dir", str(tmp_path)],
+            ["prog", "--splits", "train", "validation", "--data-root", str(tmp_path)],
         )
         mod.main()
         assert (tmp_path / "matched_train.json").exists()
@@ -156,8 +157,41 @@ class TestMain:
 
         monkeypatch.setattr(nq, "load_dataset", fail)
         monkeypatch.setattr(
-            "sys.argv", ["prog", "--splits", "train", "--out-dir", str(tmp_path)]
+            "sys.argv", ["prog", "--splits", "train", "--data-root", str(tmp_path)]
         )
         mod.main()
-        assert "Skipping train" in capsys.readouterr().out
+        assert "Skipping fetch_train" in capsys.readouterr().out
         assert existing.read_text() == "{}"
+
+    def test_force_rebuilds_an_existing_cache(self, monkeypatch, tmp_path):
+        existing = tmp_path / "matched_train.json"
+        existing.write_text("{}")
+        monkeypatch.setattr(nq, "load_dataset", lambda *_a, **_k: iter([example()]))
+        monkeypatch.setattr(
+            "sys.argv",
+            ["prog", "--splits", "train", "--data-root", str(tmp_path), "--force"],
+        )
+        mod.main()
+        assert json.loads(existing.read_text())["n_matched"] == 1
+
+    def test_records_the_stage_in_the_manifest(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(nq, "load_dataset", lambda *_a, **_k: iter([example()]))
+        monkeypatch.setattr(
+            "sys.argv",
+            ["prog", "--splits", "train", "--data-root", str(tmp_path)],
+        )
+        mod.main()
+        manifest = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
+        stage = manifest["stages"][0]
+        assert stage["name"] == "fetch_train"
+        assert stage["outputs"][0]["path"] == "matched_train.json"
+        assert stage["outputs"][0]["records"] == 1
+        assert manifest["config"]["dataset_revision"] == DEFAULT.dataset_revision
+
+    def test_a_skipped_split_records_nothing(self, monkeypatch, tmp_path):
+        (tmp_path / "matched_train.json").write_text("{}")
+        monkeypatch.setattr(
+            "sys.argv", ["prog", "--splits", "train", "--data-root", str(tmp_path)]
+        )
+        mod.main()
+        assert not (tmp_path / cli.MANIFEST_NAME).exists()

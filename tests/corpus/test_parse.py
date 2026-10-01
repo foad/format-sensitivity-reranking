@@ -7,6 +7,8 @@ import json
 import pytest
 from scripts.corpus import parse as mod
 
+from fsr.corpus import cli
+
 PARA = "A sufficiently long paragraph of real article prose goes here for tests."
 # Long enough to clear the 200-character min_infobox gate.
 INFOBOX = (
@@ -182,13 +184,65 @@ class TestMain:
                 "train",
                 "--source",
                 "cache",
-                "--in-dir",
-                str(tmp_path),
-                "--out-dir",
+                "--data-root",
                 str(tmp_path),
                 *extra,
             ],
         )
+
+    def test_skips_a_split_whose_output_exists(self, monkeypatch, tmp_path, capsys):
+        self._cache(tmp_path)
+        out = tmp_path / "parsed_train.json"
+        out.write_text("{}")
+        self._argv(monkeypatch, tmp_path)
+        mod.main()
+        assert "Skipping parse_train" in capsys.readouterr().out
+        assert out.read_text() == "{}"
+
+    def test_force_rebuilds_an_existing_output(self, monkeypatch, tmp_path):
+        self._cache(tmp_path)
+        out = tmp_path / "parsed_train.json"
+        out.write_text("{}")
+        self._argv(monkeypatch, tmp_path, "--force")
+        mod.main()
+        assert json.loads(out.read_text())["n_records"] == 1
+
+    def test_a_dry_run_ignores_an_existing_output(self, monkeypatch, tmp_path):
+        self._cache(tmp_path)
+        (tmp_path / "parsed_train.json").write_text("{}")
+        dry = tmp_path / "dry.txt"
+        self._argv(monkeypatch, tmp_path, "--dry-run", "1", "--dry-run-out", str(dry))
+        mod.main()
+        assert dry.exists()
+
+    def test_limits_the_records_read_from_the_cache(self, monkeypatch, tmp_path):
+        self._cache(
+            tmp_path,
+            records=[cache_record("1"), cache_record("2"), cache_record("3")],
+        )
+        self._argv(monkeypatch, tmp_path, "--limit", "2")
+        mod.main()
+        data = json.loads((tmp_path / "parsed_train.json").read_text())
+        assert data["n_records"] == 2
+
+    def test_records_the_stage_in_the_manifest(self, monkeypatch, tmp_path):
+        self._cache(tmp_path)
+        self._argv(monkeypatch, tmp_path, "--min-pairs", "2")
+        mod.main()
+        manifest = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
+        stage = manifest["stages"][0]
+        assert stage["name"] == "parse_train"
+        assert stage["outputs"][0]["path"] == "parsed_train.json"
+        assert stage["outputs"][0]["records"] == 1
+        assert manifest["config"]["min_pairs"] == 2
+
+    def test_the_dry_run_output_defaults_under_the_data_root(
+        self, monkeypatch, tmp_path
+    ):
+        self._cache(tmp_path)
+        self._argv(monkeypatch, tmp_path, "--dry-run", "1")
+        mod.main()
+        assert (tmp_path / "parse_dry_run.txt").exists()
 
     def test_writes_a_parsed_cache(self, monkeypatch, tmp_path):
         self._cache(tmp_path)
@@ -230,7 +284,7 @@ class TestMain:
         )
         monkeypatch.setattr(
             "sys.argv",
-            ["prog", "--splits", "train", "--out-dir", str(tmp_path)],
+            ["prog", "--splits", "train", "--data-root", str(tmp_path)],
         )
         mod.main()
         data = json.loads((tmp_path / "parsed_train.json").read_text())
@@ -261,7 +315,7 @@ class TestMain:
                 "prog",
                 "--splits",
                 "train",
-                "--out-dir",
+                "--data-root",
                 str(tmp_path),
                 "--dry-run",
                 "1",

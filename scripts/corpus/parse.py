@@ -2,7 +2,7 @@
 
 Reads Natural Questions directly by default.
 
-Writes `data/nq/parsed_{split}.json`.
+Writes `parsed_{split}.json`.
 """
 
 from __future__ import annotations
@@ -13,12 +13,17 @@ from collections import Counter
 from collections.abc import Iterable
 from pathlib import Path
 
+from fsr.corpus.cli import (
+    add_common_args,
+    record_stage,
+    report_written,
+    skip_existing,
+    take,
+)
 from fsr.corpus.config import DEFAULT
 from fsr.corpus.nq import ScanStats, iter_matched
 from fsr.corpus.wikitext import extract_body, parse_infobox, quality_check
 
-DEFAULT_IN_DIR = Path("data") / "nq"
-DEFAULT_OUT_DIR = Path("data") / "nq"
 STRICT_GATE_SAMPLE = 5
 DRY_RUN_BODY_CHARS = 1000
 
@@ -40,8 +45,8 @@ def parse_record(
         min_infobox: The shortest raw infobox HTML a record may hold.
 
     Returns:
-        The parsed record with its quality_flags, and a count of dropped rows by
-        reason.
+        The parsed record with its quality_flags, a count of dropped rows by
+        reason, and the source short answers.
     """
     pairs, parser_stats = parse_infobox(rec["infobox_html_raw"])
     body = extract_body(rec["post_infobox_html_raw"], target_chars=target_body_chars)
@@ -107,7 +112,7 @@ def open_source(
     source: str,
     split: str,
     in_path: Path,
-    n_limit: int,
+    limit: int,
     dataset: str,
     revision: str | None,
 ) -> tuple[Iterable[dict] | None, bool]:
@@ -117,7 +122,7 @@ def open_source(
         source: Either `stream` or `cache`.
         split: The Natural Questions split name.
         in_path: The cache file, used by the cache source.
-        n_limit: The cap on examples scanned, used by the stream source.
+        limit: The cap on examples scanned, or on cache records read.
         dataset: The Hugging Face dataset to stream.
         revision: The dataset revision to pin.
 
@@ -129,10 +134,10 @@ def open_source(
             print(f"Skipping {split}: {in_path} does not exist")
             return None, False
         print(f"Loading {in_path} ({in_path.stat().st_size / 1e6:.1f} MB)...")
-        records = json.loads(in_path.read_text())["records"]
+        records = take(json.loads(in_path.read_text())["records"], limit)
         print(f"  {len(records):,} raw matched records")
         return records, strict_gate_available(records)
-    return iter_matched(split, n_limit, dataset, revision, ScanStats()), True
+    return iter_matched(split, limit, dataset, revision, ScanStats()), True
 
 
 def write_dry_run(
@@ -171,6 +176,33 @@ def write_dry_run(
             fh.write("\n")
 
 
+def report_gate(
+    parser_totals: Counter,
+    quality_totals: Counter,
+    n_records: int,
+    n_passed: int,
+    strict_gate_active: bool,
+) -> None:
+    """Print the parser counts and the quality-gate outcome of one split.
+
+    Args:
+        parser_totals: The dropped-row counts.
+        quality_totals: The quality-flag counts.
+        n_records: The records parsed.
+        n_passed: The records that raised no flag.
+        strict_gate_active: Whether the answer check ran.
+    """
+    print("\nParser stats (totals across all records):")
+    for name, count in sorted(parser_totals.items()):
+        print(f"  {name}: {count:,}")
+    gate = "strict + loose" if strict_gate_active else "loose only"
+    print(f"\nQuality gate ({gate}):")
+    share = 100 * n_passed / n_records if n_records else 0.0
+    print(f"  passed: {n_passed:,} ({share:.1f}%)")
+    for flag, count in sorted(quality_totals.items()):
+        print(f"  flagged {flag}: {count:,}")
+
+
 def main() -> None:
     """Parse each requested split and write its parsed cache."""
     ap = argparse.ArgumentParser(description=__doc__)
@@ -190,38 +222,38 @@ def main() -> None:
         default="stream",
         help="Read Natural Questions directly, or the raw cache from fetch.py",
     )
-    ap.add_argument(
-        "--n-limit",
-        type=int,
-        default=0,
-        help="Cap on examples scanned per split when streaming (0 = no cap)",
-    )
     ap.add_argument("--dataset", default=DEFAULT.dataset)
     ap.add_argument(
         "--revision",
         default=DEFAULT.dataset_revision,
         help="Dataset revision to pin (commit SHA, tag, or branch)",
     )
-    ap.add_argument("--in-dir", type=Path, default=DEFAULT_IN_DIR)
-    ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     ap.add_argument(
         "--dry-run",
         type=int,
         default=0,
         help="If >0, write N parsed samples to --dry-run-out and exit",
     )
-    ap.add_argument(
-        "--dry-run-out", type=Path, default=DEFAULT_OUT_DIR / "parse_dry_run.txt"
+    ap.add_argument("--dry-run-out", type=Path, default=None)
+    add_common_args(
+        ap,
+        "Cap on examples scanned when streaming, or on records read from the "
+        "cache (0 = no cap)",
     )
     args = ap.parse_args()
 
+    dry_run_out = args.dry_run_out or args.data_root / "parse_dry_run.txt"
+
     for split_idx, split in enumerate(args.splits):
-        in_path = args.in_dir / f"matched_{split}.json"
-        out_path = args.out_dir / f"parsed_{split}.json"
+        stage = f"parse_{split}"
+        in_path = args.data_root / f"matched_{split}.json"
+        out_path = args.data_root / f"parsed_{split}.json"
 
         print(f"\n=== {split} ===")
+        if not args.dry_run and skip_existing(stage, [out_path], args.force):
+            continue
         records, strict_gate_active = open_source(
-            args.source, split, in_path, args.n_limit, args.dataset, args.revision
+            args.source, split, in_path, args.limit, args.dataset, args.revision
         )
         if records is None:
             continue
@@ -235,21 +267,18 @@ def main() -> None:
             keep_sources=args.dry_run if split_idx == 0 else 0,
         )
         n_passed = sum(1 for r in parsed_records if not r["quality_flags"])
-
-        print("\nParser stats (totals across all records):")
-        for k, v in sorted(parser_totals.items()):
-            print(f"  {k}: {v:,}")
-        gate = "strict + loose" if strict_gate_active else "loose only"
-        print(f"\nQuality gate ({gate}):")
-        share = 100 * n_passed / len(parsed_records) if parsed_records else 0.0
-        print(f"  passed: {n_passed:,} ({share:.1f}%)")
-        for f, n in sorted(quality_totals.items()):
-            print(f"  flagged {f}: {n:,}")
+        report_gate(
+            parser_totals,
+            quality_totals,
+            len(parsed_records),
+            n_passed,
+            strict_gate_active,
+        )
 
         if args.dry_run > 0 and split_idx == 0:
             n = min(args.dry_run, len(parsed_records))
-            write_dry_run(args.dry_run_out, parsed_records, sources, n)
-            print(f"\nDry-run: wrote {n} parsed samples -> {args.dry_run_out}")
+            write_dry_run(dry_run_out, parsed_records, sources, n)
+            print(f"\nDry-run: wrote {n} parsed samples -> {dry_run_out}")
             print("(No parsed_*.json written. Re-run without --dry-run.)")
             return
 
@@ -274,9 +303,17 @@ def main() -> None:
                 indent=2,
             )
         )
-        size_mb = out_path.stat().st_size / 1e6
-        print(
-            f"\nWrote {len(parsed_records):,} records -> {out_path}  ({size_mb:.1f} MB)"
+        report_written(out_path, len(parsed_records))
+        record_stage(
+            args.data_root,
+            stage,
+            {out_path: len(parsed_records)},
+            {
+                "body_chars": args.target_body_chars,
+                "min_pairs": args.min_pairs,
+                "min_body_chars": args.min_body,
+                "min_infobox_chars": args.min_infobox,
+            },
         )
 
 

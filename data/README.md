@@ -10,7 +10,7 @@ Licensed CC BY-SA 3.0 (see [`LICENSE`](LICENSE))
 |---|---|---|
 | `nq/parsed_{train,validation}.json` | Parsed infobox `(k,v)` pairs + extracted body + quality flags | `scripts/corpus/parse.py` |
 | `nq/h1_measurement/*.json` | Per-model per-format raw scores + summary stats (H1) | `scripts/h1/nq_h1_measurement.py` |
-| `nq/h2_splits/` | Article-level 80/10/10 splits | `scripts/corpus/split.py` |
+| `nq/splits/` | Article-level 80/10/10 splits | `scripts/corpus/split.py` |
 | `nq/h2_compare/`, `h2_selection/`, `h2_tanh_ablation/` | H2 result JSONs | H2 sweep scripts |
 
 ## Optional data

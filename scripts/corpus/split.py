@@ -11,11 +11,18 @@ import argparse
 import json
 from pathlib import Path
 
+from fsr.corpus.cli import (
+    add_common_args,
+    record_stage,
+    skip_existing,
+    split_dir,
+    take,
+)
 from fsr.corpus.config import DEFAULT
 from fsr.corpus.splitting import split_by_article, strict_gated
 
-DEFAULT_IN_DIR = Path("data") / "nq"
-DEFAULT_OUT_DIR = Path("data") / "nq" / "h2_splits"
+SPLIT_NAMES = ("train", "dev", "test", "nq_val")
+META_NAME = "meta.json"
 
 
 def load_passed(path: Path) -> list[dict]:
@@ -61,27 +68,35 @@ def write_split(out_dir: Path, name: str, records: list[dict], seed: int) -> Pat
 def main() -> None:
     """Partition the parsed corpus and write the split files."""
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--in-dir", type=Path, default=DEFAULT_IN_DIR)
-    ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     ap.add_argument("--seed", type=int, default=DEFAULT.split_seed)
     ap.add_argument("--frac-train", type=float, default=DEFAULT.frac_train)
     ap.add_argument("--frac-dev", type=float, default=DEFAULT.frac_dev)
+    add_common_args(ap, "Cap on records read from each parsed file (0 = no cap)")
     args = ap.parse_args()
 
-    args.out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = split_dir(args.data_root)
+    outputs = [out_dir / f"{name}.json" for name in SPLIT_NAMES]
+    outputs.append(out_dir / META_NAME)
+    if skip_existing("split", outputs, args.force):
+        return
 
-    train_passed = load_passed(args.in_dir / "parsed_train.json")
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    train_passed = take(load_passed(args.data_root / "parsed_train.json"), args.limit)
     splits = split_by_article(train_passed, args.seed, args.frac_train, args.frac_dev)
-    nq_val = load_passed(args.in_dir / "parsed_validation.json")
+    nq_val = take(load_passed(args.data_root / "parsed_validation.json"), args.limit)
 
-    written = [
-        ("train", splits.train),
-        ("dev", splits.dev),
-        ("test", splits.test),
-        ("nq_val", nq_val),
-    ]
-    for name, records in written:
-        path = write_split(args.out_dir, name, records, args.seed)
+    written = dict(
+        zip(
+            SPLIT_NAMES,
+            [splits.train, splits.dev, splits.test, nq_val],
+            strict=True,
+        )
+    )
+    recorded: dict[Path, int | None] = {}
+    for name, records in written.items():
+        path = write_split(out_dir, name, records, args.seed)
+        recorded[path] = len(records)
         print(f"{name:>8}: {len(records):>5} records -> {path}")
 
     meta = {
@@ -91,8 +106,22 @@ def main() -> None:
         "nq_val_n_records": len(nq_val),
         **splits.counts,
     }
-    (args.out_dir / "meta.json").write_text(json.dumps(meta, indent=2))
+    meta_path = out_dir / META_NAME
+    meta_path.write_text(json.dumps(meta, indent=2))
+    recorded[meta_path] = None
     print(f"\nmeta: {json.dumps(meta, indent=2)}")
+
+    record_stage(
+        args.data_root,
+        "split",
+        recorded,
+        {
+            "split_seed": args.seed,
+            "frac_train": args.frac_train,
+            "frac_dev": args.frac_dev,
+            "frac_test": 1.0 - args.frac_train - args.frac_dev,
+        },
+    )
 
 
 if __name__ == "__main__":

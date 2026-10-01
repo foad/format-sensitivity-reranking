@@ -7,6 +7,9 @@ import json
 import pytest
 from scripts.corpus import split as mod
 
+from fsr.corpus import cli
+from fsr.corpus.cli import split_dir
+
 
 def parsed_file(path, n_titles=100, n_flagged=0, report_passed=True):
     """Write a parsed corpus file and return its path."""
@@ -50,14 +53,52 @@ class TestLoadPassed:
 
 class TestMain:
     def _run(self, monkeypatch, tmp_path, *extra):
-        in_dir = corpus_dir(tmp_path)
-        out_dir = tmp_path / "splits"
-        monkeypatch.setattr(
-            "sys.argv",
-            ["prog", "--in-dir", str(in_dir), "--out-dir", str(out_dir), *extra],
-        )
+        data_root = corpus_dir(tmp_path)
+        out_dir = split_dir(data_root)
+        monkeypatch.setattr("sys.argv", ["prog", "--data-root", str(data_root), *extra])
         mod.main()
         return out_dir
+
+    def test_skips_when_every_output_exists(self, monkeypatch, tmp_path, capsys):
+        out = self._run(monkeypatch, tmp_path)
+        before = (out / "train.json").read_text()
+        (out / "train.json").write_text("{}")
+        self._run(monkeypatch, tmp_path)
+        assert "Skipping split" in capsys.readouterr().out
+        assert (out / "train.json").read_text() == "{}"
+        assert before != "{}"
+
+    def test_force_rebuilds_the_splits(self, monkeypatch, tmp_path):
+        out = self._run(monkeypatch, tmp_path)
+        (out / "train.json").write_text("{}")
+        self._run(monkeypatch, tmp_path, "--force")
+        assert json.loads((out / "train.json").read_text())["split"] == "train"
+
+    def test_limits_the_records_read(self, monkeypatch, tmp_path):
+        out = self._run(monkeypatch, tmp_path, "--limit", "10")
+        total = sum(
+            json.loads((out / f"{name}.json").read_text())["n_records"]
+            for name in ("train", "dev", "test")
+        )
+        assert total == 10
+
+    def test_records_the_stage_in_the_manifest(self, monkeypatch, tmp_path):
+        self._run(monkeypatch, tmp_path, "--frac-train", "0.5", "--frac-dev", "0.25")
+        manifest = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
+        stage = manifest["stages"][0]
+        assert stage["name"] == "split"
+        assert len(stage["outputs"]) == 5
+        assert {o["path"] for o in stage["outputs"]} == {
+            f"{cli.SPLIT_SUBDIR}/{name}.json"
+            for name in ("train", "dev", "test", "nq_val", "meta")
+        }
+        assert manifest["config"]["frac_test"] == 0.25
+
+    def test_the_meta_file_records_no_count(self, monkeypatch, tmp_path):
+        self._run(monkeypatch, tmp_path)
+        manifest = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
+        outputs = {o["path"]: o["records"] for o in manifest["stages"][0]["outputs"]}
+        assert outputs[f"{cli.SPLIT_SUBDIR}/meta.json"] is None
 
     def test_writes_every_split_file(self, monkeypatch, tmp_path):
         out = self._run(monkeypatch, tmp_path)

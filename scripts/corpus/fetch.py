@@ -11,30 +11,37 @@ import argparse
 import json
 from pathlib import Path
 
+from fsr.corpus.cli import (
+    add_common_args,
+    record_stage,
+    report_written,
+    skip_existing,
+)
 from fsr.corpus.config import DEFAULT
 from fsr.corpus.nq import ScanStats, iter_matched
-
-DEFAULT_OUT_DIR = Path("data") / "nq"
 
 
 def fetch_split(
     split: str,
     out_path: Path,
-    n_limit: int,
+    limit: int,
     dataset: str = DEFAULT.dataset,
     revision: str | None = DEFAULT.dataset_revision,
-) -> None:
+) -> int:
     """Stream one split and write its infobox-answered examples to out_path.
 
     Args:
         split: The Natural Questions split name.
         out_path: The JSON file to write.
-        n_limit: The cap on examples scanned. 0 scans the whole split.
+        limit: The cap on examples scanned. 0 scans the whole split.
         dataset: The Hugging Face dataset to stream.
         revision: The dataset revision to pin. None uses the default branch.
+
+    Returns:
+        The number of records written.
     """
     stats = ScanStats()
-    matched = list(iter_matched(split, n_limit, dataset, revision, stats))
+    matched = list(iter_matched(split, limit, dataset, revision, stats))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(
@@ -50,8 +57,8 @@ def fetch_split(
             indent=2,
         )
     )
-    size_mb = out_path.stat().st_size / 1e6
-    print(f"Wrote {len(matched):,} records -> {out_path}  ({size_mb:.1f} MB)")
+    report_written(out_path, len(matched))
+    return len(matched)
 
 
 def main() -> None:
@@ -63,27 +70,29 @@ def main() -> None:
         default=["train", "validation"],
         choices=["train", "validation"],
     )
-    ap.add_argument(
-        "--n-limit",
-        type=int,
-        default=0,
-        help="Cap on examples scanned per split (0 = no cap)",
-    )
-    ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     ap.add_argument("--dataset", default=DEFAULT.dataset)
     ap.add_argument(
         "--revision",
         default=DEFAULT.dataset_revision,
         help="Dataset revision to pin (commit SHA, tag, or branch)",
     )
+    add_common_args(
+        ap, "Cap on examples scanned per split, before matching (0 = no cap)"
+    )
     args = ap.parse_args()
 
     for split in args.splits:
-        out_path = args.out_dir / f"matched_{split}.json"
-        if out_path.exists():
-            print(f"Skipping {split}: cache already exists at {out_path}")
+        stage = f"fetch_{split}"
+        out_path = args.data_root / f"matched_{split}.json"
+        if skip_existing(stage, [out_path], args.force):
             continue
-        fetch_split(split, out_path, args.n_limit, args.dataset, args.revision)
+        written = fetch_split(split, out_path, args.limit, args.dataset, args.revision)
+        record_stage(
+            args.data_root,
+            stage,
+            {out_path: written},
+            {"dataset": args.dataset, "dataset_revision": args.revision},
+        )
 
 
 if __name__ == "__main__":
