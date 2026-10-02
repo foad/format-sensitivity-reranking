@@ -7,7 +7,6 @@ __pycache__/
 
 # HuggingFace / model caches
 .cache/
-*.lock
 
 # Built corpus and results
 data/nq/*

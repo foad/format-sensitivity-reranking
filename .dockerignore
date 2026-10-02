@@ -1,0 +1,7 @@
+.git
+.venv
+data
+adapters
+notebooks
+htmlcov
+**/__pycache__
