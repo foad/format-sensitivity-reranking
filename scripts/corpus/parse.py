@@ -199,6 +199,27 @@ def report_gate(
         print(f"  flagged {flag}: {count:,}")
 
 
+def gate_config(args: argparse.Namespace) -> dict[str, object]:
+    """Return the parameters this stage ran with.
+
+    Args:
+        args: The parsed arguments.
+
+    Returns:
+        The configuration to record.
+    """
+    config: dict[str, object] = {
+        "body_chars": args.target_body_chars,
+        "min_pairs": args.min_pairs,
+        "min_body_chars": args.min_body,
+        "min_infobox_chars": args.min_infobox,
+    }
+    if args.source == "stream":
+        config["dataset"] = args.dataset
+        config["dataset_revision"] = args.revision
+    return config
+
+
 def main() -> None:
     """Parse each requested split and write its parsed cache."""
     ap = argparse.ArgumentParser(description=__doc__)
@@ -304,12 +325,7 @@ def main() -> None:
             args.data_root,
             stage,
             {out_path: len(parsed_records)},
-            {
-                "body_chars": args.target_body_chars,
-                "min_pairs": args.min_pairs,
-                "min_body_chars": args.min_body,
-                "min_infobox_chars": args.min_infobox,
-            },
+            gate_config(args),
         )
 
 

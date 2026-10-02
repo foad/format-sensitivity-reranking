@@ -20,28 +20,6 @@
   },
   "stages": [
     {
-      "name": "fetch_train",
-      "outputs": [
-        {
-          "path": "matched_train.json",
-          "sha256": "654f73035c0ba324e9073a42ab1a190c3a8465ce55f6568fc82c4b2c6941ba2e",
-          "bytes": 2883597173,
-          "records": 11072
-        }
-      ]
-    },
-    {
-      "name": "fetch_validation",
-      "outputs": [
-        {
-          "path": "matched_validation.json",
-          "sha256": "367ef48663e4e1e76224c7ae9dfab0bdc65365ee1708773f9df381eeabc8c46b",
-          "bytes": 60984431,
-          "records": 251
-        }
-      ]
-    },
-    {
       "name": "parse_train",
       "outputs": [
         {

@@ -14,7 +14,6 @@ from pathlib import Path
 from fsr.cli import add_common_args, report_written, skip_existing
 from fsr.corpus.config import DEFAULT
 from fsr.corpus.files import write_atomic
-from fsr.corpus.manifest import record_stage
 from fsr.corpus.nq import ScanStats, iter_matched
 
 
@@ -83,13 +82,7 @@ def main() -> None:
         out_path = args.data_root / f"matched_{split}.json"
         if skip_existing(stage, [out_path], args.force):
             continue
-        written = fetch_split(split, out_path, args.limit, args.dataset, args.revision)
-        record_stage(
-            args.data_root,
-            stage,
-            {out_path: written},
-            {"dataset": args.dataset, "dataset_revision": args.revision},
-        )
+        fetch_split(split, out_path, args.limit, args.dataset, args.revision)
 
 
 if __name__ == "__main__":

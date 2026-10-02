@@ -22,8 +22,8 @@ The dataset revision is pinned so a build reproduces the same corpus. See
 ## Checking a download
 
 `nq/manifest.json` records the build parameters and the size, record count
-and SHA-256 of every file, so a downloaded corpus can be checked against
-the one the results came from:
+and SHA-256 of every corpus file, so a downloaded corpus can be checked
+against the one the results came from:
 
 ```bash
 uv run python scripts/corpus/validate.py
