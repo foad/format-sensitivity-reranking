@@ -592,3 +592,54 @@ class TestListModels:
         )
         mod.main()
         assert capsys.readouterr().out.split() == [m.slug for m in BASE_MODELS]
+
+
+class TestBudgetModels:
+    def test_defaults_to_the_whole_roster(self):
+        args = mod.build_parser().parse_args([])
+        assert args.budget_models == list(BASE_MODEL_IDS)
+
+    def test_one_scored_model_still_budgets_across_the_roster(
+        self, monkeypatch, tmp_path
+    ):
+        seen = {}
+
+        def capture(records, tokenizers):
+            seen["budget"] = sorted(tokenizers)
+            return records, {"tightest_counts": {}, "dropped": 0}
+
+        monkeypatch.setattr(mod, "prepare_records_with_body", capture)
+        monkeypatch.setattr(
+            mod, "try_load_tokenizer", lambda _name, _t: PairTokenizer()
+        )
+        monkeypatch.setattr(mod, "try_load_model", lambda *_a, **_k: LogitModel())
+        write_split(tmp_path, "test", [record(str(i)) for i in range(4)])
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "prog",
+                "--in-dir",
+                str(tmp_path),
+                "--out-dir",
+                str(tmp_path),
+                "--mode",
+                "with_body",
+                "--models",
+                "bge_base",
+            ],
+        )
+        mod.main()
+        assert seen["budget"] == sorted(BASE_MODEL_IDS)
+
+    def test_stops_when_a_budget_tokenizer_is_missing(self, monkeypatch, tmp_path):
+        def load(name, _trust):
+            return None if "bge-reranker-v2-m3" in name else PairTokenizer()
+
+        monkeypatch.setattr(mod, "try_load_tokenizer", load)
+        write_split(tmp_path, "test", [record("1")])
+        monkeypatch.setattr(
+            "sys.argv",
+            ["prog", "--in-dir", str(tmp_path), "--out-dir", str(tmp_path)],
+        )
+        with pytest.raises(SystemExit, match="budget tokenizer"):
+            mod.main()

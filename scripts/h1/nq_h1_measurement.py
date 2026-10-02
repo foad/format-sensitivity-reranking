@@ -319,6 +319,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ap.add_argument("--models", nargs="+", default=list(BASE_MODEL_IDS))
     ap.add_argument(
+        "--budget-models",
+        nargs="+",
+        default=list(BASE_MODEL_IDS),
+        help="Tokenizers the body budget comes from.",
+    )
+    ap.add_argument(
         "--out-tag",
         default="",
         help="Suffix for the output file",
@@ -360,6 +366,7 @@ def main() -> None:
             print(model.slug)
         return
     args.models = resolve_models(args.models)
+    args.budget_models = resolve_models(args.budget_models)
 
     if args.smoke_test:
         args.limit = SMOKE_TEST_RECORDS
@@ -382,24 +389,31 @@ def main() -> None:
         records = records[: args.limit]
     print(f"  {len(records):,} records")
 
-    print(f"\nLoading tokenizers for {len(args.models)} models...")
+    wanted = list(dict.fromkeys(args.models + args.budget_models))
+    print(f"\nLoading tokenizers for {len(wanted)} models...")
     tokenizers = {}
-    for m in args.models:
+    for m in wanted:
         tok = try_load_tokenizer(m, trust)
         if tok is not None:
             tokenizers[m] = tok
             print(f"  ok {m}")
     if not tokenizers:
         raise SystemExit("No tokenizers loaded, cannot proceed.")
+    budget_tokenizers = {
+        m: tokenizers[m] for m in args.budget_models if m in tokenizers
+    }
+    if len(budget_tokenizers) != len(args.budget_models):
+        raise SystemExit(
+            "Not every budget tokenizer loaded. The body budget comes from the "
+            "whole model set, so fix the load and run again."
+        )
 
     modes = ["metadata_only", "with_body"] if args.mode == "both" else [args.mode]
 
     for mode in modes:
         if mode == "with_body":
-            print(
-                "\nPreparing with_body records (body budget across all tokenizers)..."
-            )
-            eligible, stats = prepare_records_with_body(records, tokenizers)
+            print("\nPreparing with_body records (budget across the whole roster)...")
+            eligible, stats = prepare_records_with_body(records, budget_tokenizers)
             tightest_counts = stats["tightest_counts"]
             drop_stats = {"dropped": stats["dropped"], **budget_summary(eligible)}
             print(
