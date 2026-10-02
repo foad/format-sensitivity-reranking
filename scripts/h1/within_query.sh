@@ -69,29 +69,63 @@ else
     echo "reusing candidate lists at $CACHE"
 fi
 
-run_model() {
-    local SLUG="$1" DEVICE="$2"
-    local TAG="wq_${SLUG}${SUFFIX}"
-    local OUT_JSON="$OUT_DIR/${SPLIT}_${TAG}.json"
-    if [ -f "$OUT_JSON" ] && [ "${FORCE:-0}" != "1" ]; then
-        echo "  [skip] $SLUG: $OUT_JSON is already present"
-        return 0
-    fi
-    echo "  [gpu $DEVICE] $SLUG"
-    GPU="$DEVICE" fsr_run "$OUT_DIR/${SPLIT}_${TAG}.log" \
-        scripts/h1/within_query.py "${COMMON[@]}" \
-        --models "$SLUG" --out-tag "$TAG"
+model_log() {
+    echo "$OUT_DIR/${SPLIT}_wq_${1}${SUFFIX}.log"
 }
 
-echo "scoring ${#MODEL_LIST[@]} models across ${#GPU_LIST[@]} GPUs"
+run_model() {
+    local SLUG="$1" DEVICE="$2" STARTED ELAPSED
+    local TAG="wq_${SLUG}${SUFFIX}"
+    local rc=0
+    STARTED=$(date +%s)
+    # Split logs between the per-model log and the terminal.
+    if [ "$PARALLEL" = 1 ]; then
+        GPU="$DEVICE" fsr_run "$OUT_DIR/${SPLIT}_${TAG}.log" \
+            scripts/h1/within_query.py "${COMMON[@]}" \
+            --models "$SLUG" --out-tag "$TAG" > /dev/null || rc=$?
+    else
+        GPU="$DEVICE" fsr_run "$OUT_DIR/${SPLIT}_${TAG}.log" \
+            scripts/h1/within_query.py "${COMMON[@]}" \
+            --models "$SLUG" --out-tag "$TAG" || rc=$?
+    fi
+    ELAPSED=$(( $(date +%s) - STARTED ))
+    if [ "$rc" -eq 0 ]; then
+        echo "  [gpu $DEVICE] $SLUG done in ${ELAPSED}s"
+    else
+        echo "  [gpu $DEVICE] $SLUG FAILED rc=$rc after ${ELAPSED}s"
+    fi
+    return "$rc"
+}
+
+PENDING=()
+for SLUG in "${MODEL_LIST[@]}"; do
+    OUT_JSON="$OUT_DIR/${SPLIT}_wq_${SLUG}${SUFFIX}.json"
+    if [ -f "$OUT_JSON" ] && [ "${FORCE:-0}" != "1" ]; then
+        echo "  [skip] $SLUG: $OUT_JSON is already present"
+    else
+        PENDING+=("$SLUG")
+    fi
+done
+
+PARALLEL=0
+[ "${#GPU_LIST[@]}" -gt 1 ] && [ "${#PENDING[@]}" -gt 1 ] && PARALLEL=1
+echo "scoring ${#PENDING[@]} models across ${#GPU_LIST[@]} GPUs"
+if [ "$PARALLEL" = 1 ]; then
+    echo "follow a model with:"
+    for SLUG in "${PENDING[@]}"; do
+        echo "  tail -F $(model_log "$SLUG")"
+    done
+fi
+
 FAILED=()
 i=0
-while [ "$i" -lt "${#MODEL_LIST[@]}" ]; do
+while [ "$i" -lt "${#PENDING[@]}" ]; do
     PIDS=()
     SLUGS=()
     for DEVICE in "${GPU_LIST[@]}"; do
-        [ "$i" -lt "${#MODEL_LIST[@]}" ] || break
-        SLUG="${MODEL_LIST[$i]}"
+        [ "$i" -lt "${#PENDING[@]}" ] || break
+        SLUG="${PENDING[$i]}"
+        echo "  [gpu $DEVICE] $SLUG started"
         run_model "$SLUG" "$DEVICE" &
         PIDS+=($!)
         SLUGS+=("$SLUG")
