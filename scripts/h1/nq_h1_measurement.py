@@ -26,9 +26,14 @@ import numpy as np
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
+from fsr.corpus.splitting import SPLIT_CHOICES, load_records
 from fsr.formats import FORMATS
 from fsr.metrics import format_sensitivity_summary
-from fsr.models.registry import BASE_MODEL_IDS
+from fsr.models.registry import (
+    BASE_MODEL_IDS,
+    BASE_MODELS,
+    by_slug,
+)
 from fsr.passages import MIN_BODY_TOKENS, prepare_records_with_body
 from fsr.scoring import score_batch
 
@@ -146,6 +151,21 @@ def build_pairs(records: list[dict], renderer: Any, mode: str) -> list[tuple[str
     ]
 
 
+def resolve_models(names: list[str]) -> list[str]:
+    """Return the Hugging Face identifier of each named model.
+
+    Args:
+        names: Registry slugs, Hugging Face identifiers, or a mix.
+
+    Returns:
+        The identifiers, in the order given.
+
+    Raises:
+        ValueError: If a name is neither a slug nor an identifier.
+    """
+    return [name if "/" in name else by_slug(name).model_id for name in names]
+
+
 def run_mode(
     mode: str,
     records: list[dict],
@@ -172,7 +192,8 @@ def run_mode(
     print(f"MODE: {mode}   n_records = {len(records)}")
     print(f"{'=' * 70}")
 
-    out_path = args.out_dir / f"{args.split}_{mode}.json"
+    suffix = f"_{args.out_tag}" if args.out_tag else ""
+    out_path = args.out_dir / f"{args.split}_{mode}{suffix}.json"
     args.out_dir.mkdir(parents=True, exist_ok=True)
     all_results: dict[str, Any] = {}
     failures: list[dict[str, str]] = []
@@ -182,7 +203,7 @@ def run_mode(
             "mode": mode,
             "split": args.split,
             "n_records": len(records),
-            "source_cache": f"{args.in_dir.name}/parsed_{args.split}.json",
+            "split_source": args.split,
             "models_probed": list(all_results),
             "models_failed": failures,
             "formats": list(FORMATS),
@@ -288,11 +309,25 @@ def run_mode(
 def build_parser() -> argparse.ArgumentParser:
     """Return the command-line parser."""
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--split", default="train", choices=["train", "validation"])
+    ap.add_argument(
+        "--split",
+        default="test",
+        choices=list(SPLIT_CHOICES),
+    )
     ap.add_argument(
         "--mode", choices=["metadata_only", "with_body", "both"], default="both"
     )
     ap.add_argument("--models", nargs="+", default=list(BASE_MODEL_IDS))
+    ap.add_argument(
+        "--out-tag",
+        default="",
+        help="Suffix for the output file",
+    )
+    ap.add_argument(
+        "--list-models",
+        action="store_true",
+        help="Print the registry slug of each model in the roster",
+    )
     ap.add_argument("--batch-size", type=int, default=16)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--in-dir", type=Path, default=DEFAULT_IN_DIR)
@@ -320,6 +355,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     """Run the requested modes over the requested models."""
     args = build_parser().parse_args()
+    if args.list_models:
+        for model in BASE_MODELS:
+            print(model.slug)
+        return
+    args.models = resolve_models(args.models)
 
     if args.smoke_test:
         args.limit = SMOKE_TEST_RECORDS
@@ -337,13 +377,10 @@ def main() -> None:
     print(f"Device: {device}")
     print(f"trust_remote_code: {trust}")
 
-    parsed_path = args.in_dir / f"parsed_{args.split}.json"
-    print(f"\nLoading {parsed_path}...")
-    data = json.loads(parsed_path.read_text())
-    records = [r for r in data["records"] if not r["quality_flags"]]
+    records = load_records(args.in_dir, args.split)
     if args.limit:
         records = records[: args.limit]
-    print(f"  {len(records):,} quality-passed records")
+    print(f"  {len(records):,} records")
 
     print(f"\nLoading tokenizers for {len(args.models)} models...")
     tokenizers = {}

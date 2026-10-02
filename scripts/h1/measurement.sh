@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Within-query measurement for one split.
+# Cross-query format sensitivity for one record set.
 #
 # Usage:
-#   bash scripts/h1/within_query.sh [SPLIT]
+#   bash scripts/h1/measurement.sh [SPLIT]
 #
 # Environment:
 #   GPUS         comma-separated GPUs to spread models across (default 0)
 #   MODELS       comma-separated registry slugs (default the whole roster)
 #   FSR_RUNNER   runner to source (default scripts/runners/local.sh)
 #   DATA_ROOT    corpus directory (default data/nq)
-#   BATCH_SIZE   scoring batch size (default 32)
-#   LIMIT        cap on queries, for a smoke run
-#   FORCE        1 to rebuild the cache and re-score every model
+#   BATCH_SIZE   scoring batch size (default 16)
+#   LIMIT        cap on records, for a smoke run
+#   FORCE        1 to re-score every model
 
 set -euo pipefail
 
@@ -31,22 +31,24 @@ case "$SPLIT" in
         ;;
 esac
 
-MEASURE=scripts/h1/within_query.py
+MEASURE=scripts/h1/nq_h1_measurement.py
 DATA_ROOT="${DATA_ROOT:-data/nq}"
-OUT_DIR="$DATA_ROOT/h1_within_query"
+OUT_DIR="$DATA_ROOT/h1_measurement"
 mkdir -p "$OUT_DIR"
 
-COMMON=(--data-root "$DATA_ROOT" --split "$SPLIT"
-        --batch-size "${BATCH_SIZE:-32}")
-[ -n "${LIMIT:-}" ] && COMMON+=(--limit "$LIMIT")
-[ "${FORCE:-0}" = "1" ] && COMMON+=(--force)
+COMMON=(--in-dir "$DATA_ROOT" --out-dir "$OUT_DIR" --split "$SPLIT"
+        --batch-size "${BATCH_SIZE:-16}")
 SUFFIX=""
-[ -n "${LIMIT:-}" ] && SUFFIX="_limit${LIMIT}"
+if [ -n "${LIMIT:-}" ]; then
+    COMMON+=(--limit "$LIMIT")
+    SUFFIX="_limit${LIMIT}"
+fi
 
 job_command() { JOB_CMD=("$MEASURE" "${COMMON[@]}" --models "$1"
-                         --out-tag "wq_${1}${SUFFIX}"); }
-job_output() { echo "$OUT_DIR/${SPLIT}_wq_${1}${SUFFIX}.json"; }
-job_log() { echo "$OUT_DIR/${SPLIT}_wq_${1}${SUFFIX}.log"; }
+                         --out-tag "${1}${SUFFIX}"); }
+# with_body is written after metadata_only, so it means the model finished.
+job_output() { echo "$OUT_DIR/${SPLIT}_with_body_${1}${SUFFIX}.json"; }
+job_log() { echo "$OUT_DIR/${SPLIT}_${1}${SUFFIX}.log"; }
 
 if [ -n "${MODELS:-}" ]; then
     IFS=', ' read -ra MODEL_LIST <<< "$MODELS"
@@ -55,16 +57,5 @@ else
 fi
 [ "${#MODEL_LIST[@]}" -gt 0 ] || { echo "ERROR: no models to score" >&2; exit 1; }
 
-# Shared cache for candidate lists.
-CACHE="$OUT_DIR/${SPLIT}_candidates${SUFFIX}.json"
-if [ ! -f "$CACHE" ] || [ "${FORCE:-0}" = "1" ]; then
-    echo "building candidate lists for $SPLIT"
-    GPU="$(fsr_gpus | head -1)" fsr_run \
-        "$OUT_DIR/${SPLIT}_candidates${SUFFIX}.log" \
-        "$MEASURE" "${COMMON[@]}" --prepare-only
-else
-    echo "reusing candidate lists at $CACHE"
-fi
-
 fsr_dispatch "${MODEL_LIST[@]}"
-echo "done: $OUT_DIR/${SPLIT}_wq_*${SUFFIX}.json"
+echo "done: $OUT_DIR/${SPLIT}_{with_body,metadata_only}_*${SUFFIX}.json"

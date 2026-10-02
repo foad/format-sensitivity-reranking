@@ -16,10 +16,13 @@ See [`../docs/reproduction.md`](../docs/reproduction.md) for exact commands and 
 
 `local.sh` launches a measurement locally on the device named by `GPU`, falling back to `CUDA_VISIBLE_DEVICES`. Setting `FSR_RUNNER` uses a different runner.
 
+`dispatch.sh` spreads per-model jobs across `GPUS` in waves, skipping a model whose output is present. With several GPUs the screen shows one line per model and each model's detail goes to its own log.
+
 ## `h1/`
- - `nq_h1_measurement.py --split train`: score six models across two modes (with_body, metadata_only).
- - `within_query.py`: within-query ranking disturbance over the BM25 candidate lists.
+ - `run.sh`: the full H1 pass.
+ - `measurement.sh`: cross-query sensitivity for one split, one model per GPU.
  - `within_query.sh`: builds the shared candidate cache once, then scores one model per GPU.
+ - `nq_h1_measurement.py`, `within_query.py`: the measurements themselves.
 
 ## `h2/`
  - `sweep.sh`: Phase-1 lambda selection, then Phase-2 five-fold hold-one-out, parameterised by model.

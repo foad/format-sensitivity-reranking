@@ -2,7 +2,18 @@
 
 from __future__ import annotations
 
-from fsr.corpus.splitting import split_by_article, strict_gated
+import json
+
+from fsr.corpus.layout import split_dir
+from fsr.corpus.splitting import load_records, split_by_article, strict_gated
+
+
+def write_split(root, name, records):
+    """Write one split file under the corpus directory."""
+    path = split_dir(root) / f"{name}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"records": records}))
+    return path
 
 
 def record(title: str, rec_id: str = "1", flags=None) -> dict:
@@ -95,3 +106,31 @@ class TestSplitByArticle:
         s = split_by_article(corpus(1))
         assert len(s.test) == 1
         assert s.train == [] and s.dev == []
+
+
+class TestLoadRecords:
+    def test_stays_quiet_when_asked(self, tmp_path, capsys):
+        write_split(tmp_path, "test", [{"id": "1"}])
+        load_records(tmp_path, "test", verbose=False)
+        assert capsys.readouterr().out == ""
+
+    def test_names_each_file_it_reads(self, tmp_path, capsys):
+        write_split(tmp_path, "test", [{"id": "1"}])
+        load_records(tmp_path, "test")
+        assert "test.json" in capsys.readouterr().out
+
+    def test_reads_one_split(self, tmp_path):
+        write_split(tmp_path, "test", [{"id": "1"}, {"id": "2"}])
+        assert [r["id"] for r in load_records(tmp_path, "test")] == ["1", "2"]
+
+    def test_all_concatenates_the_partition(self, tmp_path):
+        write_split(tmp_path, "train", [{"id": "1"}])
+        write_split(tmp_path, "dev", [{"id": "2"}])
+        write_split(tmp_path, "test", [{"id": "3"}])
+        assert [r["id"] for r in load_records(tmp_path, "all")] == ["1", "2", "3"]
+
+    def test_all_leaves_out_the_validation_corpus(self, tmp_path):
+        for name in ("train", "dev", "test"):
+            write_split(tmp_path, name, [{"id": name}])
+        write_split(tmp_path, "nq_val", [{"id": "held out"}])
+        assert "held out" not in [r["id"] for r in load_records(tmp_path, "all")]

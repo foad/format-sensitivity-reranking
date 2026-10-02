@@ -26,7 +26,7 @@ from fsr.candidates import (
 )
 from fsr.cli import add_common_args, take
 from fsr.corpus.layout import split_dir
-from fsr.corpus.splitting import strict_gated
+from fsr.corpus.splitting import SPLIT_CHOICES, load_records, strict_gated
 from fsr.formats import FORMAT_NAMES, FORMATS
 from fsr.models.loading import load_model, load_tokenizer
 from fsr.models.registry import BASE_MODEL_IDS, BASE_MODELS, by_slug
@@ -279,7 +279,7 @@ def prepare_queries(
     Raises:
         SystemExit: If no query survives.
     """
-    records = take(load_split(split_path, args.split), args.limit)
+    records = take(load_records(args.data_root, args.split), args.limit)
     print(f"\nSplit '{args.split}': {len(records)} queries")
 
     suffix = f"_limit{args.limit}" if args.limit else ""
@@ -318,9 +318,7 @@ def prepare_queries(
 def build_parser() -> argparse.ArgumentParser:
     """Return the command-line parser."""
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument(
-        "--split", default="test", choices=["train", "dev", "test", "nq_val"]
-    )
+    ap.add_argument("--split", default="test", choices=list(SPLIT_CHOICES))
     ap.add_argument("--models", nargs="+", default=list(BASE_MODEL_IDS))
     ap.add_argument(
         "--budget-models",

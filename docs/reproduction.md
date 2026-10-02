@@ -16,6 +16,22 @@ docker run --rm --gpus device=0 -v "$PWD:/work" format-sensitivity-reranking \
 
 Built on `nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04`.
 
+## H1
+
+```bash
+GPUS=0,1,2 bash scripts/h1/run.sh
+```
+
+| Stage | Axis | Records | Default |
+|---|---|---|---|
+| 1, 2 | cross-query, within-query | `test`, the headline | on |
+| 3, 4 | cross-query, within-query | `nq_val`, an independent check | on |
+| 5, 6 | cross-query, within-query | `all`, the whole corpus | off |
+
+Stages 5 and 6 overlap the records H2 trains on, so they are descriptive only.
+
+Results land in `data/nq/h1_measurement/` and `data/nq/h1_within_query/`.
+
 ## Corpus
 
 Check the pipeline first, over a small scan:

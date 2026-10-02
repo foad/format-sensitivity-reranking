@@ -9,7 +9,8 @@ import torch
 from scripts.h1 import nq_h1_measurement as mod
 from tests.fakes import LogitModel, PairTokenizer
 
-from fsr.models.registry import BASE_MODEL_IDS
+from fsr.corpus.layout import split_dir
+from fsr.models.registry import BASE_MODEL_IDS, BASE_MODELS
 
 FORMAT_COUNT = 5
 
@@ -166,16 +167,25 @@ class TestBuildPairs:
         assert pairs[0][1].endswith("---\n")
 
 
+def write_split(root, name, records):
+    """Write one split file under the corpus directory."""
+    path = split_dir(root) / f"{name}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"records": records}))
+    return path
+
+
 class TestRunMode:
     def _args(self, tmp_path, **over):
         base = {
-            "split": "train",
+            "split": "test",
             "out_dir": tmp_path,
             "in_dir": tmp_path,
             "batch_size": 4,
             "seed": 0,
             "no_trust_remote_code": False,
             "eager_attn": False,
+            "out_tag": "",
         }
         base.update(over)
         return pytest.importorskip("argparse").Namespace(**base)
@@ -199,7 +209,7 @@ class TestRunMode:
             None,
             None,
         )
-        data = json.loads((tmp_path / "train_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
         assert data["models_probed"] == ["model/a", "model/b"]
         assert data["models_failed"] == []
         assert len(data["results"]["model/a"]["scores"]) == FORMAT_COUNT
@@ -217,7 +227,7 @@ class TestRunMode:
             None,
             None,
         )
-        data = json.loads((tmp_path / "train_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
         assert data["models_failed"][0]["stage"] == "tokenizer_load"
 
     def test_records_a_model_load_failure(self, monkeypatch, tmp_path):
@@ -233,7 +243,7 @@ class TestRunMode:
             None,
             None,
         )
-        data = json.loads((tmp_path / "train_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
         assert data["models_failed"][0]["stage"] == "model_load"
 
     def test_records_a_scoring_failure_without_stopping(self, monkeypatch, tmp_path):
@@ -254,7 +264,7 @@ class TestRunMode:
             None,
             None,
         )
-        data = json.loads((tmp_path / "train_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
         assert len(data["models_failed"]) == 2
         assert data["models_failed"][0]["error"].startswith("RuntimeError")
 
@@ -271,7 +281,7 @@ class TestRunMode:
             {"model/a": 1},
             {"dropped": 0, "budget_min": 400},
         )
-        data = json.loads((tmp_path / "train_with_body.json").read_text())
+        data = json.loads((tmp_path / "test_with_body.json").read_text())
         assert data["tightest_tokeniser_counts"] == {"model/a": 1}
         assert data["drop_stats"]["dropped"] == 0
 
@@ -288,7 +298,7 @@ class TestRunMode:
             None,
             None,
         )
-        data = json.loads((tmp_path / "train_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
         assert "tightest_tokeniser_counts" not in data
         assert "drop_stats" not in data
 
@@ -350,7 +360,7 @@ class TestBuildParser:
         args = mod.build_parser().parse_args([])
         assert args.mode == "both"
         assert args.models == list(BASE_MODEL_IDS)
-        assert args.split == "train"
+        assert args.split == "test"
 
     def test_accepts_an_explicit_model_list(self):
         args = mod.build_parser().parse_args(["--models", "a/b", "c/d"])
@@ -358,7 +368,11 @@ class TestBuildParser:
 
     def test_rejects_an_unknown_split(self):
         with pytest.raises(SystemExit):
-            mod.build_parser().parse_args(["--split", "test"])
+            mod.build_parser().parse_args(["--split", "validation"])
+
+    def test_accepts_every_split_and_all(self):
+        for split in ("train", "dev", "test", "nq_val", "all"):
+            assert mod.build_parser().parse_args(["--split", split]).split == split
 
 
 class TestMain:
@@ -373,8 +387,7 @@ class TestMain:
             }
             for i in range(n)
         ]
-        records.append({**records[0], "id": "bad", "quality_flags": ["too_few_pairs"]})
-        (tmp_path / "parsed_train.json").write_text(json.dumps({"records": records}))
+        write_split(tmp_path, "test", records)
         return tmp_path
 
     def _patch(self, monkeypatch, _tmp_path):
@@ -413,29 +426,8 @@ class TestMain:
             ],
         )
         mod.main()
-        data = json.loads((tmp_path / "train_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
         assert data["n_records"] == 3
-
-    def test_excludes_quality_flagged_records(self, monkeypatch, tmp_path):
-        self._corpus(tmp_path)
-        self._patch(monkeypatch, tmp_path)
-        monkeypatch.setattr(
-            "sys.argv",
-            [
-                "prog",
-                "--mode",
-                "metadata_only",
-                "--models",
-                "m/a",
-                "--in-dir",
-                str(tmp_path),
-                "--out-dir",
-                str(tmp_path),
-            ],
-        )
-        mod.main()
-        data = json.loads((tmp_path / "train_metadata_only.json").read_text())
-        assert "bad" not in json.dumps(data["results"])
 
     def test_with_body_mode_reports_the_budget_distribution(
         self, monkeypatch, tmp_path, capsys
@@ -481,7 +473,7 @@ class TestMain:
             ],
         )
         mod.main()
-        data = json.loads((tmp_path / "train_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
         assert data["n_records"] == 2
 
     def test_smoke_test_mode_caps_records_and_batch(
@@ -506,7 +498,7 @@ class TestMain:
         )
         mod.main()
         assert "SMOKE TEST MODE" in capsys.readouterr().out
-        data = json.loads((tmp_path / "train_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
         assert data["n_records"] == mod.SMOKE_TEST_RECORDS
 
     def test_exits_when_no_tokenizer_loads(self, monkeypatch, tmp_path):
@@ -529,7 +521,7 @@ class TestMain:
             mod.main()
 
     def test_skips_a_mode_with_no_eligible_records(self, monkeypatch, tmp_path, capsys):
-        (tmp_path / "parsed_train.json").write_text(json.dumps({"records": []}))
+        write_split(tmp_path, "test", [])
         self._patch(monkeypatch, tmp_path)
         monkeypatch.setattr(
             "sys.argv",
@@ -547,3 +539,56 @@ class TestMain:
         )
         mod.main()
         assert "No eligible records" in capsys.readouterr().out
+
+
+class TestOutTag:
+    def test_names_the_file_without_a_tag(self, monkeypatch, tmp_path):
+        TestRunMode()._patch_loaders(monkeypatch)
+        mod.run_mode(
+            "metadata_only",
+            [record("1")],
+            ["model/a"],
+            {"model/a": PairTokenizer()},
+            TestRunMode()._args(tmp_path),
+            "cpu",
+            None,
+            None,
+        )
+        assert (tmp_path / "test_metadata_only.json").exists()
+
+    def test_a_tag_separates_parallel_runs(self, monkeypatch, tmp_path):
+        TestRunMode()._patch_loaders(monkeypatch)
+        mod.run_mode(
+            "metadata_only",
+            [record("1")],
+            ["model/a"],
+            {"model/a": PairTokenizer()},
+            TestRunMode()._args(tmp_path, out_tag="bge_base"),
+            "cpu",
+            None,
+            None,
+        )
+        assert (tmp_path / "test_metadata_only_bge_base.json").exists()
+
+
+class TestResolveModels:
+    def test_passes_an_identifier_through(self):
+        assert mod.resolve_models(["BAAI/bge-reranker-base"]) == [
+            "BAAI/bge-reranker-base"
+        ]
+
+    def test_resolves_a_slug(self):
+        assert mod.resolve_models(["bge_base"]) == ["BAAI/bge-reranker-base"]
+
+    def test_rejects_an_unknown_slug(self):
+        with pytest.raises(ValueError, match="unknown model"):
+            mod.resolve_models(["nope"])
+
+
+class TestListModels:
+    def test_prints_every_slug_and_stops(self, monkeypatch, tmp_path, capsys):
+        monkeypatch.setattr(
+            "sys.argv", ["prog", "--out-dir", str(tmp_path), "--list-models"]
+        )
+        mod.main()
+        assert capsys.readouterr().out.split() == [m.slug for m in BASE_MODELS]

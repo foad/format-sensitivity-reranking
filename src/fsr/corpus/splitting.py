@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import random
 from collections import defaultdict
 from dataclasses import dataclass
+from pathlib import Path
 
 from fsr.corpus.config import DEFAULT
+from fsr.corpus.layout import split_dir
 
 
 @dataclass
@@ -24,6 +27,32 @@ class Splits:
     dev: list[dict]
     test: list[dict]
     counts: dict[str, int]
+
+
+SPLIT_CHOICES = ("train", "dev", "test", "nq_val", "all")
+PARTITION = ("train", "dev", "test")
+
+
+def load_records(data_root: Path, split: str, verbose: bool = True) -> list[dict]:
+    """Return the records of one split.
+
+    Args:
+        data_root: The corpus directory.
+        split: A split name, or `all` for the train, dev and test partition
+            together. That is the whole quality-passed training corpus.
+        verbose: Whether to name each file as it is read.
+
+    Returns:
+        The records, in split order.
+    """
+    names = PARTITION if split == "all" else (split,)
+    records: list[dict] = []
+    for name in names:
+        path = split_dir(data_root) / f"{name}.json"
+        if verbose:
+            print(f"Loading {path}...")
+        records += json.loads(path.read_text())["records"]
+    return records
 
 
 def strict_gated(records: list[dict]) -> list[dict]:
