@@ -11,14 +11,10 @@ import argparse
 import json
 from pathlib import Path
 
-from fsr.corpus.cli import (
-    add_common_args,
-    record_stage,
-    report_written,
-    skip_existing,
-)
+from fsr.cli import add_common_args, report_written, skip_existing
 from fsr.corpus.config import DEFAULT
 from fsr.corpus.files import write_atomic
+from fsr.corpus.manifest import record_stage
 from fsr.corpus.nq import ScanStats, iter_matched
 
 

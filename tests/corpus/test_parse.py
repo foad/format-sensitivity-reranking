@@ -7,7 +7,7 @@ import json
 import pytest
 from scripts.corpus import parse as mod
 
-from fsr.corpus import cli
+from fsr.corpus.manifest import MANIFEST_NAME
 
 PARA = "A sufficiently long paragraph of real article prose goes here for tests."
 # Long enough to clear the 200-character min_infobox gate.
@@ -229,7 +229,7 @@ class TestMain:
         self._cache(tmp_path)
         self._argv(monkeypatch, tmp_path, "--min-pairs", "2")
         mod.main()
-        manifest = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
+        manifest = json.loads((tmp_path / MANIFEST_NAME).read_text())
         stage = manifest["stages"][0]
         assert stage["name"] == "parse_train"
         assert stage["outputs"][0]["path"] == "parsed_train.json"

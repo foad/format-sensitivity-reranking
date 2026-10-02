@@ -8,13 +8,16 @@ import json
 import pytest
 
 from fsr.corpus.config import DEFAULT
+from fsr.corpus.layout import SPLIT_SUBDIR
 from fsr.corpus.manifest import (
+    MANIFEST_NAME,
     SCHEMA_VERSION,
     UNKNOWN_VERSION,
     Manifest,
     Output,
     Stage,
     package_version,
+    record_stage,
 )
 
 CONFIG = DEFAULT.as_dict()
@@ -178,3 +181,64 @@ class TestLoadOrNew:
 class TestStage:
     def test_defaults_to_no_outputs(self):
         assert Stage(name="fetch").outputs == []
+
+
+class TestRecordStage:
+    def write(self, tmp_path, name="parsed_train.json"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('{"records": []}')
+        return path
+
+    def test_writes_a_manifest_holding_the_stage(self, tmp_path):
+        out = self.write(tmp_path)
+        manifest_path = record_stage(tmp_path, "parse", {out: 12}, {})
+        assert manifest_path == tmp_path / MANIFEST_NAME
+        data = json.loads(manifest_path.read_text())
+        assert [s["name"] for s in data["stages"]] == ["parse"]
+        assert data["stages"][0]["outputs"][0]["records"] == 12
+
+    def test_paths_are_relative_to_the_data_root(self, tmp_path):
+        out = self.write(tmp_path / SPLIT_SUBDIR, "train.json")
+        record_stage(tmp_path, "split", {out: 3}, {})
+        data = json.loads((tmp_path / MANIFEST_NAME).read_text())
+        assert data["stages"][0]["outputs"][0]["path"] == f"{SPLIT_SUBDIR}/train.json"
+
+    def test_a_new_manifest_starts_from_the_published_config(self, tmp_path):
+        out = self.write(tmp_path)
+        record_stage(tmp_path, "parse", {out: None}, {})
+        data = json.loads((tmp_path / MANIFEST_NAME).read_text())
+        assert data["config"] == DEFAULT.as_dict()
+
+    def test_the_stage_config_replaces_published_values(self, tmp_path):
+        out = self.write(tmp_path)
+        record_stage(tmp_path, "split", {out: None}, {"split_seed": 7})
+        data = json.loads((tmp_path / MANIFEST_NAME).read_text())
+        assert data["config"]["split_seed"] == 7
+        assert data["config"]["cache_k"] == DEFAULT.cache_k
+
+    def test_a_second_stage_is_appended(self, tmp_path):
+        out = self.write(tmp_path)
+        record_stage(tmp_path, "parse", {out: None}, {})
+        record_stage(tmp_path, "split", {out: None}, {})
+        data = json.loads((tmp_path / MANIFEST_NAME).read_text())
+        assert [s["name"] for s in data["stages"]] == ["parse", "split"]
+
+    def test_rerunning_a_stage_replaces_it(self, tmp_path):
+        out = self.write(tmp_path)
+        record_stage(tmp_path, "parse", {out: 1}, {})
+        record_stage(tmp_path, "parse", {out: 2}, {})
+        data = json.loads((tmp_path / MANIFEST_NAME).read_text())
+        assert len(data["stages"]) == 1
+        assert data["stages"][0]["outputs"][0]["records"] == 2
+
+    def test_records_a_file_holding_no_records(self, tmp_path):
+        out = self.write(tmp_path, "meta.json")
+        record_stage(tmp_path, "split", {out: None}, {})
+        data = json.loads((tmp_path / MANIFEST_NAME).read_text())
+        assert data["stages"][0]["outputs"][0]["records"] is None
+
+    def test_rejects_an_output_outside_the_data_root(self, tmp_path):
+        out = self.write(tmp_path.parent, "stray.json")
+        with pytest.raises(ValueError):
+            record_stage(tmp_path, "parse", {out: None}, {})

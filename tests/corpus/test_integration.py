@@ -15,8 +15,9 @@ from scripts.corpus import split as split_script
 from scripts.corpus import validate as validate_script
 
 from fsr.corpus import nq
-from fsr.corpus.cli import MANIFEST_NAME, SPLIT_SUBDIR
 from fsr.corpus.files import digest_file
+from fsr.corpus.layout import SPLIT_SUBDIR
+from fsr.corpus.manifest import MANIFEST_NAME
 from fsr.corpus.run_record import RUN_NAME
 
 MODULES = {

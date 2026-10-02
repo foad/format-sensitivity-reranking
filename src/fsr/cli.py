@@ -1,21 +1,13 @@
-"""The file layout and the command-line behaviour shared by the build stages."""
+"""The command-line behaviour shared by the pipeline scripts."""
 
 from __future__ import annotations
 
 import argparse
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Sequence
 from itertools import islice
 from pathlib import Path
 
-from fsr.corpus.config import DEFAULT
-from fsr.corpus.manifest import Manifest, Output
-
 DEFAULT_DATA_ROOT = Path("data") / "nq"
-SPLIT_SUBDIR = "splits"
-MANIFEST_NAME = "manifest.json"
-META_NAME = "meta.json"
-NEGATIVES_NAME = "bm25_negatives.json"
-SPLIT_NAMES = ("train", "dev", "test", "nq_val")
 
 
 def add_data_root_arg(ap: argparse.ArgumentParser) -> None:
@@ -29,23 +21,17 @@ def add_data_root_arg(ap: argparse.ArgumentParser) -> None:
 
 
 def add_common_args(ap: argparse.ArgumentParser, limit_help: str) -> None:
-    """Add the arguments that every build stage accepts.
+    """Add the arguments that every stage accepts.
 
     Args:
         ap: The parser to add to.
-        limit_help: The help text for --limit, which counts different things
-            in a stage that streams and a stage that reads a file.
+        limit_help: The help text for --limit.
     """
     add_data_root_arg(ap)
     ap.add_argument("--limit", type=int, default=0, help=limit_help)
     ap.add_argument(
         "--force", action="store_true", help="Rebuild outputs that already exist"
     )
-
-
-def split_dir(data_root: Path) -> Path:
-    """Return the directory that holds the split files."""
-    return data_root / SPLIT_SUBDIR
 
 
 def take[T](records: Iterable[T], limit: int) -> list[T]:
@@ -93,30 +79,3 @@ def report_written(path: Path, records: int | None = None) -> None:
     if records is not None:
         detail = f"{records:,} records, {detail}"
     print(f"Wrote {path}  ({detail})")
-
-
-def record_stage(
-    data_root: Path,
-    name: str,
-    outputs: Mapping[Path, int | None],
-    config: Mapping[str, object],
-) -> Path:
-    """Add a completed stage to the build manifest and save it.
-
-    Args:
-        data_root: Manifest directory, with outputs recorded relative to it.
-        name: The stage name. An earlier stage of this name is replaced.
-        outputs: The records each written file holds, or None.
-        config: The parameter values the stage ran with.
-
-    Returns:
-        The manifest file.
-    """
-    path = data_root / MANIFEST_NAME
-    manifest = Manifest.load_or_new(path, DEFAULT.as_dict())
-    manifest.config.update(config)
-    manifest.record(
-        name, [Output.describe(p, data_root, n) for p, n in outputs.items()]
-    )
-    manifest.save(path)
-    return path

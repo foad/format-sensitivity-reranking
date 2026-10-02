@@ -6,15 +6,9 @@ import argparse
 import json
 from pathlib import Path
 
-from fsr.corpus.cli import (
-    MANIFEST_NAME,
-    META_NAME,
-    NEGATIVES_NAME,
-    SPLIT_NAMES,
-    add_data_root_arg,
-    split_dir,
-)
-from fsr.corpus.manifest import Manifest
+from fsr.cli import add_data_root_arg
+from fsr.corpus.layout import META_NAME, NEGATIVES_NAME, SPLIT_NAMES, split_dir
+from fsr.corpus.manifest import MANIFEST_NAME, Manifest
 from fsr.corpus.splitting import strict_gated
 from fsr.corpus.validate import (
     check_ids_unique,

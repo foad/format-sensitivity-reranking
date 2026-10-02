@@ -7,8 +7,8 @@ import json
 import pytest
 from scripts.corpus import negatives as mod
 
-from fsr.corpus import cli
-from fsr.corpus.cli import split_dir
+from fsr.corpus.layout import NEGATIVES_NAME, SPLIT_SUBDIR, split_dir
+from fsr.corpus.manifest import MANIFEST_NAME
 
 SPLIT_SIZES = {"train": 4, "dev": 2, "test": 2, "nq_val": 2}
 
@@ -79,7 +79,7 @@ class TestMain:
             ["prog", "--data-root", str(data_root), "--cache-k", "3", *extra],
         )
         mod.main()
-        return split_dir(data_root) / cli.NEGATIVES_NAME
+        return split_dir(data_root) / NEGATIVES_NAME
 
     def test_writes_the_negatives_cache(self, monkeypatch, tmp_path):
         data = json.loads(self._run(monkeypatch, tmp_path).read_text())
@@ -121,10 +121,10 @@ class TestMain:
 
     def test_records_the_stage_in_the_manifest(self, monkeypatch, tmp_path):
         self._run(monkeypatch, tmp_path, "--seed", "7")
-        manifest = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
+        manifest = json.loads((tmp_path / MANIFEST_NAME).read_text())
         stage = manifest["stages"][0]
         assert stage["name"] == "negatives"
-        assert stage["outputs"][0]["path"] == f"{cli.SPLIT_SUBDIR}/{cli.NEGATIVES_NAME}"
+        assert stage["outputs"][0]["path"] == f"{SPLIT_SUBDIR}/{NEGATIVES_NAME}"
         assert stage["outputs"][0]["records"] == sum(SPLIT_SIZES.values())
         assert manifest["config"]["negatives_seed"] == 7
         assert manifest["config"]["cache_k"] == 3

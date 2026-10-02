@@ -7,8 +7,8 @@ import json
 import pytest
 from scripts.corpus import validate as mod
 
-from fsr.corpus import cli
-from fsr.corpus.cli import split_dir
+from fsr.corpus.layout import META_NAME, NEGATIVES_NAME, split_dir
+from fsr.corpus.manifest import record_stage
 
 N_CORPUS = 6
 SPLIT_SIZES = {"train": 2, "dev": 1, "test": 1, "nq_val": 1}
@@ -37,7 +37,7 @@ def build_corpus(tmp_path, cache_k=2):
         queries += chunk
         (out_dir / f"{name}.json").write_text(json.dumps({"records": chunk}))
 
-    (out_dir / cli.META_NAME).write_text(
+    (out_dir / META_NAME).write_text(
         json.dumps(
             {
                 "n_records_train": SPLIT_SIZES["train"],
@@ -52,15 +52,15 @@ def build_corpus(tmp_path, cache_k=2):
         q["id"]: [r["id"] for r in corpus if r["id"] != q["id"]][:cache_k]
         for q in queries
     }
-    (out_dir / cli.NEGATIVES_NAME).write_text(
+    (out_dir / NEGATIVES_NAME).write_text(
         json.dumps({"cache_k": cache_k, "negatives": negatives})
     )
 
     outputs = {out_dir / f"{name}.json": None for name in SPLIT_SIZES}
     outputs[tmp_path / "parsed_train.json"] = None
-    outputs[out_dir / cli.META_NAME] = None
-    outputs[out_dir / cli.NEGATIVES_NAME] = None
-    cli.record_stage(tmp_path, "build", outputs, {})
+    outputs[out_dir / META_NAME] = None
+    outputs[out_dir / NEGATIVES_NAME] = None
+    record_stage(tmp_path, "build", outputs, {})
     return tmp_path
 
 
@@ -116,7 +116,7 @@ class TestCollectProblems:
 
     def test_reports_a_changed_file(self, tmp_path):
         data_root = build_corpus(tmp_path)
-        path = split_dir(data_root) / cli.META_NAME
+        path = split_dir(data_root) / META_NAME
         path.write_text(json.dumps({**json.loads(path.read_text()), "extra": 1}))
         problems = mod.collect_problems(data_root)
         assert problems == ["build: splits/meta.json changed after the build"]

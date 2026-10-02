@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from fsr.corpus.cli import add_data_root_arg
+from fsr.cli import add_data_root_arg
 from fsr.corpus.config import DEFAULT
 from fsr.corpus.run_record import RUN_NAME, RunRecord, now
 

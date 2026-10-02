@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
+from fsr.corpus.config import DEFAULT
 from fsr.corpus.files import digest_file, write_atomic
 
 SCHEMA_VERSION = 1
+MANIFEST_NAME = "manifest.json"
 UNKNOWN_VERSION = "unknown"
 
 
@@ -172,3 +175,30 @@ class Manifest:
             The manifest.
         """
         return cls.load(path) if path.exists() else cls(config=config)
+
+
+def record_stage(
+    data_root: Path,
+    name: str,
+    outputs: Mapping[Path, int | None],
+    config: Mapping[str, object],
+) -> Path:
+    """Add a completed stage to the build manifest and save it.
+
+    Args:
+        data_root: Manifest directory, with outputs recorded relative to it.
+        name: The stage name. An earlier stage of this name is replaced.
+        outputs: The records each written file holds, or None.
+        config: The parameter values the stage ran with.
+
+    Returns:
+        The manifest file.
+    """
+    path = data_root / MANIFEST_NAME
+    manifest = Manifest.load_or_new(path, DEFAULT.as_dict())
+    manifest.config.update(config)
+    manifest.record(
+        name, [Output.describe(p, data_root, n) for p, n in outputs.items()]
+    )
+    manifest.save(path)
+    return path

@@ -12,18 +12,11 @@ import argparse
 import json
 from pathlib import Path
 
-from fsr.corpus.cli import (
-    NEGATIVES_NAME,
-    SPLIT_NAMES,
-    add_common_args,
-    record_stage,
-    report_written,
-    skip_existing,
-    split_dir,
-    take,
-)
+from fsr.cli import add_common_args, report_written, skip_existing, take
 from fsr.corpus.config import DEFAULT
 from fsr.corpus.files import write_atomic
+from fsr.corpus.layout import NEGATIVES_NAME, SPLIT_NAMES, split_dir
+from fsr.corpus.manifest import record_stage
 from fsr.corpus.negatives import build_negatives
 from fsr.corpus.splitting import strict_gated
 

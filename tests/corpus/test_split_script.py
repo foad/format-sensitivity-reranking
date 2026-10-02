@@ -7,8 +7,8 @@ import json
 import pytest
 from scripts.corpus import split as mod
 
-from fsr.corpus import cli
-from fsr.corpus.cli import split_dir
+from fsr.corpus.layout import SPLIT_SUBDIR, split_dir
+from fsr.corpus.manifest import MANIFEST_NAME
 
 
 def parsed_file(path, n_titles=100, n_flagged=0, report_passed=True):
@@ -84,21 +84,21 @@ class TestMain:
 
     def test_records_the_stage_in_the_manifest(self, monkeypatch, tmp_path):
         self._run(monkeypatch, tmp_path, "--frac-train", "0.5", "--frac-dev", "0.25")
-        manifest = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
+        manifest = json.loads((tmp_path / MANIFEST_NAME).read_text())
         stage = manifest["stages"][0]
         assert stage["name"] == "split"
         assert len(stage["outputs"]) == 5
         assert {o["path"] for o in stage["outputs"]} == {
-            f"{cli.SPLIT_SUBDIR}/{name}.json"
+            f"{SPLIT_SUBDIR}/{name}.json"
             for name in ("train", "dev", "test", "nq_val", "meta")
         }
         assert manifest["config"]["frac_test"] == 0.25
 
     def test_the_meta_file_records_no_count(self, monkeypatch, tmp_path):
         self._run(monkeypatch, tmp_path)
-        manifest = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
+        manifest = json.loads((tmp_path / MANIFEST_NAME).read_text())
         outputs = {o["path"]: o["records"] for o in manifest["stages"][0]["outputs"]}
-        assert outputs[f"{cli.SPLIT_SUBDIR}/meta.json"] is None
+        assert outputs[f"{SPLIT_SUBDIR}/meta.json"] is None
 
     def test_writes_every_split_file(self, monkeypatch, tmp_path):
         out = self._run(monkeypatch, tmp_path)

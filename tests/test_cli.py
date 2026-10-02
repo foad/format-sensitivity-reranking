@@ -1,15 +1,11 @@
-"""Tests for fsr.corpus.cli."""
+"""Tests for fsr.cli."""
 
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
-import pytest
-
-from fsr.corpus import cli
-from fsr.corpus.config import DEFAULT
+from fsr import cli
 
 
 def parser():
@@ -33,11 +29,6 @@ class TestAddCommonArgs:
 
     def test_limit_help_is_the_caller_text(self):
         assert "Cap on records read" in parser().format_help()
-
-
-class TestSplitDir:
-    def test_sits_under_the_data_root(self):
-        assert cli.split_dir(Path("data/nq")) == Path("data/nq") / cli.SPLIT_SUBDIR
 
 
 class TestTake:
@@ -121,66 +112,3 @@ class TestReportWritten:
         out.write_text("{}")
         cli.report_written(out, 8188)
         assert "8,188 records" in capsys.readouterr().out
-
-
-class TestRecordStage:
-    def write(self, tmp_path, name="parsed_train.json"):
-        path = tmp_path / name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text('{"records": []}')
-        return path
-
-    def test_writes_a_manifest_holding_the_stage(self, tmp_path):
-        out = self.write(tmp_path)
-        manifest_path = cli.record_stage(tmp_path, "parse", {out: 12}, {})
-        assert manifest_path == tmp_path / cli.MANIFEST_NAME
-        data = json.loads(manifest_path.read_text())
-        assert [s["name"] for s in data["stages"]] == ["parse"]
-        assert data["stages"][0]["outputs"][0]["records"] == 12
-
-    def test_paths_are_relative_to_the_data_root(self, tmp_path):
-        out = self.write(tmp_path / cli.SPLIT_SUBDIR, "train.json")
-        cli.record_stage(tmp_path, "split", {out: 3}, {})
-        data = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
-        assert (
-            data["stages"][0]["outputs"][0]["path"] == f"{cli.SPLIT_SUBDIR}/train.json"
-        )
-
-    def test_a_new_manifest_starts_from_the_published_config(self, tmp_path):
-        out = self.write(tmp_path)
-        cli.record_stage(tmp_path, "parse", {out: None}, {})
-        data = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
-        assert data["config"] == DEFAULT.as_dict()
-
-    def test_the_stage_config_replaces_published_values(self, tmp_path):
-        out = self.write(tmp_path)
-        cli.record_stage(tmp_path, "split", {out: None}, {"split_seed": 7})
-        data = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
-        assert data["config"]["split_seed"] == 7
-        assert data["config"]["cache_k"] == DEFAULT.cache_k
-
-    def test_a_second_stage_is_appended(self, tmp_path):
-        out = self.write(tmp_path)
-        cli.record_stage(tmp_path, "parse", {out: None}, {})
-        cli.record_stage(tmp_path, "split", {out: None}, {})
-        data = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
-        assert [s["name"] for s in data["stages"]] == ["parse", "split"]
-
-    def test_rerunning_a_stage_replaces_it(self, tmp_path):
-        out = self.write(tmp_path)
-        cli.record_stage(tmp_path, "parse", {out: 1}, {})
-        cli.record_stage(tmp_path, "parse", {out: 2}, {})
-        data = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
-        assert len(data["stages"]) == 1
-        assert data["stages"][0]["outputs"][0]["records"] == 2
-
-    def test_records_a_file_holding_no_records(self, tmp_path):
-        out = self.write(tmp_path, "meta.json")
-        cli.record_stage(tmp_path, "split", {out: None}, {})
-        data = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
-        assert data["stages"][0]["outputs"][0]["records"] is None
-
-    def test_rejects_an_output_outside_the_data_root(self, tmp_path):
-        out = self.write(tmp_path.parent, "stray.json")
-        with pytest.raises(ValueError):
-            cli.record_stage(tmp_path, "parse", {out: None}, {})

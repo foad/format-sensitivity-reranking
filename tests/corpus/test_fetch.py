@@ -6,8 +6,9 @@ import json
 
 from scripts.corpus import fetch as mod
 
-from fsr.corpus import cli, nq
+from fsr.corpus import nq
 from fsr.corpus.config import DEFAULT
+from fsr.corpus.manifest import MANIFEST_NAME
 
 OPEN = '<table class="infobox">'
 CLOSE = "</table>"
@@ -181,7 +182,7 @@ class TestMain:
             ["prog", "--splits", "train", "--data-root", str(tmp_path)],
         )
         mod.main()
-        manifest = json.loads((tmp_path / cli.MANIFEST_NAME).read_text())
+        manifest = json.loads((tmp_path / MANIFEST_NAME).read_text())
         stage = manifest["stages"][0]
         assert stage["name"] == "fetch_train"
         assert stage["outputs"][0]["path"] == "matched_train.json"
@@ -194,4 +195,4 @@ class TestMain:
             "sys.argv", ["prog", "--splits", "train", "--data-root", str(tmp_path)]
         )
         mod.main()
-        assert not (tmp_path / cli.MANIFEST_NAME).exists()
+        assert not (tmp_path / MANIFEST_NAME).exists()
