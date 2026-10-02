@@ -9,6 +9,8 @@ import torch
 from scripts.h1 import nq_h1_measurement as mod
 from tests.fakes import LogitModel, PairTokenizer
 
+from fsr.models.registry import BASE_MODEL_IDS
+
 FORMAT_COUNT = 5
 
 
@@ -347,7 +349,7 @@ class TestBuildParser:
     def test_defaults_to_both_modes_and_the_full_roster(self):
         args = mod.build_parser().parse_args([])
         assert args.mode == "both"
-        assert args.models == mod.DEFAULT_MODELS
+        assert args.models == list(BASE_MODEL_IDS)
         assert args.split == "train"
 
     def test_accepts_an_explicit_model_list(self):

@@ -5,7 +5,7 @@ Companion code and artefacts for the MSc dissertation *Evaluating and Mitigating
 The study runs in two phases:
 
 - **H1 (characterisation).** Does a pointwise cross-encoder reranker score the same passage differently when its metadata is serialised as YAML, JSON, TOML, inline key-value, or Markdown? Measured across six models on a refined Natural Questions corpus.
-- **H2 (mitigation).** Can a LoRA adapter trained with a composite ranking-plus-invariance objective (`L_total = L_rank + lambda*L_inv`) reduce that sensitivity without harming ranking quality? Evaluated on six model variants with a five-fold hold-one-out design over the five formats, under a fixed training budget.
+- **H2 (mitigation).** Can a LoRA adapter trained with a composite ranking-plus-invariance objective (`L_total = L_rank + lambda*L_inv`) reduce that sensitivity without harming ranking quality? Evaluated on seven model variants with a five-fold hold-one-out design over the five formats, under a fixed training budget.
 
 ## Key results
 
@@ -52,7 +52,7 @@ H1 scores six models:
  - [`mixedbread-ai/mxbai-rerank-base-v1`](https://huggingface.co/mixedbread-ai/mxbai-rerank-base-v1)
  - [`jinaai/jina-reranker-v2-base-multilingual`](https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual)
 
-H2 fine-tunes six variants: `MiniLM-L6`, `MiniLM-L12`, `bge-reranker-base`, `mxbai`, `mxbai` with a jina-matched tanh classifier head, and `jina`.
+H2 fine-tunes every H1 model, plus `mxbai` with a jina-matched tanh classifier head.
 
 ## Licensing
 

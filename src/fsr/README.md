@@ -12,5 +12,5 @@ Library code for the format-sensitivity study.
 | `within_query.py` | Answer-axis statistics: conditional inconsistency and within-query rank disturbance over one query's candidate list. |
 | `answer_location.py` | Classification of a corpus record by where its short answer appears. |
 | `corpus/` | Infobox location, Wikipedia text extraction, the build parameters, the consistency checks, and the build and run records. |
-| `models/` | Model loading, and vendor-specific architecture patches for jina and mxbai. |
+| `models/` | The model roster, model loading, and vendor-specific architecture patches for jina and mxbai. |
 | `training/` | Batch construction and the composite ranking-plus-invariance objective. |

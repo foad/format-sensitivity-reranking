@@ -28,6 +28,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from fsr.formats import FORMATS
 from fsr.metrics import format_sensitivity_summary
+from fsr.models.registry import BASE_MODEL_IDS
 from fsr.passages import MIN_BODY_TOKENS, prepare_records_with_body
 from fsr.scoring import score_batch
 
@@ -35,15 +36,6 @@ DEFAULT_IN_DIR = Path("data") / "nq"
 DEFAULT_OUT_DIR = Path("data") / "nq" / "h1_measurement"
 SMOKE_TEST_RECORDS = 10
 SMOKE_TEST_BATCH = 4
-
-DEFAULT_MODELS = [
-    "cross-encoder/ms-marco-MiniLM-L6-v2",
-    "cross-encoder/ms-marco-MiniLM-L12-v2",
-    "BAAI/bge-reranker-base",
-    "BAAI/bge-reranker-v2-m3",
-    "mixedbread-ai/mxbai-rerank-base-v1",
-    "jinaai/jina-reranker-v2-base-multilingual",
-]
 
 
 def try_load_tokenizer(model_name: str, trust_remote_code: bool) -> Any | None:
@@ -300,7 +292,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument(
         "--mode", choices=["metadata_only", "with_body", "both"], default="both"
     )
-    ap.add_argument("--models", nargs="+", default=DEFAULT_MODELS)
+    ap.add_argument("--models", nargs="+", default=list(BASE_MODEL_IDS))
     ap.add_argument("--batch-size", type=int, default=16)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--in-dir", type=Path, default=DEFAULT_IN_DIR)
