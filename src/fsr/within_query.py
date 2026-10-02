@@ -7,7 +7,7 @@ and the candidate set held fixed, so format is the only variable.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from itertools import combinations
+from itertools import combinations, pairwise
 from typing import Any
 
 import numpy as np
@@ -15,8 +15,11 @@ from scipy import stats
 
 from fsr.formats import FORMAT_NAMES
 from fsr.metrics import reciprocal_ranks
+from fsr.models.registry import label_of
 
 SCALE_EPSILON = 1e-12
+DEFAULT_BOOTSTRAP = 10_000
+DEFAULT_CI = 0.95
 MatricesPerFormat = Mapping[str, Any]
 
 
@@ -279,3 +282,83 @@ def conditional_inconsistency_from_matrices(
 ) -> dict[str, Any]:
     """Run conditional_inconsistency on candidate score matrices."""
     return conditional_inconsistency(gold_leads(matrices_per_fmt, gold_col), formats)
+
+
+def bootstrap_tables(
+    results: dict[str, Any],
+    formats: list[str],
+    n_boot: int = DEFAULT_BOOTSTRAP,
+    seed: int = 0,
+    ci: float = DEFAULT_CI,
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[str], np.ndarray]:
+    """Bootstrap the per-model intervals and the adjacent-model differences.
+
+    Args:
+        results: The statistics of each model.
+        formats: The formats measured.
+        n_boot: The number of resamples.
+        seed: The seed for the resampling.
+        ci: The interval width.
+
+    Returns:
+        The statistics of each model.
+    """
+    models = list(results)
+    lo_pct, hi_pct = (1 - ci) / 2 * 100, 100 - (1 - ci) / 2 * 100
+
+    fd_rows, flip_rows, tau_rows, labels = [], [], [], {}
+    for model, entry in results.items():
+        ranks = {f: np.asarray(entry["reciprocal_ranks"][f]) for f in formats}
+        leads = np.stack([ranks[f] == 1.0 for f in formats])
+        n_lead = leads.sum(axis=0)
+        fd_rows.append((n_lead > 0) & (n_lead < len(formats)))
+
+        pair = entry["within_query"]["summary"]["max_flip_pair"]
+        labels[model] = pair
+        per_query = entry["per_query"][pair]
+        flip_rows.append(np.asarray(per_query["flip_rate_pct"], dtype=float))
+        tau_rows.append(np.asarray(per_query["kendall_tau"], dtype=float))
+
+    fd_mat = np.stack(fd_rows).astype(float)
+    flip_mat = np.stack(flip_rows)
+    tau_mat = np.stack(tau_rows)
+
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, fd_mat.shape[1], size=(n_boot, fd_mat.shape[1]))
+    fd_boot = 100.0 * fd_mat[:, idx].mean(axis=2)
+    flip_boot = np.nanmean(flip_mat[:, idx], axis=2)
+    tau_boot = np.nanmean(tau_mat[:, idx], axis=2)
+
+    def interval(boot: np.ndarray, i: int) -> tuple[float, float]:
+        return float(np.percentile(boot[i], lo_pct)), float(
+            np.percentile(boot[i], hi_pct)
+        )
+
+    per_model = {
+        model: {
+            "worst_pair": labels[model],
+            "format_dependent_pct": 100.0 * fd_mat[i].mean(),
+            "format_dependent_ci": interval(fd_boot, i),
+            "flip_rate_pct": float(np.nanmean(flip_mat[i])),
+            "flip_rate_ci": interval(flip_boot, i),
+            "kendall_tau": float(np.nanmean(tau_mat[i])),
+            "kendall_tau_ci": interval(tau_boot, i),
+        }
+        for i, model in enumerate(models)
+    }
+
+    order = np.argsort([-per_model[m]["format_dependent_pct"] for m in models])
+    diffs = []
+    for a, b in pairwise(order):
+        delta = fd_boot[a] - fd_boot[b]
+        lo = float(np.percentile(delta, lo_pct))
+        hi = float(np.percentile(delta, hi_pct))
+        diffs.append(
+            {
+                "pair": f"{label_of(models[a])} - {label_of(models[b])}",
+                "delta_pp": float(fd_mat[a].mean() * 100 - fd_mat[b].mean() * 100),
+                "ci": (lo, hi),
+                "separated": bool(lo > 0 or hi < 0),
+            }
+        )
+    return per_model, diffs, models, order

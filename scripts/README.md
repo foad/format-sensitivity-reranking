@@ -15,7 +15,6 @@ See [`../docs/reproduction.md`](../docs/reproduction.md) for exact commands and 
 ## `h1/`
  - `nq_h1_measurement.py --split train`: score six models across two modes (with_body, metadata_only).
  - `within_query.py`: within-query ranking disturbance over the BM25 candidate lists.
- - `h1_within_query_report.py`: the reported within-query figures.
 
 ## `h2/`
  - `sweep.sh`: Phase-1 lambda selection, then Phase-2 five-fold hold-one-out, parameterised by model.

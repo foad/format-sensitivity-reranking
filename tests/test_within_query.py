@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from fsr.within_query import (
+    bootstrap_tables,
     conditional_inconsistency,
     conditional_inconsistency_from_matrices,
     gold_leads,
@@ -207,3 +208,90 @@ class TestScoreScaleDiagnostic:
             score_scale_diagnostic(far, formats=PAIR)["ratio"]
             > score_scale_diagnostic(near, formats=PAIR)["ratio"]
         )
+
+
+BOOTSTRAP_FORMATS = ["yaml", "json", "toml"]
+BOOTSTRAP_MODELS = [
+    "cross-encoder/ms-marco-MiniLM-L6-v2",
+    "BAAI/bge-reranker-base",
+]
+
+
+def bootstrap_entry(seed=0, n_queries=8):
+    rng = np.random.default_rng(seed)
+    pair = "yaml vs json"
+    return {
+        "reciprocal_ranks": {
+            f: rng.choice([1.0, 0.5, 0.25], size=n_queries).tolist()
+            for f in BOOTSTRAP_FORMATS
+        },
+        "within_query": {"summary": {"max_flip_pair": pair}},
+        "per_query": {
+            pair: {
+                "flip_rate_pct": rng.uniform(0, 30, size=n_queries).tolist(),
+                "kendall_tau": rng.uniform(0.5, 1.0, size=n_queries).tolist(),
+            }
+        },
+    }
+
+
+class TestBootstrapTables:
+    def _tables(self, n_boot=200):
+        results = {m: bootstrap_entry(i) for i, m in enumerate(BOOTSTRAP_MODELS)}
+        return bootstrap_tables(results, BOOTSTRAP_FORMATS, n_boot=n_boot, seed=1)
+
+    def test_reports_every_model(self):
+        per_model, _, models, _ = self._tables()
+        assert set(per_model) == set(BOOTSTRAP_MODELS)
+        assert models == BOOTSTRAP_MODELS
+
+    def test_reports_an_interval_for_each_statistic(self):
+        per_model, _, _, _ = self._tables()
+        value = per_model[BOOTSTRAP_MODELS[0]]
+        for key in ("format_dependent_ci", "flip_rate_ci", "kendall_tau_ci"):
+            low, high = value[key]
+            assert low <= high
+
+    def test_orders_by_format_dependent_share(self):
+        per_model, _, models, order = self._tables()
+        shares = [per_model[models[i]]["format_dependent_pct"] for i in order]
+        assert shares == sorted(shares, reverse=True)
+
+    def test_reports_adjacent_differences(self):
+        _, diffs, _, _ = self._tables()
+        assert len(diffs) == len(BOOTSTRAP_MODELS) - 1
+        assert "separated" in diffs[0]
+
+    def test_labels_the_compared_models(self):
+        _, diffs, _, _ = self._tables()
+        assert diffs[0]["pair"] in {"MiniLM-L6 - bge-base", "bge-base - MiniLM-L6"}
+
+    def test_separated_follows_the_interval(self):
+        _, diffs, _, _ = self._tables()
+        low, high = diffs[0]["ci"]
+        assert diffs[0]["separated"] == bool(low > 0 or high < 0)
+
+    def test_names_the_worst_pair(self):
+        per_model, _, _, _ = self._tables()
+        assert per_model[BOOTSTRAP_MODELS[0]]["worst_pair"] == "yaml vs json"
+
+    def test_is_deterministic_for_a_seed(self):
+        first, diffs, models, order = self._tables()
+        again, diffs_again, models_again, order_again = self._tables()
+        assert first == again
+        assert diffs == diffs_again
+        assert models == models_again
+        assert order.tolist() == order_again.tolist()
+
+    def test_a_wider_interval_is_not_narrower(self):
+        results = {m: bootstrap_entry(i) for i, m in enumerate(BOOTSTRAP_MODELS)}
+        narrow, _, _, _ = bootstrap_tables(
+            results, BOOTSTRAP_FORMATS, n_boot=200, seed=1, ci=0.50
+        )
+        wide, _, _, _ = bootstrap_tables(
+            results, BOOTSTRAP_FORMATS, n_boot=200, seed=1, ci=0.99
+        )
+        model = BOOTSTRAP_MODELS[0]
+        narrow_low, narrow_high = narrow[model]["format_dependent_ci"]
+        wide_low, wide_high = wide[model]["format_dependent_ci"]
+        assert wide_high - wide_low >= narrow_high - narrow_low
