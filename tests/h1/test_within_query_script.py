@@ -11,7 +11,7 @@ from tests.fakes import LogitModel, PairTokenizer, WordTokenizer
 
 from fsr.corpus.layout import split_dir
 from fsr.formats import FORMAT_NAMES
-from fsr.models.registry import BASE_MODEL_IDS
+from fsr.models.registry import BASE_MODEL_IDS, BASE_MODELS
 
 SENTENCE = "The bridge opened in 1946 and carries the road across the river. "
 TOKENIZERS = {"word": WordTokenizer()}
@@ -419,3 +419,62 @@ class TestMain:
         monkeypatch.setattr(mod.torch.cuda, "empty_cache", lambda: freed.append(1))
         run_main(monkeypatch, tmp_path)
         assert freed == []
+
+
+class TestResolveModels:
+    def test_passes_an_identifier_through(self):
+        assert mod.resolve_models(["BAAI/bge-reranker-base"]) == [
+            "BAAI/bge-reranker-base"
+        ]
+
+    def test_resolves_a_slug(self):
+        assert mod.resolve_models(["bge_base"]) == ["BAAI/bge-reranker-base"]
+
+    def test_keeps_the_order(self):
+        assert mod.resolve_models(["jina_v2", "minilm_l6"]) == [
+            "jinaai/jina-reranker-v2-base-multilingual",
+            "cross-encoder/ms-marco-MiniLM-L6-v2",
+        ]
+
+    def test_rejects_an_unknown_slug(self):
+        with pytest.raises(ValueError, match="unknown model"):
+            mod.resolve_models(["nope"])
+
+
+class TestListModels:
+    def test_prints_every_slug_and_stops(self, monkeypatch, tmp_path, capsys):
+        monkeypatch.setattr(
+            "sys.argv", ["prog", "--data-root", str(tmp_path), "--list-models"]
+        )
+        mod.main()
+        printed = capsys.readouterr().out.split()
+        assert printed == [m.slug for m in BASE_MODELS]
+        assert not (tmp_path / mod.OUT_SUBDIR).exists()
+
+
+class TestPrepareOnly:
+    def test_caches_the_candidates_and_stops(self, monkeypatch, tmp_path, capsys):
+        root = corpus_tree(tmp_path)
+        monkeypatch.setattr(mod, "load_tokenizer", lambda _name: DualTokenizer())
+        monkeypatch.setattr(
+            mod, "load_model", lambda *_a, **_k: pytest.fail("must not score")
+        )
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "prog",
+                "--data-root",
+                str(root),
+                "--models",
+                "bge_base",
+                "--budget-models",
+                "bge_base",
+                "--negatives",
+                "3",
+                "--prepare-only",
+            ],
+        )
+        mod.main()
+        assert (root / mod.OUT_SUBDIR / "test_candidates.json").exists()
+        assert not (root / mod.OUT_SUBDIR / "test_within_query.json").exists()
+        assert "stopping before scoring" in capsys.readouterr().out

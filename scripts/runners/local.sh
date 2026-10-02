@@ -2,12 +2,14 @@
 # Launch a measurement locally.
 #
 # Usage:
-#   fsr_run <log> <script> [args...]
+#   GPU=<n> fsr_run <log> <script> [args...]
+#
+# GPU specifies the device, falling back to CUDA_VISIBLE_DEVICES, then 0.
 
 fsr_run() {
     local LOG="$1"
     shift
-    local DEVICE="${CUDA_VISIBLE_DEVICES:-0}"
+    local DEVICE="${GPU:-${CUDA_VISIBLE_DEVICES:-0}}"
     echo "[runner] local, CUDA device ${DEVICE}, log ${LOG}"
     if [ -t 1 ]; then
         CUDA_VISIBLE_DEVICES="$DEVICE" PYTHONUNBUFFERED=1 \

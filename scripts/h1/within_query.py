@@ -29,7 +29,7 @@ from fsr.corpus.layout import split_dir
 from fsr.corpus.splitting import strict_gated
 from fsr.formats import FORMAT_NAMES, FORMATS
 from fsr.models.loading import load_model, load_tokenizer
-from fsr.models.registry import BASE_MODEL_IDS
+from fsr.models.registry import BASE_MODEL_IDS, BASE_MODELS, by_slug
 from fsr.passages import MAX_TOKENS
 from fsr.scoring import score_batch
 from fsr.within_query import (
@@ -42,6 +42,21 @@ from fsr.within_query import (
 
 OUT_SUBDIR = "h1_within_query"
 PARSED_NAME = "parsed_train.json"
+
+
+def resolve_models(names: list[str]) -> list[str]:
+    """Return the Hugging Face identifier of each named model.
+
+    Args:
+        names: Registry slugs or Hugging Face identifiers.
+
+    Returns:
+        The identifiers, in the order given.
+
+    Raises:
+        ValueError: If a name is neither a slug nor an identifier.
+    """
+    return [name if "/" in name else by_slug(name).model_id for name in names]
 
 
 def load_split(split_path: Path, name: str) -> list[dict]:
@@ -336,6 +351,16 @@ def build_parser() -> argparse.ArgumentParser:
         f"{MAX_TOKENS} tokens (0 disables)",
     )
     ap.add_argument(
+        "--list-models",
+        action="store_true",
+        help="Print the registry slug of each model in the roster, then stop",
+    )
+    ap.add_argument(
+        "--prepare-only",
+        action="store_true",
+        help="Build and cache the candidate lists, then stop before scoring",
+    )
+    ap.add_argument(
         "--store-matrices",
         action="store_true",
         help="Keep the raw score matrices as well as the statistics",
@@ -351,6 +376,10 @@ def main() -> None:
         SystemExit: If an adapter is given for more than one model.
     """
     args = build_parser().parse_args()
+    if args.list_models:
+        for model in BASE_MODELS:
+            print(model.slug)
+        return
     args.out_dir = args.out_dir or args.data_root / OUT_SUBDIR
     args.out_dir.mkdir(parents=True, exist_ok=True)
     split_path = split_dir(args.data_root)
@@ -361,11 +390,15 @@ def main() -> None:
             "--lora-adapter applies to a single model; pass one --models entry."
         )
 
+    models = resolve_models(args.models)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Device: {device}")
 
-    tokenizers = load_tokenizers(args.budget_models)
+    tokenizers = load_tokenizers(resolve_models(args.budget_models))
     prepared, prep_stats = prepare_queries(args, split_path, tokenizers)
+    if args.prepare_only:
+        print("Prepared the candidate lists; stopping before scoring.")
+        return
 
     overflow = measure_overflow(
         prepared, tokenizers, args.overflow_sample, seed=args.seed
@@ -389,7 +422,7 @@ def main() -> None:
                     "split": args.split,
                     "lora_adapter": args.lora_adapter,
                     "tanh_head": args.tanh_head,
-                    "budget_models": list(args.budget_models),
+                    "budget_models": resolve_models(args.budget_models),
                     "neg_count_per_query": args.negatives,
                     "n_queries": len(prepared),
                     "query_ids": [q["id"] for q in prepared],
@@ -402,7 +435,7 @@ def main() -> None:
             )
         )
 
-    for model_name in args.models:
+    for model_name in models:
         print(f"\n{'-' * 70}\n{model_name}\n{'-' * 70}")
         try:
             model = load_model(
