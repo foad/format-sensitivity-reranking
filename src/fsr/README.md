@@ -4,6 +4,7 @@ Library code for the format-sensitivity study.
 
 | Module | Contents |
 |---|---|
+| `candidates.py` | Candidate lists for the within-query measurement, budgeted per candidate. |
 | `cli.py` | The arguments, the skip rule and the reporting shared by the pipeline scripts. |
 | `formats.py` | The five metadata renderers under study, and the `FORMATS` registry. |
 | `passages.py` | The tokenizer contract, body-token budgeting, and semantic truncation. |
