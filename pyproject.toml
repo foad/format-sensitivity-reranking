@@ -6,7 +6,7 @@ requires-python = ">=3.13,<3.14"
 license = { text = "MIT" }
 dependencies = [
     "sentence-transformers>=3.0.0",
-    "torch>=2.2.0",
+    "torch==2.6.0",
     "datasets>=2.19.0",
     "numpy>=1.26",
     "pandas>=2.2",

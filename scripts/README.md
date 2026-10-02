@@ -12,9 +12,14 @@ See [`../docs/reproduction.md`](../docs/reproduction.md) for exact commands and 
  - `negatives.py`: BM25 hard-negative mining.
  - `validate.py`: check the built corpus for issues.
 
+## `runners/`
+
+`local.sh` launches a measurement locally, honouring `CUDA_VISIBLE_DEVICES`. Setting `FSR_RUNNER` uses a different runner.
+
 ## `h1/`
  - `nq_h1_measurement.py --split train`: score six models across two modes (with_body, metadata_only).
  - `within_query.py`: within-query ranking disturbance over the BM25 candidate lists.
+ - `within_query.sh`: runs the above for one split, through the selected runner.
 
 ## `h2/`
  - `sweep.sh`: Phase-1 lambda selection, then Phase-2 five-fold hold-one-out, parameterised by model.
