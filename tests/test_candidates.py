@@ -5,7 +5,14 @@ from __future__ import annotations
 import pytest
 from tests.fakes import CharTokenizer, WordTokenizer
 
-from fsr.candidates import DEFAULT_NEGATIVES, build_candidate_lists, prepare_candidate
+from fsr.candidates import (
+    DEFAULT_NEGATIVES,
+    build_candidate_lists,
+    measure_overflow,
+    prepare_candidate,
+)
+from fsr.formats import FORMATS
+from fsr.passages import MAX_TOKENS
 
 SENTENCE = "The bridge opened in 1946 and carries the main road across the river. "
 TOKENIZERS = {"word": WordTokenizer()}
@@ -217,3 +224,87 @@ class TestBuildCandidateLists:
     def test_reports_every_statistic(self, key):
         _, stats = self._build()
         assert key in stats
+
+
+def prepared_queries(n_queries=3, n_candidates=2, body="word word"):
+    return [
+        {
+            "id": str(q),
+            "question": "who built it",
+            "candidates": [
+                {"pairs": [["Born", "1946"]], "truncated_body": body}
+                for _ in range(n_candidates)
+            ],
+        }
+        for q in range(n_queries)
+    ]
+
+
+class TestMeasureOverflow:
+    def test_measures_nothing_when_the_sample_is_zero(self):
+        assert measure_overflow(prepared_queries(), TOKENIZERS, 0) is None
+
+    def test_measures_nothing_for_a_negative_sample(self):
+        assert measure_overflow(prepared_queries(), TOKENIZERS, -1) is None
+
+    def test_reports_no_overflow_for_short_renderings(self):
+        out = measure_overflow(prepared_queries(), TOKENIZERS, 3, verbose=False)
+        assert out["over_max_tokens_pct"] == {"word": 0.0}
+
+    def test_counts_every_rendering(self):
+        out = measure_overflow(
+            prepared_queries(n_queries=2, n_candidates=3), TOKENIZERS, 2, verbose=False
+        )
+        assert out["queries_sampled"] == 2
+        assert out["renderings_per_model"] == 2 * 3 * len(FORMATS)
+
+    def test_caps_the_sample_at_the_queries_available(self):
+        out = measure_overflow(prepared_queries(2), TOKENIZERS, 50, verbose=False)
+        assert out["queries_sampled"] == 2
+
+    def test_reports_overflow_as_a_percentage(self):
+        queries = prepared_queries(n_queries=1, n_candidates=2)
+        queries[0]["candidates"][0]["truncated_body"] = "word " * (MAX_TOKENS + 10)
+        out = measure_overflow(queries, TOKENIZERS, 1, verbose=False)
+        assert out["over_max_tokens_pct"]["word"] == 50.0
+
+    def test_reports_each_tokenizer_separately(self):
+        queries = prepared_queries(n_queries=1, n_candidates=1, body="word " * 300)
+        out = measure_overflow(
+            queries,
+            {"word": WordTokenizer(), "char": CharTokenizer()},
+            1,
+            verbose=False,
+        )
+        assert out["over_max_tokens_pct"]["word"] == 0.0
+        assert out["over_max_tokens_pct"]["char"] == 100.0
+
+    def test_honours_the_context_length(self):
+        out = measure_overflow(
+            prepared_queries(1, 1), TOKENIZERS, 1, max_tokens=1, verbose=False
+        )
+        assert out["over_max_tokens_pct"]["word"] == 100.0
+
+    def test_measures_only_the_given_formats(self):
+        out = measure_overflow(
+            prepared_queries(1, 1),
+            TOKENIZERS,
+            1,
+            formats={"yaml": FORMATS["yaml"]},
+            verbose=False,
+        )
+        assert out["renderings_per_model"] == 1
+
+    def test_the_sample_follows_the_seed(self):
+        queries = prepared_queries(20)
+        first = measure_overflow(queries, TOKENIZERS, 5, seed=1, verbose=False)
+        again = measure_overflow(queries, TOKENIZERS, 5, seed=1, verbose=False)
+        assert first == again
+
+    def test_reports_progress_when_asked(self, capsys):
+        measure_overflow(prepared_queries(1), TOKENIZERS, 1)
+        assert "overflow check 1/1" in capsys.readouterr().out
+
+    def test_stays_quiet_otherwise(self, capsys):
+        measure_overflow(prepared_queries(1), TOKENIZERS, 1, verbose=False)
+        assert capsys.readouterr().out == ""

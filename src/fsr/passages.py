@@ -24,11 +24,14 @@ MIN_WORD_BOUNDARY_CHARS = 20
 class Tokenizer(Protocol):
     """The tokenizer interface that this module requires."""
 
-    def __call__(self, text: str, **kwargs: Any) -> Mapping[str, Any]:
-        """Tokenize the text and return the encoding.
+    def __call__(
+        self, text: str, text_pair: str | None = None, **kwargs: Any
+    ) -> Mapping[str, Any]:
+        """Tokenize the text, or a text pair, and return the encoding.
 
         Args:
             text: The text to tokenize.
+            text_pair: A second text, encoded with the first as a pair.
             **kwargs: Tokenizer options, including add_special_tokens,
                 return_offsets_mapping, and truncation.
 

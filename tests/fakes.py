@@ -9,8 +9,12 @@ from typing import Any
 class WordTokenizer:
     """The tokenizer makes one token from each run of non-whitespace characters."""
 
-    def __call__(self, text: str, **kwargs: Any) -> dict[str, Any]:
-        """Tokenize the text and return the encoding."""
+    def __call__(
+        self, text: str, text_pair: str | None = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Tokenize the text, or a text pair, and return the encoding."""
+        if text_pair is not None:
+            text = f"{text} {text_pair}"
         spans = [(m.start(), m.end()) for m in re.finditer(r"\S+", text)]
         out: dict[str, Any] = {"input_ids": list(range(len(spans)))}
         if kwargs.get("return_offsets_mapping"):
@@ -24,8 +28,12 @@ class CharTokenizer:
     A token budget therefore equals a character budget.
     """
 
-    def __call__(self, text: str, **kwargs: Any) -> dict[str, Any]:
-        """Tokenize the text and return the encoding."""
+    def __call__(
+        self, text: str, text_pair: str | None = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Tokenize the text, or a text pair, and return the encoding."""
+        if text_pair is not None:
+            text = f"{text} {text_pair}"
         out: dict[str, Any] = {"input_ids": list(range(len(text)))}
         if kwargs.get("return_offsets_mapping"):
             out["offset_mapping"] = [(i, i + 1) for i in range(len(text))]

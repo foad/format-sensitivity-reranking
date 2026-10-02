@@ -6,10 +6,19 @@ import time
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from fsr.passages import Tokenizer, compute_body_budget, truncate_body_semantic
+import numpy as np
+
+from fsr.formats import FORMATS, Renderer
+from fsr.passages import (
+    MAX_TOKENS,
+    Tokenizer,
+    compute_body_budget,
+    truncate_body_semantic,
+)
 
 DEFAULT_NEGATIVES = 15
 PROGRESS_EVERY = 25
+OVERFLOW_PLACES = 4
 
 
 def prepare_candidate(
@@ -132,3 +141,57 @@ def build_candidate_lists(
         "tightest_tokeniser_counts": tightest_counts,
     }
     return prepared, stats
+
+
+def measure_overflow(
+    prepared: Sequence[Mapping[str, Any]],
+    tokenizers: Mapping[str, Tokenizer],
+    sample_size: int,
+    seed: int = 0,
+    formats: Mapping[str, Renderer] | None = None,
+    max_tokens: int = MAX_TOKENS,
+    verbose: bool = True,
+) -> dict[str, Any] | None:
+    """Measure how often a rendered candidate exceeds the model context.
+
+    Args:
+        prepared: The queries with their candidate lists.
+        tokenizers: The tokenizers to measure, by name.
+        sample_size: How many queries to sample. 0 or fewer measures nothing.
+        seed: The seed for the sample.
+        formats: The renderers to measure. The default is FORMATS.
+        max_tokens: The model context length.
+        verbose: Whether to report progress while measuring.
+
+    Returns:
+        The statistics of the overflow measurement, or None.
+    """
+    if sample_size <= 0:
+        return None
+    renderers = FORMATS if formats is None else formats
+    rng = np.random.default_rng(seed)
+    n = min(sample_size, len(prepared))
+    sampled = rng.choice(len(prepared), size=n, replace=False)
+
+    counts = dict.fromkeys(tokenizers, 0)
+    total = 0
+    for seen, index in enumerate(sampled, start=1):
+        if verbose and (seen % PROGRESS_EVERY == 0 or seen == n):
+            print(f"    overflow check {seen}/{n}", flush=True)
+        query = prepared[int(index)]
+        for candidate in query["candidates"]:
+            for render in renderers.values():
+                text = render(candidate["pairs"], candidate["truncated_body"])
+                for name, tokenizer in tokenizers.items():
+                    encoded = tokenizer(query["question"], text)["input_ids"]
+                    if len(encoded) > max_tokens:
+                        counts[name] += 1
+                total += 1
+    return {
+        "queries_sampled": n,
+        "renderings_per_model": total,
+        "over_max_tokens_pct": {
+            name: round(100.0 * count / total, OVERFLOW_PLACES)
+            for name, count in counts.items()
+        },
+    }
