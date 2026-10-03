@@ -14,6 +14,7 @@ data/nq/parsed_*.json
 data/nq/splits/
 data/**/*_candidates*.json
 data/**/*.npz
+data/**/*roster*.log
 
 # Smoke test data
 data/smoke/

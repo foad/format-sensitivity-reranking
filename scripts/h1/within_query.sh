@@ -51,7 +51,7 @@ job_log() { echo "$OUT_DIR/${SPLIT}_within_${1}${SUFFIX}.log"; }
 if [ -n "${MODELS:-}" ]; then
     IFS=', ' read -ra MODEL_LIST <<< "$MODELS"
 else
-    ROSTER_LOG="$(mktemp)"
+    ROSTER_LOG="$OUT_DIR/within_roster.log"
     mapfile -t MODEL_LIST < <(fsr_roster "$MEASURE" "$ROSTER_LOG")
     rm -f "$ROSTER_LOG" "${ROSTER_LOG}.hare.log"
 fi
@@ -69,4 +69,4 @@ else
 fi
 
 fsr_dispatch "${MODEL_LIST[@]}"
-echo "done: $OUT_DIR/${SPLIT}_wq_*${SUFFIX}.json"
+echo "done: $OUT_DIR/${SPLIT}_within_{with_body,metadata_only}_*${SUFFIX}.json"

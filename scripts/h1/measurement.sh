@@ -53,11 +53,11 @@ job_log() { echo "$OUT_DIR/${SPLIT}_cross_${1}${SUFFIX}.log"; }
 if [ -n "${MODELS:-}" ]; then
     IFS=', ' read -ra MODEL_LIST <<< "$MODELS"
 else
-    ROSTER_LOG="$(mktemp)"
+    ROSTER_LOG="$OUT_DIR/cross_roster.log"
     mapfile -t MODEL_LIST < <(fsr_roster "$MEASURE" "$ROSTER_LOG")
     rm -f "$ROSTER_LOG" "${ROSTER_LOG}.hare.log"
 fi
 [ "${#MODEL_LIST[@]}" -gt 0 ] || { echo "ERROR: no models to score" >&2; exit 1; }
 
 fsr_dispatch "${MODEL_LIST[@]}"
-echo "done: $OUT_DIR/${SPLIT}_{with_body,metadata_only}_*${SUFFIX}.json"
+echo "done: $OUT_DIR/${SPLIT}_cross_{with_body,metadata_only}_*${SUFFIX}.json"
