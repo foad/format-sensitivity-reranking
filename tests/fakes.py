@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import re
+import types
 from typing import Any
+
+import torch
 
 
 class WordTokenizer:
@@ -53,8 +56,6 @@ class PairTokenizer:
 
     def __call__(self, queries, _passages=None, **_kwargs) -> Encoding:
         """Return an encoding whose batch size matches the queries."""
-        import torch
-
         return Encoding(input_ids=torch.zeros(len(queries), 4, dtype=torch.long))
 
 
@@ -67,11 +68,43 @@ class LogitModel:
 
     def __call__(self, **kwargs) -> Any:
         """Return a namespace holding the logits for this batch."""
-        import types
-
-        import torch
-
         batch = kwargs["input_ids"].shape[0]
         generator = torch.Generator().manual_seed(batch * 7 + len(self.shape))
         size = (batch, *self.shape) if self.shape else (batch,)
         return types.SimpleNamespace(logits=torch.rand(size, generator=generator))
+
+
+class HashingPairTokenizer:
+    """A tokenizer that encodes query and passage pairs into fixed-width vectors."""
+
+    def __init__(self, width: int = 4) -> None:
+        """Store the encoding width."""
+        self.width = width
+
+    def __call__(self, queries, passages=None, **_kwargs) -> Encoding:
+        """Return an encoding of one row per query."""
+        import torch
+
+        passages = passages if passages is not None else [""] * len(queries)
+        rows = []
+        for query, passage in zip(queries, passages, strict=True):
+            text = f"{query}|{passage}"
+            buckets = [0] * self.width
+            for index, character in enumerate(text):
+                buckets[index % self.width] += ord(character)
+            rows.append(buckets)
+        return Encoding(input_ids=torch.tensor(rows, dtype=torch.long))
+
+
+class ScoringModel(torch.nn.Module):
+    """A differentiable scorer with trainable parameters."""
+
+    def __init__(self, width: int = 4) -> None:
+        """Build the scoring head."""
+        super().__init__()
+        self.classifier = torch.nn.Linear(width, 1)
+
+    def forward(self, input_ids=None, **_kwargs) -> Any:
+        """Return one logit per row of the batch."""
+        scaled = input_ids.to(torch.float32) / 1000.0
+        return types.SimpleNamespace(logits=self.classifier(scaled))
