@@ -1,0 +1,61 @@
+Device: cuda
+
+Loading tokenizers for 6 budget models...
+  ok  cross-encoder/ms-marco-MiniLM-L6-v2
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  ok  cross-encoder/ms-marco-MiniLM-L12-v2
+  ok  BAAI/bge-reranker-base
+  ok  BAAI/bge-reranker-v2-m3
+  ok  mixedbread-ai/mxbai-rerank-base-v1
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+  ok  jinaai/jina-reranker-v2-base-multilingual
+Loading data/nq/splits/train.json...
+Loading data/nq/splits/dev.json...
+Loading data/nq/splits/test.json...
+
+Split 'all': 8188 queries
+
+Reusing candidate lists from data/nq/h1_within_query/all_candidates.json
+  7642 queries
+  dropped_gold_budget: 529
+  dropped_no_bm25_negs: 0
+  dropped_too_few_eligible_negs: 17
+  negatives_skipped_for_budget: 4463
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (554 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 25/100
+    overflow check 50/100
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (518 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (518 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (578 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 75/100
+    overflow check 100/100
+  >512-token renderings: worst model 1.91% (sampled 100 queries)
+
+----------------------------------------------------------------------
+mixedbread-ai/mxbai-rerank-base-v1
+----------------------------------------------------------------------
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 3288.04it/s]
+  scored       yaml  gold mean=+2.551  neg mean=-4.277
+  scored       json  gold mean=+2.312  neg mean=-4.403
+  scored       toml  gold mean=+2.391  neg mean=-4.342
+  scored  inline_kv  gold mean=+2.510  neg mean=-4.293
+  scored   markdown  gold mean=+2.474  neg mean=-4.350
+
+  max within-query flip %: 4.9%  (yaml vs json)
+  min Kendall tau:         0.902  (yaml vs json)
+  max top-1 change %:      3.3%  (yaml vs json)
+  delta/S_within:          0.047
+  gold top-1 all formats:  87.1%  |  format-dependent: 3.7%  |  never: 9.1%
+  MRR per format:          yaml=0.935  json=0.933  toml=0.935  inline_kv=0.935  markdown=0.934
+  (8025.2s)
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=all  n_queries=7642  candidates=16
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+------------------------------------------------------------------------------------------------------
+mixedbread-ai/mxbai-rerank-base-v1                     4.9%     0.902       3.3%      3.7%     0.047
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved -> data/nq/h1_within_query/all_wq_mxbai_v1.json  (3.7 MB)

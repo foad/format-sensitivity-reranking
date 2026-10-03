@@ -4,13 +4,16 @@ The built corpus and the result artefacts.
 
 Licensed CC BY-SA 3.0 (see [`LICENSE`](LICENSE))
 
-Download them from the release and unpack into `data/`, or build them manually.
+The result JSONs and their run logs are in the repository. The corpus is not:
+download it from the release and unpack into `data/`, or build it manually.
 
 | Path | Contents | Built by |
 |---|---|---|
 | `nq/parsed_{train,validation}.json` | Infobox `(k,v)` pairs, body text, and quality flags | `scripts/corpus/parse.py` |
 | `nq/splits/` | Article-level 80/10/10 splits, and the BM25 hard negatives | `scripts/corpus/split.py`, `negatives.py` |
-| `nq/h1_measurement/*.json` | Per-model per-format scores and summary statistics | `scripts/h1/nq_h1_measurement.py` |
+| `nq/h1_measurement/*.json` | Per-model cross-query scores and statistics. Tracked | `scripts/h1/run.sh` |
+| `nq/h1_within_query/*_wq_*.json` | Per-model within-query statistics. Tracked | `scripts/h1/run.sh` |
+| `nq/h1_within_query/*_candidates*.json` | Candidate lists, rebuilt by the measurement | `scripts/h1/within_query.py` |
 | `nq/h2_compare/`, `h2_selection/`, `h2_tanh_ablation/` | H2 result JSONs | H2 sweep scripts |
 | `nq/matched_{train,validation}.json` | The raw Wikipedia HTML cache (2.9 GB). Only needed to re-parse without re-streaming. | `scripts/corpus/fetch.py` |
 

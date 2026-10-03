@@ -8,9 +8,12 @@ __pycache__/
 # HuggingFace / model caches
 .cache/
 
-# Built corpus and results
-data/nq/*
-!data/nq/manifest.json
+# Release assets and derived caches
+data/**/matched_*.json
+data/nq/parsed_*.json
+data/nq/splits/
+data/**/*_candidates*.json
+data/**/*.npz
 
 # Smoke test data
 data/smoke/

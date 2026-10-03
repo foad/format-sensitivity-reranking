@@ -1,0 +1,47 @@
+{
+  "command": ["scripts/corpus/build_corpus.py", "--fetch"],
+  "started": "2026-10-01T16:44:56.811753+00:00",
+  "finished": "2026-10-01T17:39:35.112832+00:00",
+  "fsr_version": "1.0.0",
+  "git": {
+    "revision": "e42588e4c3b0fbe78bc6ca3cf74fbc5c00a93518",
+    "dirty": false
+  },
+  "stages": [
+    {
+      "name": "fetch",
+      "exit_code": 0,
+      "started": "2026-10-01T16:44:56.818477+00:00",
+      "finished": "2026-10-01T17:37:19.322003+00:00",
+      "seconds": 3142.504
+    },
+    {
+      "name": "parse",
+      "exit_code": 0,
+      "started": "2026-10-01T17:37:19.322335+00:00",
+      "finished": "2026-10-01T17:37:37.457849+00:00",
+      "seconds": 18.136
+    },
+    {
+      "name": "split",
+      "exit_code": 0,
+      "started": "2026-10-01T17:37:37.458173+00:00",
+      "finished": "2026-10-01T17:37:37.715533+00:00",
+      "seconds": 0.257
+    },
+    {
+      "name": "negatives",
+      "exit_code": 0,
+      "started": "2026-10-01T17:37:37.715862+00:00",
+      "finished": "2026-10-01T17:39:33.618626+00:00",
+      "seconds": 115.903
+    },
+    {
+      "name": "validate",
+      "exit_code": 0,
+      "started": "2026-10-01T17:39:33.618950+00:00",
+      "finished": "2026-10-01T17:39:35.112493+00:00",
+      "seconds": 1.494
+    }
+  ]
+}
