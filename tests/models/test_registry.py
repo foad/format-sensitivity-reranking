@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import shlex
+
 import pytest
 
 from fsr.models.registry import (
@@ -10,7 +12,9 @@ from fsr.models.registry import (
     MODELS,
     by_id,
     by_slug,
+    config_lines,
     label_of,
+    main,
 )
 
 
@@ -79,3 +83,98 @@ class TestLabelOf:
 
     def test_falls_back_to_the_identifier(self):
         assert label_of("some/other-model") == "some/other-model"
+
+
+class TestBatchGeometry:
+    def test_every_model_carries_a_batch_geometry(self):
+        for model in MODELS:
+            assert model.physical_batch > 0
+            assert model.grad_accum > 0
+            assert model.eval_batch > 0
+
+    def test_effective_batch_is_the_product(self):
+        model = by_slug("bge_base")
+        assert model.effective_batch == model.physical_batch * model.grad_accum
+
+    def test_effective_batch_is_uniform_across_the_roster(self):
+        assert {m.effective_batch for m in MODELS} == {16}
+
+    def test_the_patched_variant_matches_its_base_geometry(self):
+        tanh = by_slug("mxbai_v1_tanh")
+        plain = by_slug("mxbai_v1")
+        assert tanh.physical_batch == plain.physical_batch
+        assert tanh.grad_accum == plain.grad_accum
+        assert tanh.eval_batch == plain.eval_batch
+
+    def test_the_minilm_pair_share_a_geometry(self):
+        l6 = by_slug("minilm_l6")
+        l12 = by_slug("minilm_l12")
+        assert (l6.physical_batch, l6.grad_accum, l6.eval_batch) == (4, 4, 32)
+        assert (l12.physical_batch, l12.grad_accum, l12.eval_batch) == (4, 4, 32)
+
+
+class TestConfigLines:
+    def test_reports_every_setting(self):
+        names = [line.split("=", 1)[0] for line in config_lines(by_slug("bge_base"))]
+        assert names == [
+            "MODEL_ID",
+            "LORA_TARGETS",
+            "PHYSICAL_BATCH",
+            "GRAD_ACCUM",
+            "EVAL_BATCH",
+            "TANH_HEAD",
+        ]
+
+    def test_a_shell_recovers_every_scalar(self):
+        for model in MODELS:
+            expected = {
+                "MODEL_ID": model.model_id,
+                "PHYSICAL_BATCH": str(model.physical_batch),
+                "GRAD_ACCUM": str(model.grad_accum),
+                "EVAL_BATCH": str(model.eval_batch),
+                "TANH_HEAD": "1" if model.tanh_head else "0",
+            }
+            for line in config_lines(model):
+                name, quoted = line.split("=", 1)
+                if name == "LORA_TARGETS":
+                    continue
+                assert shlex.split(quoted) == [expected[name]]
+
+    def test_the_lora_targets_are_a_shell_array(self):
+        lines = dict(line.split("=", 1) for line in config_lines(by_slug("bge_base")))
+        assert lines["LORA_TARGETS"] == "(query key value)"
+
+    def test_a_single_target_stays_an_array(self):
+        lines = dict(line.split("=", 1) for line in config_lines(by_slug("jina_v2")))
+        assert lines["LORA_TARGETS"] == "(Wqkv)"
+
+    def test_reports_the_patched_head_as_one(self):
+        lines = dict(ln.split("=", 1) for ln in config_lines(by_slug("mxbai_v1_tanh")))
+        assert shlex.split(lines["TANH_HEAD"]) == ["1"]
+
+    def test_reports_an_unpatched_head_as_zero(self):
+        lines = dict(ln.split("=", 1) for ln in config_lines(by_slug("mxbai_v1")))
+        assert shlex.split(lines["TANH_HEAD"]) == ["0"]
+
+
+class TestMain:
+    def test_list_prints_every_slug(self, capsys):
+        assert main(["--list"]) == 0
+        printed = capsys.readouterr().out.split()
+        assert printed == [m.slug for m in MODELS]
+
+    def test_config_prints_the_settings(self, capsys):
+        assert main(["--config", "jina_v2"]) == 0
+        assert capsys.readouterr().out.splitlines() == config_lines(by_slug("jina_v2"))
+
+    def test_config_rejects_an_unknown_slug(self, capsys):
+        assert main(["--config", "bge"]) == 2
+        assert "unknown model 'bge'" in capsys.readouterr().err
+
+    def test_requires_one_of_the_two(self):
+        with pytest.raises(SystemExit):
+            main([])
+
+    def test_refuses_both(self):
+        with pytest.raises(SystemExit):
+            main(["--list", "--config", "jina_v2"])
