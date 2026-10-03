@@ -15,7 +15,7 @@ Loading data/nq/splits/test.json...
 
 Split 'all': 8188 queries
 
-Reusing candidate lists from data/nq/h1_within_query/all_candidates.json
+Reusing candidate lists from data/nq/h1/all_candidates.json
   7642 queries
   dropped_gold_budget: 529
   dropped_no_bm25_negs: 0
@@ -34,7 +34,21 @@ Reusing candidate lists from data/nq/h1_within_query/all_candidates.json
 ----------------------------------------------------------------------
 BAAI/bge-reranker-v2-m3
 ----------------------------------------------------------------------
-Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 9930.97it/s]
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 9770.09it/s]
+  metadata_only
+  scored       yaml  gold mean=-0.347  neg mean=-5.114
+  scored       json  gold mean=-0.278  neg mean=-4.649
+  scored       toml  gold mean=-0.311  neg mean=-4.662
+  scored  inline_kv  gold mean=-0.096  neg mean=-4.554
+  scored   markdown  gold mean=-0.452  neg mean=-4.798
+
+  max within-query flip %: 12.0%  (json vs inline_kv)
+  min Kendall tau:         0.760  (json vs inline_kv)
+  max top-1 change %:      23.5%  (json vs inline_kv)
+  delta/S_within:          0.187
+  gold top-1 all formats:  47.4%  |  format-dependent: 16.5%  |  never: 36.1%
+  MRR per format:          yaml=0.681  json=0.668  toml=0.676  inline_kv=0.676  markdown=0.674
+  with_body
   scored       yaml  gold mean=+4.426  neg mean=-4.757
   scored       json  gold mean=+4.712  neg mean=-4.608
   scored       toml  gold mean=+4.697  neg mean=-4.752
@@ -47,10 +61,21 @@ BAAI/bge-reranker-v2-m3
   delta/S_within:          0.102
   gold top-1 all formats:  90.4%  |  format-dependent: 4.8%  |  never: 4.9%
   MRR per format:          yaml=0.960  json=0.960  toml=0.961  inline_kv=0.961  markdown=0.958
-  (16747.6s)
+  (28228.9s)
 
 ====================================================================================================
-WITHIN-QUERY SUMMARY - split=all  n_queries=7642  candidates=16
+WITHIN-QUERY SUMMARY - split=all/metadata_only  n_queries=7642  candidates=16
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+------------------------------------------------------------------------------------------------------
+BAAI/bge-reranker-v2-m3                               12.0%     0.760      23.5%     16.5%     0.187
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved -> data/nq/h1/all_within_metadata_only_bge_v2_m3.json  (3.8 MB)
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=all/with_body  n_queries=7642  candidates=16
 ====================================================================================================
 model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
 ------------------------------------------------------------------------------------------------------
@@ -58,4 +83,4 @@ BAAI/bge-reranker-v2-m3                               10.6%     0.789       3.5%
 
   fmt-dep% = queries whose gold ranks first under some formats but not others.
 
-Saved -> data/nq/h1_within_query/all_wq_bge_v2_m3.json  (3.6 MB)
+Saved -> data/nq/h1/all_within_with_body_bge_v2_m3.json  (3.6 MB)
