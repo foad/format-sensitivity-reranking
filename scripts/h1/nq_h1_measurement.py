@@ -38,7 +38,8 @@ from fsr.passages import MIN_BODY_TOKENS, prepare_records_with_body
 from fsr.scoring import score_batch
 
 DEFAULT_IN_DIR = Path("data") / "nq"
-DEFAULT_OUT_DIR = Path("data") / "nq" / "h1_measurement"
+AXIS = "cross"
+DEFAULT_OUT_DIR = Path("data") / "nq" / "h1"
 SMOKE_TEST_RECORDS = 10
 SMOKE_TEST_BATCH = 4
 
@@ -193,7 +194,7 @@ def run_mode(
     print(f"{'=' * 70}")
 
     suffix = f"_{args.out_tag}" if args.out_tag else ""
-    out_path = args.out_dir / f"{args.split}_{mode}{suffix}.json"
+    out_path = args.out_dir / f"{args.split}_{AXIS}_{mode}{suffix}.json"
     args.out_dir.mkdir(parents=True, exist_ok=True)
     all_results: dict[str, Any] = {}
     failures: list[dict[str, str]] = []

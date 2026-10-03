@@ -33,25 +33,27 @@ esac
 
 MEASURE=scripts/h1/within_query.py
 DATA_ROOT="${DATA_ROOT:-data/nq}"
-OUT_DIR="$DATA_ROOT/h1_within_query"
+OUT_DIR="$DATA_ROOT/h1"
 mkdir -p "$OUT_DIR"
 
 COMMON=(--data-root "$DATA_ROOT" --split "$SPLIT"
-        --batch-size "${BATCH_SIZE:-32}")
+        --mode "${MODE:-both}" --batch-size "${BATCH_SIZE:-32}")
 [ -n "${LIMIT:-}" ] && COMMON+=(--limit "$LIMIT")
 [ "${FORCE:-0}" = "1" ] && COMMON+=(--force)
 SUFFIX=""
 [ -n "${LIMIT:-}" ] && SUFFIX="_limit${LIMIT}"
 
 job_command() { JOB_CMD=("$MEASURE" "${COMMON[@]}" --models "$1"
-                         --out-tag "wq_${1}${SUFFIX}"); }
-job_output() { echo "$OUT_DIR/${SPLIT}_wq_${1}${SUFFIX}.json"; }
-job_log() { echo "$OUT_DIR/${SPLIT}_wq_${1}${SUFFIX}.log"; }
+                         --out-tag "${1}${SUFFIX}"); }
+job_output() { echo "$OUT_DIR/${SPLIT}_within_with_body_${1}${SUFFIX}.json"; }
+job_log() { echo "$OUT_DIR/${SPLIT}_within_${1}${SUFFIX}.log"; }
 
 if [ -n "${MODELS:-}" ]; then
     IFS=', ' read -ra MODEL_LIST <<< "$MODELS"
 else
-    mapfile -t MODEL_LIST < <(fsr_roster "$MEASURE" "$OUT_DIR/roster.log")
+    ROSTER_LOG="$(mktemp)"
+    mapfile -t MODEL_LIST < <(fsr_roster "$MEASURE" "$ROSTER_LOG")
+    rm -f "$ROSTER_LOG" "${ROSTER_LOG}.hare.log"
 fi
 [ "${#MODEL_LIST[@]}" -gt 0 ] || { echo "ERROR: no models to score" >&2; exit 1; }
 

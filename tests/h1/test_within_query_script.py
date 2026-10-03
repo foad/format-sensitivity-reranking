@@ -313,7 +313,7 @@ def run_main(monkeypatch, tmp_path, *extra, model=None):
         ],
     )
     mod.main()
-    return root / mod.OUT_SUBDIR / "test_within_query.json"
+    return root / mod.OUT_SUBDIR / "test_within_with_body.json"
 
 
 class TestMain:
@@ -365,7 +365,7 @@ class TestMain:
         )
         mod.main()
         payload = json.loads(
-            (root / mod.OUT_SUBDIR / "test_within_query.json").read_text()
+            (root / mod.OUT_SUBDIR / "test_within_with_body.json").read_text()
         )
         assert payload["models_failed"] == [
             {"model": "model/a", "stage": "model_load", "error": "no weights"}
@@ -399,12 +399,45 @@ class TestMain:
     def test_honours_a_custom_output_directory(self, monkeypatch, tmp_path):
         out_dir = tmp_path / "elsewhere"
         run_main(monkeypatch, tmp_path, "--out-dir", str(out_dir))
-        assert (out_dir / "test_within_query.json").exists()
+        assert (out_dir / "test_within_with_body.json").exists()
 
     def test_honours_the_output_tag(self, monkeypatch, tmp_path):
         root = tmp_path
         run_main(monkeypatch, root, "--out-tag", "baseline")
-        assert (root / mod.OUT_SUBDIR / "test_baseline.json").exists()
+        assert (root / mod.OUT_SUBDIR / "test_within_with_body_baseline.json").exists()
+
+    def test_writes_one_file_per_mode(self, monkeypatch, tmp_path):
+        out = run_main(monkeypatch, tmp_path)
+        for mode in mod.MODES:
+            path = out.parent / f"test_within_{mode}.json"
+            assert json.loads(path.read_text())["mode"] == mode
+
+    def test_one_mode_writes_only_that_file(self, monkeypatch, tmp_path):
+        out = run_main(monkeypatch, tmp_path, "--mode", "metadata_only")
+        assert (out.parent / "test_within_metadata_only.json").exists()
+        assert not (out.parent / "test_within_with_body.json").exists()
+
+    def test_both_modes_share_the_candidate_lists(self, monkeypatch, tmp_path):
+        out = run_main(monkeypatch, tmp_path)
+        ids = {
+            tuple(
+                json.loads((out.parent / f"test_within_{mode}.json").read_text())[
+                    "query_ids"
+                ]
+            )
+            for mode in mod.MODES
+        }
+        assert len(ids) == 1
+
+    def test_a_failed_model_is_recorded_in_every_mode(self, monkeypatch, tmp_path):
+        def fail(*_args, **_kwargs):
+            raise RuntimeError("bad shape")
+
+        monkeypatch.setattr(mod, "score_all_formats", fail)
+        out = run_main(monkeypatch, tmp_path)
+        for mode in mod.MODES:
+            payload = json.loads((out.parent / f"test_within_{mode}.json").read_text())
+            assert payload["models_failed"][0]["stage"] == "scoring"
 
     def test_frees_the_cache_on_a_gpu(self, monkeypatch, tmp_path):
         freed = []
@@ -476,5 +509,56 @@ class TestPrepareOnly:
         )
         mod.main()
         assert (root / mod.OUT_SUBDIR / "test_candidates.json").exists()
-        assert not (root / mod.OUT_SUBDIR / "test_within_query.json").exists()
+        assert not (root / mod.OUT_SUBDIR / "test_within_with_body.json").exists()
         assert "stopping before scoring" in capsys.readouterr().out
+
+
+class TestScoringModes:
+    def _matrices(self, with_body):
+        return mod.score_all_formats(
+            LogitModel(),
+            PairTokenizer(),
+            prepared_queries(),
+            4,
+            "cpu",
+            with_body=with_body,
+            verbose=False,
+        )
+
+    def test_metadata_only_drops_the_body(self, monkeypatch):
+        seen = []
+
+        def capture(_model, _tokenizer, pairs, *_args, **_kwargs):
+            seen.append([passage for _question, passage in pairs])
+            return [0.0] * len(pairs)
+
+        monkeypatch.setattr(mod, "score_batch", capture)
+        mod.score_all_formats(
+            LogitModel(),
+            PairTokenizer(),
+            prepared_queries(1, 1),
+            4,
+            "cpu",
+            with_body=False,
+            verbose=False,
+        )
+        assert all("body" not in p for batch in seen for p in batch)
+
+    def test_with_body_keeps_it(self, monkeypatch):
+        seen = []
+
+        def capture(_model, _tokenizer, pairs, *_args, **_kwargs):
+            seen.append([passage for _question, passage in pairs])
+            return [0.0] * len(pairs)
+
+        monkeypatch.setattr(mod, "score_batch", capture)
+        mod.score_all_formats(
+            LogitModel(),
+            PairTokenizer(),
+            prepared_queries(1, 1),
+            4,
+            "cpu",
+            with_body=True,
+            verbose=False,
+        )
+        assert any("body" in p for batch in seen for p in batch)

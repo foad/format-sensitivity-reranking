@@ -33,7 +33,7 @@ esac
 
 MEASURE=scripts/h1/nq_h1_measurement.py
 DATA_ROOT="${DATA_ROOT:-data/nq}"
-OUT_DIR="$DATA_ROOT/h1_measurement"
+OUT_DIR="$DATA_ROOT/h1"
 mkdir -p "$OUT_DIR"
 
 COMMON=(--in-dir "$DATA_ROOT" --out-dir "$OUT_DIR" --split "$SPLIT"
@@ -47,13 +47,15 @@ fi
 job_command() { JOB_CMD=("$MEASURE" "${COMMON[@]}" --models "$1"
                          --out-tag "${1}${SUFFIX}"); }
 # with_body is written after metadata_only, so it means the model finished.
-job_output() { echo "$OUT_DIR/${SPLIT}_with_body_${1}${SUFFIX}.json"; }
-job_log() { echo "$OUT_DIR/${SPLIT}_${1}${SUFFIX}.log"; }
+job_output() { echo "$OUT_DIR/${SPLIT}_cross_with_body_${1}${SUFFIX}.json"; }
+job_log() { echo "$OUT_DIR/${SPLIT}_cross_${1}${SUFFIX}.log"; }
 
 if [ -n "${MODELS:-}" ]; then
     IFS=', ' read -ra MODEL_LIST <<< "$MODELS"
 else
-    mapfile -t MODEL_LIST < <(fsr_roster "$MEASURE" "$OUT_DIR/roster.log")
+    ROSTER_LOG="$(mktemp)"
+    mapfile -t MODEL_LIST < <(fsr_roster "$MEASURE" "$ROSTER_LOG")
+    rm -f "$ROSTER_LOG" "${ROSTER_LOG}.hare.log"
 fi
 [ "${#MODEL_LIST[@]}" -gt 0 ] || { echo "ERROR: no models to score" >&2; exit 1; }
 

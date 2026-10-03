@@ -40,7 +40,9 @@ from fsr.within_query import (
     within_query_rank_stability,
 )
 
-OUT_SUBDIR = "h1_within_query"
+AXIS = "within"
+OUT_SUBDIR = "h1"
+MODES = ("metadata_only", "with_body")
 PARSED_NAME = "parsed_train.json"
 
 
@@ -92,6 +94,7 @@ def score_all_formats(
     prepared: list[dict],
     batch_size: int,
     device: str,
+    with_body: bool = True,
     verbose: bool = True,
 ) -> dict[str, np.ndarray]:
     """Score every candidate of every query, once per format.
@@ -102,6 +105,7 @@ def score_all_formats(
         prepared: The queries with their candidate lists.
         batch_size: The scoring batch size.
         device: The device to score on.
+        with_body: Whether a candidate carries its body text.
         verbose: Whether to report each format as it completes.
 
     Returns:
@@ -113,7 +117,10 @@ def score_all_formats(
     for name in FORMAT_NAMES:
         render = FORMATS[name]
         pairs = [
-            (query["question"], render(c["pairs"], c["truncated_body"]))
+            (
+                query["question"],
+                render(c["pairs"], c["truncated_body"] if with_body else ""),
+            )
             for query in prepared
             for c in query["candidates"]
         ]
@@ -319,6 +326,12 @@ def build_parser() -> argparse.ArgumentParser:
     """Return the command-line parser."""
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--split", default="test", choices=list(SPLIT_CHOICES))
+    ap.add_argument(
+        "--mode",
+        choices=[*MODES, "both"],
+        default="both",
+        help="Render the candidates with their body, with metadata alone, or both",
+    )
     ap.add_argument("--models", nargs="+", default=list(BASE_MODEL_IDS))
     ap.add_argument(
         "--budget-models",
@@ -340,7 +353,11 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out-dir", type=Path, default=None)
-    ap.add_argument("--out-tag", default="within_query")
+    ap.add_argument(
+        "--out-tag",
+        default="",
+        help="Appended to the file name, to keep parallel runs apart",
+    )
     ap.add_argument(
         "--overflow-sample",
         type=int,
@@ -381,7 +398,12 @@ def main() -> None:
     args.out_dir = args.out_dir or args.data_root / OUT_SUBDIR
     args.out_dir.mkdir(parents=True, exist_ok=True)
     split_path = split_dir(args.data_root)
-    out_path = args.out_dir / f"{args.split}_{args.out_tag}.json"
+    suffix = f"_{args.out_tag}" if args.out_tag else ""
+    modes = list(MODES) if args.mode == "both" else [args.mode]
+    out_paths = {
+        mode: args.out_dir / f"{args.split}_{AXIS}_{mode}{suffix}.json"
+        for mode in modes
+    }
 
     if args.lora_adapter and len(args.models) != 1:
         raise SystemExit(
@@ -409,15 +431,16 @@ def main() -> None:
             f"(sampled {overflow['queries_sampled']} queries)"
         )
 
-    results: dict[str, dict] = {}
+    results: dict[str, dict[str, dict]] = {mode: {} for mode in modes}
     failures: list[dict] = []
     n_candidates = len(prepared[0]["candidates"])
 
-    def save() -> None:
-        out_path.write_text(
+    def save(mode: str) -> None:
+        out_paths[mode].write_text(
             json.dumps(
                 {
                     "split": args.split,
+                    "mode": mode,
                     "lora_adapter": args.lora_adapter,
                     "tanh_head": args.tanh_head,
                     "budget_models": resolve_models(args.budget_models),
@@ -426,9 +449,9 @@ def main() -> None:
                     "query_ids": [q["id"] for q in prepared],
                     "formats": list(FORMAT_NAMES),
                     "prep_stats": prep_stats,
-                    "models_probed": list(results),
+                    "models_probed": list(results[mode]),
                     "models_failed": failures,
-                    "results": results,
+                    "results": results[mode],
                 }
             )
         )
@@ -451,34 +474,47 @@ def main() -> None:
             failures.append(
                 {"model": model_name, "stage": "model_load", "error": str(error)}
             )
-            save()
+            for mode in modes:
+                save(mode)
             continue
 
         try:
             started = time.time()
             tokenizer = tokenizers.get(model_name) or load_tokenizer(model_name)
-            matrices = score_all_formats(
-                model, tokenizer, prepared, args.batch_size, device
-            )
-            entry = summarise_model(matrices, args.store_matrices)
-            results[model_name] = entry
-            report_model(entry)
+            for mode in modes:
+                print(f"  {mode}")
+                matrices = score_all_formats(
+                    model,
+                    tokenizer,
+                    prepared,
+                    args.batch_size,
+                    device,
+                    with_body=mode == "with_body",
+                )
+                entry = summarise_model(matrices, args.store_matrices)
+                results[mode][model_name] = entry
+                report_model(entry)
+                save(mode)
             print(f"  ({time.time() - started:.1f}s)")
-            save()
         except Exception as error:
             print(f"  scoring failed: {type(error).__name__}: {error}")
             failures.append(
                 {"model": model_name, "stage": "scoring", "error": str(error)}
             )
-            save()
+            for mode in modes:
+                save(mode)
 
         del model
         if device == "cuda":
             torch.cuda.empty_cache()
 
-    report_summary(results, failures, n_candidates, args.split, len(prepared))
-    save()
-    print(f"\nSaved -> {out_path}  ({out_path.stat().st_size / 1e6:.1f} MB)")
+    for mode in modes:
+        report_summary(
+            results[mode], failures, n_candidates, f"{args.split}/{mode}", len(prepared)
+        )
+        save(mode)
+        size = out_paths[mode].stat().st_size / 1e6
+        print(f"\nSaved -> {out_paths[mode]}  ({size:.1f} MB)")
 
 
 if __name__ == "__main__":

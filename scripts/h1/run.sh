@@ -8,6 +8,7 @@
 #   GPUS         comma-separated GPUs to spread models across (default 0)
 #   STAGES       comma-separated stage numbers to run (default all)
 #   MODELS       comma-separated registry slugs (default the whole roster)
+#   MODE         with_body, metadata_only, or both (default both)
 #   FSR_RUNNER   runner to source (default scripts/runners/local.sh)
 #   DATA_ROOT    corpus directory (default data/nq)
 #   LIMIT        cap on records and queries, for a smoke pass
@@ -51,5 +52,4 @@ stage 6 "within-query, all" bash scripts/h1/within_query.sh all
 
 echo
 echo "H1 pass complete in $(( ($(date +%s) - STARTED) / 60 )) min"
-echo "  cross-query:  $DATA_ROOT/h1_measurement/"
-echo "  within-query: $DATA_ROOT/h1_within_query/"
+echo "  results: $DATA_ROOT/h1/"

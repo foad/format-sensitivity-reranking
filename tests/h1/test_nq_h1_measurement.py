@@ -209,7 +209,7 @@ class TestRunMode:
             None,
             None,
         )
-        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert data["models_probed"] == ["model/a", "model/b"]
         assert data["models_failed"] == []
         assert len(data["results"]["model/a"]["scores"]) == FORMAT_COUNT
@@ -227,7 +227,7 @@ class TestRunMode:
             None,
             None,
         )
-        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert data["models_failed"][0]["stage"] == "tokenizer_load"
 
     def test_records_a_model_load_failure(self, monkeypatch, tmp_path):
@@ -243,7 +243,7 @@ class TestRunMode:
             None,
             None,
         )
-        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert data["models_failed"][0]["stage"] == "model_load"
 
     def test_records_a_scoring_failure_without_stopping(self, monkeypatch, tmp_path):
@@ -264,7 +264,7 @@ class TestRunMode:
             None,
             None,
         )
-        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert len(data["models_failed"]) == 2
         assert data["models_failed"][0]["error"].startswith("RuntimeError")
 
@@ -281,7 +281,7 @@ class TestRunMode:
             {"model/a": 1},
             {"dropped": 0, "budget_min": 400},
         )
-        data = json.loads((tmp_path / "test_with_body.json").read_text())
+        data = json.loads((tmp_path / "test_cross_with_body.json").read_text())
         assert data["tightest_tokeniser_counts"] == {"model/a": 1}
         assert data["drop_stats"]["dropped"] == 0
 
@@ -298,7 +298,7 @@ class TestRunMode:
             None,
             None,
         )
-        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert "tightest_tokeniser_counts" not in data
         assert "drop_stats" not in data
 
@@ -426,7 +426,7 @@ class TestMain:
             ],
         )
         mod.main()
-        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert data["n_records"] == 3
 
     def test_with_body_mode_reports_the_budget_distribution(
@@ -473,7 +473,7 @@ class TestMain:
             ],
         )
         mod.main()
-        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert data["n_records"] == 2
 
     def test_smoke_test_mode_caps_records_and_batch(
@@ -498,7 +498,7 @@ class TestMain:
         )
         mod.main()
         assert "SMOKE TEST MODE" in capsys.readouterr().out
-        data = json.loads((tmp_path / "test_metadata_only.json").read_text())
+        data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert data["n_records"] == mod.SMOKE_TEST_RECORDS
 
     def test_exits_when_no_tokenizer_loads(self, monkeypatch, tmp_path):
@@ -554,7 +554,7 @@ class TestOutTag:
             None,
             None,
         )
-        assert (tmp_path / "test_metadata_only.json").exists()
+        assert (tmp_path / "test_cross_metadata_only.json").exists()
 
     def test_a_tag_separates_parallel_runs(self, monkeypatch, tmp_path):
         TestRunMode()._patch_loaders(monkeypatch)
@@ -568,7 +568,7 @@ class TestOutTag:
             None,
             None,
         )
-        assert (tmp_path / "test_metadata_only_bge_base.json").exists()
+        assert (tmp_path / "test_cross_metadata_only_bge_base.json").exists()
 
 
 class TestResolveModels:

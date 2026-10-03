@@ -16,25 +16,12 @@ docker run --rm --gpus device=0 -v "$PWD:/work" format-sensitivity-reranking \
 
 Built on `nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04`.
 
-## H1
-
-```bash
-GPUS=0,1,2 bash scripts/h1/run.sh
-```
-
-| Stage | Axis | Records | Default |
-|---|---|---|---|
-| 1, 2 | cross-query, within-query | `test`, the headline | on |
-| 3, 4 | cross-query, within-query | `nq_val`, an independent check | on |
-| 5, 6 | cross-query, within-query | `all`, the whole corpus | off |
-
-Stages 5 and 6 overlap the records H2 trains on, so they are descriptive only.
-
-Results land in `data/nq/h1_measurement/` and `data/nq/h1_within_query/`.
-
 ## Corpus
 
-Check the pipeline first, over a small scan:
+Every measurement reads the corpus, so build it first, or download it
+from the release and unpack into `data/`.
+
+To build it, check the pipeline first over a small scan:
 
 ```bash
 uv run python scripts/corpus/build_corpus.py \
@@ -54,8 +41,9 @@ a different revision.
 
 ### Checking the result
 
-The build prints `Corpus build complete` once passed. It reports split leakage, malformed negatives, and any file changed since the stage that wrote it.
-Validation can also be ran independently:
+The build prints `Corpus build complete` once `validate` has passed.
+
+Validation can also be run on its own:
 
 ```bash
 uv run python scripts/corpus/validate.py
@@ -63,3 +51,21 @@ uv run python scripts/corpus/validate.py
 
 `data/nq/run.json` holds the exit code of each stage. `data/nq/manifest.json`
 holds the build parameters and a digest of every file written.
+
+## H1
+
+```bash
+GPUS=0,1,2 bash scripts/h1/run.sh
+```
+
+| Stage | Axis | Records | Default |
+|---|---|---|---|
+| 1, 2 | cross-query, within-query | `test`, the headline | on |
+| 3, 4 | cross-query, within-query | `nq_val`, an independent check | on |
+| 5, 6 | cross-query, within-query | `all`, the whole corpus | off |
+
+Stages 5 and 6 are descriptive only.
+
+Results land in `data/nq/h1/`, named `{split}_{axis}_{mode}_{model}.json`.
+
+See [`../data/README.md`](../data/README.md).
