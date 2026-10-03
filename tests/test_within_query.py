@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from fsr.within_query import (
+    bootstrap_ci_of_inconsistency,
     bootstrap_tables,
     conditional_inconsistency,
     conditional_inconsistency_from_matrices,
@@ -295,3 +296,54 @@ class TestBootstrapTables:
         narrow_low, narrow_high = narrow[model]["format_dependent_ci"]
         wide_low, wide_high = wide[model]["format_dependent_ci"]
         assert wide_high - wide_low >= narrow_high - narrow_low
+
+
+class TestBootstrapCiOfInconsistency:
+    def _top1(self, n=200, seed=0):
+        rng = np.random.default_rng(seed)
+        base = rng.random(n) < 0.8
+        return {f: base & (rng.random(n) < 0.9) for f in ("yaml", "json", "toml")}
+
+    def test_brackets_the_point_estimate(self):
+        top1 = self._top1()
+        point = conditional_inconsistency(top1, formats=list(top1))["inconsistency_pct"]
+        low, high = bootstrap_ci_of_inconsistency(top1, n_boot=500, formats=list(top1))
+        assert low <= point <= high
+
+    def test_a_wider_interval_is_not_narrower(self):
+        top1 = self._top1()
+        narrow = bootstrap_ci_of_inconsistency(
+            top1, n_boot=500, ci=0.50, formats=list(top1)
+        )
+        wide = bootstrap_ci_of_inconsistency(
+            top1, n_boot=500, ci=0.99, formats=list(top1)
+        )
+        assert wide[1] - wide[0] >= narrow[1] - narrow[0]
+
+    def test_is_deterministic_for_a_seed(self):
+        top1 = self._top1()
+        first = bootstrap_ci_of_inconsistency(top1, n_boot=200, formats=list(top1))
+        again = bootstrap_ci_of_inconsistency(top1, n_boot=200, formats=list(top1))
+        assert first == again
+
+    def test_perfect_consistency_gives_a_zero_interval(self):
+        top1 = {f: np.ones(50, dtype=bool) for f in ("yaml", "json")}
+        assert bootstrap_ci_of_inconsistency(top1, n_boot=200, formats=list(top1)) == (
+            0.0,
+            0.0,
+        )
+
+    def test_nothing_answerable_gives_nan(self):
+        top1 = {f: np.zeros(40, dtype=bool) for f in ("yaml", "json")}
+        low, high = bootstrap_ci_of_inconsistency(top1, n_boot=200, formats=list(top1))
+        assert math.isnan(low) and math.isnan(high)
+
+    def test_ignores_a_format_not_asked_for(self):
+        top1 = self._top1()
+        top1["markdown"] = np.zeros(200, dtype=bool)
+        paired = bootstrap_ci_of_inconsistency(
+            top1, n_boot=200, formats=["yaml", "json", "toml"]
+        )
+        assert paired == bootstrap_ci_of_inconsistency(
+            self._top1(), n_boot=200, formats=["yaml", "json", "toml"]
+        )

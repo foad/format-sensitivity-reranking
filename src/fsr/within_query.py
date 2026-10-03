@@ -14,12 +14,16 @@ import numpy as np
 from scipy import stats
 
 from fsr.formats import FORMAT_NAMES
-from fsr.metrics import reciprocal_ranks
+from fsr.metrics import (
+    DEFAULT_CI,
+    DEFAULT_N_BOOT,
+    DEFAULT_SEED,
+    _percentile_ci,
+    reciprocal_ranks,
+)
 from fsr.models.registry import label_of
 
 SCALE_EPSILON = 1e-12
-DEFAULT_BOOTSTRAP = 10_000
-DEFAULT_CI = 0.95
 MatricesPerFormat = Mapping[str, Any]
 
 
@@ -287,7 +291,7 @@ def conditional_inconsistency_from_matrices(
 def bootstrap_tables(
     results: dict[str, Any],
     formats: list[str],
-    n_boot: int = DEFAULT_BOOTSTRAP,
+    n_boot: int = DEFAULT_N_BOOT,
     seed: int = 0,
     ci: float = DEFAULT_CI,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], list[str], np.ndarray]:
@@ -362,3 +366,39 @@ def bootstrap_tables(
             }
         )
     return per_model, diffs, models, order
+
+
+def bootstrap_ci_of_inconsistency(
+    top1_per_fmt: Mapping[str, Any],
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    ci: float = DEFAULT_CI,
+    formats: Sequence[str] = FORMAT_NAMES,
+) -> tuple[float, float]:
+    """Compute a bootstrap interval for the conditional inconsistency share.
+
+    Args:
+        top1_per_fmt: A boolean array per format, True where the gold leads.
+        n_boot: The number of bootstrap replicates.
+        seed: The seed for the resample.
+        ci: The interval width.
+        formats: The format names to include.
+
+    Returns:
+        The lower bound and the upper bound, as percentages.
+    """
+    present = _present(top1_per_fmt, formats)
+    stack = np.stack([np.asarray(top1_per_fmt[f], dtype=bool) for f in present])
+    n_leading = stack.sum(axis=0)
+    answerable = n_leading > 0
+    inconsistent = answerable & (n_leading < len(present))
+
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, len(n_leading), size=(n_boot, len(n_leading)))
+    counts = answerable[idx].sum(axis=1)
+    shares = np.full(n_boot, np.nan)
+    drawn = counts > 0
+    shares[drawn] = 100.0 * inconsistent[idx].sum(axis=1)[drawn] / counts[drawn]
+    if not drawn.any():
+        return float("nan"), float("nan")
+    return _percentile_ci(shares[drawn], ci)

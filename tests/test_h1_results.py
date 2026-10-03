@@ -83,6 +83,28 @@ def within_entry(inconsistency=17.5):
     }
 
 
+def bootstrap_entry():
+    """Return a within-query entry carrying the per-query vectors."""
+    entry = within_entry()
+    entry["reciprocal_ranks"] = {
+        f: [1.0, 0.5, 1.0, 0.25, 1.0, 0.5] for f in mod.FORMAT_NAMES
+    }
+    entry["reciprocal_ranks"]["json"] = [0.5, 0.5, 1.0, 0.25, 1.0, 1.0]
+    entry["conditional_inconsistency"] = {
+        "n_answerable": 5,
+        "inconsistent": 2,
+        "inconsistency_pct": 40.0,
+        "answerable_pct": 83.0,
+    }
+    entry["per_query"] = {
+        "yaml vs json": {
+            "flip_rate_pct": [10.0, 20.0, 5.0, 0.0, 15.0, 30.0],
+            "kendall_tau": [0.8, 0.7, 0.9, 1.0, 0.6, 0.5],
+        }
+    }
+    return entry
+
+
 def write(tmp_path, split, axis, mode, slugs=None, entry=None):
     """Write one result file per model and return the data root."""
     out = mod.results_dir(tmp_path)
@@ -216,3 +238,50 @@ class TestPerFormatTables:
         table = mod.per_format_scores(mod.load_axis(root, "test", "cross", "with_body"))
         assert list(table.columns) == FORMATS
         assert table.iloc[0]["yaml"] == 0.0
+
+
+class TestBootstrapFrame:
+    def test_reports_an_interval_per_model(self, tmp_path):
+        root = write(tmp_path, "test", "within", "with_body", entry=bootstrap_entry())
+        frame = mod.bootstrap_frame(
+            mod.load_axis(root, "test", "within", "with_body"), n_boot=50
+        )
+        assert list(frame.index) == ["MiniLM-L6", "bge-base"]
+        row = frame.iloc[0]
+        assert row["format_dependent_lo"] <= row["format_dependent_pct"]
+        assert row["format_dependent_pct"] <= row["format_dependent_hi"]
+
+    def test_names_the_worst_pair(self, tmp_path):
+        root = write(tmp_path, "test", "within", "with_body", entry=bootstrap_entry())
+        frame = mod.bootstrap_frame(
+            mod.load_axis(root, "test", "within", "with_body"), n_boot=50
+        )
+        assert frame.iloc[0]["worst_pair"] == "yaml vs json"
+
+
+class TestIntervals:
+    def test_score_interval_brackets_the_estimate(self, tmp_path):
+        entry = cross_entry()
+        entry["scores"] = {f: [0.0, 1.0, 2.0, 3.0, 4.0, 5.0] for f in mod.FORMAT_NAMES}
+        entry["scores"]["json"] = [1.0, 1.5, 2.5, 2.0, 5.0, 4.0]
+        root = write(tmp_path, "test", "cross", "with_body", entry=entry)
+        frame = mod.score_intervals(
+            mod.load_axis(root, "test", "cross", "with_body"), n_boot=200
+        )
+        assert list(frame.columns) == ["max_abs_d", "low", "high"]
+        assert frame.iloc[0]["low"] <= frame.iloc[0]["high"]
+
+    def test_answer_interval_brackets_the_estimate(self, tmp_path):
+        root = write(tmp_path, "test", "within", "with_body", entry=bootstrap_entry())
+        frame = mod.answer_intervals(
+            mod.load_axis(root, "test", "within", "with_body"), n_boot=200
+        )
+        row = frame.iloc[0]
+        assert row["low"] <= row["inconsistency_pct"] <= row["high"]
+
+    def test_answer_interval_is_labelled_in_roster_order(self, tmp_path):
+        root = write(tmp_path, "test", "within", "with_body", entry=bootstrap_entry())
+        frame = mod.answer_intervals(
+            mod.load_axis(root, "test", "within", "with_body"), n_boot=100
+        )
+        assert list(frame.index) == ["MiniLM-L6", "bge-base"]
