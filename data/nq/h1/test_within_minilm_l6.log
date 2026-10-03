@@ -1,8 +1,8 @@
 Device: cuda
 
 Loading tokenizers for 6 budget models...
-Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
   ok  cross-encoder/ms-marco-MiniLM-L6-v2
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
   ok  cross-encoder/ms-marco-MiniLM-L12-v2
   ok  BAAI/bge-reranker-base
   ok  BAAI/bge-reranker-v2-m3
@@ -13,7 +13,7 @@ Loading data/nq/splits/test.json...
 
 Split 'test': 821 queries
 
-Reusing candidate lists from data/nq/h1_within_query/test_candidates.json
+Reusing candidate lists from data/nq/h1/test_candidates.json
   767 queries
   dropped_gold_budget: 51
   dropped_no_bm25_negs: 0
@@ -31,7 +31,21 @@ Reusing candidate lists from data/nq/h1_within_query/test_candidates.json
 ----------------------------------------------------------------------
 cross-encoder/ms-marco-MiniLM-L6-v2
 ----------------------------------------------------------------------
-Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 44624.78it/s]
+Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 12402.19it/s]
+  metadata_only
+  scored       yaml  gold mean=-2.956  neg mean=-8.498
+  scored       json  gold mean=-3.980  neg mean=-8.898
+  scored       toml  gold mean=-4.044  neg mean=-9.051
+  scored  inline_kv  gold mean=-3.673  neg mean=-8.886
+  scored   markdown  gold mean=-3.108  neg mean=-8.448
+
+  max within-query flip %: 9.4%  (yaml vs json)
+  min Kendall tau:         0.813  (yaml vs json)
+  max top-1 change %:      16.0%  (yaml vs json)
+  delta/S_within:          0.138
+  gold top-1 all formats:  38.3%  |  format-dependent: 10.4%  |  never: 51.2%
+  MRR per format:          yaml=0.578  json=0.571  toml=0.571  inline_kv=0.578  markdown=0.578
+  with_body
   scored       yaml  gold mean=+4.768  neg mean=-5.911
   scored       json  gold mean=+3.663  neg mean=-6.171
   scored       toml  gold mean=+3.801  neg mean=-6.398
@@ -44,10 +58,21 @@ cross-encoder/ms-marco-MiniLM-L6-v2
   delta/S_within:          0.107
   gold top-1 all formats:  75.2%  |  format-dependent: 12.6%  |  never: 12.1%
   MRR per format:          yaml=0.900  json=0.883  toml=0.883  inline_kv=0.900  markdown=0.886
-  (135.4s)
+  (212.4s)
 
 ====================================================================================================
-WITHIN-QUERY SUMMARY - split=test  n_queries=767  candidates=16
+WITHIN-QUERY SUMMARY - split=test/metadata_only  n_queries=767  candidates=16
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+------------------------------------------------------------------------------------------------------
+cross-encoder/ms-marco-MiniLM-L6-v2                    9.4%     0.813      16.0%     10.4%     0.138
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved -> data/nq/h1/test_within_metadata_only_minilm_l6.json  (0.4 MB)
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=test/with_body  n_queries=767  candidates=16
 ====================================================================================================
 model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
 ------------------------------------------------------------------------------------------------------
@@ -55,4 +80,4 @@ cross-encoder/ms-marco-MiniLM-L6-v2                    8.7%     0.826      11.1%
 
   fmt-dep% = queries whose gold ranks first under some formats but not others.
 
-Saved -> data/nq/h1_within_query/test_wq_minilm_l6.json  (0.4 MB)
+Saved -> data/nq/h1/test_within_with_body_minilm_l6.json  (0.4 MB)

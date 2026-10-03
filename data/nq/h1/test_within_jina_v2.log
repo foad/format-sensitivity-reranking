@@ -13,7 +13,7 @@ Loading data/nq/splits/test.json...
 
 Split 'test': 821 queries
 
-Reusing candidate lists from data/nq/h1_within_query/test_candidates.json
+Reusing candidate lists from data/nq/h1/test_candidates.json
   767 queries
   dropped_gold_budget: 51
   dropped_no_bm25_negs: 0
@@ -44,8 +44,22 @@ flash_attn is not installed. Using PyTorch native attention implementation.
 flash_attn is not installed. Using PyTorch native attention implementation.
 flash_attn is not installed. Using PyTorch native attention implementation.
 flash_attn is not installed. Using PyTorch native attention implementation.
-Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 2345.16it/s]
+Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 2328.12it/s]
+  metadata_only
 [transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  gold mean=-1.030  neg mean=-2.715
+  scored       json  gold mean=-1.099  neg mean=-2.702
+  scored       toml  gold mean=-1.109  neg mean=-2.770
+  scored  inline_kv  gold mean=-1.119  neg mean=-2.772
+  scored   markdown  gold mean=-0.992  neg mean=-2.651
+
+  max within-query flip %: 8.5%  (yaml vs json)
+  min Kendall tau:         0.829  (yaml vs json)
+  max top-1 change %:      19.0%  (yaml vs json)
+  delta/S_within:          0.125
+  gold top-1 all formats:  47.2%  |  format-dependent: 11.5%  |  never: 41.3%
+  MRR per format:          yaml=0.653  json=0.639  toml=0.650  inline_kv=0.658  markdown=0.648
+  with_body
   scored       yaml  gold mean=+1.327  neg mean=-2.205
   scored       json  gold mean=+1.472  neg mean=-2.090
   scored       toml  gold mean=+1.457  neg mean=-2.142
@@ -58,10 +72,21 @@ flash_attn is not installed. Using PyTorch native attention implementation.
   delta/S_within:          0.061
   gold top-1 all formats:  88.7%  |  format-dependent: 4.6%  |  never: 6.8%
   MRR per format:          yaml=0.948  json=0.945  toml=0.947  inline_kv=0.948  markdown=0.952
-  (612.8s)
+  (968.3s)
 
 ====================================================================================================
-WITHIN-QUERY SUMMARY - split=test  n_queries=767  candidates=16
+WITHIN-QUERY SUMMARY - split=test/metadata_only  n_queries=767  candidates=16
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+------------------------------------------------------------------------------------------------------
+jinaai/jina-reranker-v2-base-multilingual              8.5%     0.829      19.0%     11.5%     0.125
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved -> data/nq/h1/test_within_metadata_only_jina_v2.json  (0.4 MB)
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=test/with_body  n_queries=767  candidates=16
 ====================================================================================================
 model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
 ------------------------------------------------------------------------------------------------------
@@ -69,4 +94,4 @@ jinaai/jina-reranker-v2-base-multilingual              5.1%     0.897       3.8%
 
   fmt-dep% = queries whose gold ranks first under some formats but not others.
 
-Saved -> data/nq/h1_within_query/test_wq_jina_v2.json  (0.4 MB)
+Saved -> data/nq/h1/test_within_with_body_jina_v2.json  (0.4 MB)

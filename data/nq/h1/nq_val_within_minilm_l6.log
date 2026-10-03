@@ -13,7 +13,7 @@ Loading data/nq/splits/nq_val.json...
 
 Split 'nq_val': 171 queries
 
-Reusing candidate lists from data/nq/h1_within_query/nq_val_candidates.json
+Reusing candidate lists from data/nq/h1/nq_val_candidates.json
   158 queries
   dropped_gold_budget: 12
   dropped_no_bm25_negs: 0
@@ -31,7 +31,21 @@ Reusing candidate lists from data/nq/h1_within_query/nq_val_candidates.json
 ----------------------------------------------------------------------
 cross-encoder/ms-marco-MiniLM-L6-v2
 ----------------------------------------------------------------------
-Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 13324.11it/s]
+Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 8692.60it/s]
+  metadata_only
+  scored       yaml  gold mean=-2.928  neg mean=-8.088
+  scored       json  gold mean=-3.944  neg mean=-8.545
+  scored       toml  gold mean=-3.957  neg mean=-8.731
+  scored  inline_kv  gold mean=-3.721  neg mean=-8.540
+  scored   markdown  gold mean=-3.045  neg mean=-8.029
+
+  max within-query flip %: 8.6%  (yaml vs json)
+  min Kendall tau:         0.828  (yaml vs json)
+  max top-1 change %:      19.0%  (inline_kv vs markdown)
+  delta/S_within:          0.146
+  gold top-1 all formats:  29.7%  |  format-dependent: 14.6%  |  never: 55.7%
+  MRR per format:          yaml=0.519  json=0.520  toml=0.527  inline_kv=0.509  markdown=0.532
+  with_body
   scored       yaml  gold mean=+4.782  neg mean=-5.303
   scored       json  gold mean=+3.573  neg mean=-5.604
   scored       toml  gold mean=+3.954  neg mean=-5.820
@@ -44,10 +58,21 @@ cross-encoder/ms-marco-MiniLM-L6-v2
   delta/S_within:          0.112
   gold top-1 all formats:  72.2%  |  format-dependent: 12.7%  |  never: 15.2%
   MRR per format:          yaml=0.857  json=0.863  toml=0.864  inline_kv=0.848  markdown=0.865
-  (27.4s)
+  (43.6s)
 
 ====================================================================================================
-WITHIN-QUERY SUMMARY - split=nq_val  n_queries=158  candidates=16
+WITHIN-QUERY SUMMARY - split=nq_val/metadata_only  n_queries=158  candidates=16
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+------------------------------------------------------------------------------------------------------
+cross-encoder/ms-marco-MiniLM-L6-v2                    8.6%     0.828      19.0%     14.6%     0.146
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved -> data/nq/h1/nq_val_within_metadata_only_minilm_l6.json  (0.1 MB)
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=nq_val/with_body  n_queries=158  candidates=16
 ====================================================================================================
 model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
 ------------------------------------------------------------------------------------------------------
@@ -55,4 +80,4 @@ cross-encoder/ms-marco-MiniLM-L6-v2                    9.1%     0.819      12.7%
 
   fmt-dep% = queries whose gold ranks first under some formats but not others.
 
-Saved -> data/nq/h1_within_query/nq_val_wq_minilm_l6.json  (0.1 MB)
+Saved -> data/nq/h1/nq_val_within_with_body_minilm_l6.json  (0.1 MB)
