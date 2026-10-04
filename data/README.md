@@ -24,13 +24,18 @@ nq/h1/{split}_{axis}_{mode}_{model}.json
 
 | Part | Values |
 |---|---|
-| `split` | `test` for the headline, `nq_val` for the independent check, `all` for the whole corpus |
+| `split` | `test` for the reported result, `nq_val` for the independent check, `all` for the pooled descriptive run |
 | `axis` | `cross` for score-axis comparisons between queries, `within` for the answer axis inside one query's candidate list |
 | `mode` | `with_body` for metadata and body text, `metadata_only` for the ablation |
 | `model` | the registry slug, such as `bge_base` |
 
 Each file also records its split and mode, so the name is an index rather than
 the only description. A `.log` beside it holds the run output.
+
+`all` (pooled) is `train`, `dev` and `test` from `nq_train` together.
+It overlaps the H2 training data, so is only used to describe the effect at scale as part of the robustness checks.
+
+`nq_val` is a separate article set from `nq_train` and is used for independent robustness checks.
 
 ## Building manually
 

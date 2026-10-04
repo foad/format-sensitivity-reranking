@@ -60,7 +60,7 @@ GPUS=0,1,2 bash scripts/h1/run.sh
 
 | Stage | Axis | Records | Default |
 |---|---|---|---|
-| 1, 2 | cross-query, within-query | `test`, the headline | on |
+| 1, 2 | cross-query, within-query | `test`, the reported result | on |
 | 3, 4 | cross-query, within-query | `nq_val`, an independent check | on |
 | 5, 6 | cross-query, within-query | `all`, the whole corpus | off |
 

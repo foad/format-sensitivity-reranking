@@ -80,6 +80,33 @@ def available(data_root: Path, axis: str, mode: str) -> list[str]:
     return [split for split in SPLITS if load_axis(data_root, split, axis, mode)]
 
 
+def measured_counts(data_root: Path, mode: str) -> dict[str, dict[str, int]]:
+    """Return the records and the queries each split contributed.
+
+    Args:
+        data_root: The corpus directory.
+        mode: `with_body` or `metadata_only`.
+
+    Returns:
+        The `records` and `queries` count of each split that has results.
+    """
+    counts: dict[str, dict[str, int]] = {}
+    for split in SPLITS:
+        found = {}
+        for axis, key, name in (
+            ("cross", "n_records", "records"),
+            ("within", "n_queries", "queries"),
+        ):
+            for model in MODELS:
+                path = result_path(data_root, split, axis, mode, model.slug)
+                if path.exists():
+                    found[name] = json.loads(path.read_text())[key]
+                    break
+        if found:
+            counts[split] = found
+    return counts
+
+
 def _frame(rows: dict[str, dict[str, Any]]) -> pd.DataFrame:
     """Return a frame indexed by model label, in roster order."""
     frame = pd.DataFrame.from_dict(rows, orient="index")

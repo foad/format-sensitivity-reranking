@@ -105,7 +105,7 @@ def bootstrap_entry():
     return entry
 
 
-def write(tmp_path, split, axis, mode, slugs=None, entry=None):
+def write(tmp_path, split, axis, mode, slugs=None, entry=None, size=100):
     """Write one result file per model and return the data root."""
     out = mod.results_dir(tmp_path)
     out.mkdir(parents=True, exist_ok=True)
@@ -113,6 +113,7 @@ def write(tmp_path, split, axis, mode, slugs=None, entry=None):
         payload = {
             "split": split,
             "mode": mode,
+            "n_records" if axis == "cross" else "n_queries": size,
             "results": {
                 by_slug(slug).model_id: entry
                 or (cross_entry() if axis == "cross" else within_entry())
@@ -171,6 +172,43 @@ class TestAvailable:
 
     def test_reports_nothing_when_absent(self, tmp_path):
         assert mod.available(tmp_path, "within", "with_body") == []
+
+
+class TestMeasuredCounts:
+    def test_reports_both_axes_of_a_split(self, tmp_path):
+        write(tmp_path, "test", "cross", "with_body", size=770)
+        write(tmp_path, "test", "within", "with_body", size=767)
+        counts = mod.measured_counts(tmp_path, "with_body")
+        assert counts == {"test": {"records": 770, "queries": 767}}
+
+    def test_reports_one_axis_when_the_other_is_absent(self, tmp_path):
+        write(tmp_path, "test", "cross", "with_body", size=770)
+        assert mod.measured_counts(tmp_path, "with_body") == {"test": {"records": 770}}
+
+    def test_keeps_the_split_order(self, tmp_path):
+        for split in ("all", "nq_val", "test"):
+            write(tmp_path, split, "cross", "with_body")
+        assert list(mod.measured_counts(tmp_path, "with_body")) == [
+            "test",
+            "nq_val",
+            "all",
+        ]
+
+    def test_leaves_out_a_split_with_no_results(self, tmp_path):
+        write(tmp_path, "test", "cross", "with_body")
+        assert "all" not in mod.measured_counts(tmp_path, "with_body")
+
+    def test_reports_nothing_when_no_results_exist(self, tmp_path):
+        assert mod.measured_counts(tmp_path, "with_body") == {}
+
+    def test_separates_the_two_modes(self, tmp_path):
+        write(tmp_path, "test", "cross", "with_body", size=770)
+        write(tmp_path, "test", "cross", "metadata_only", size=821)
+        assert mod.measured_counts(tmp_path, "metadata_only")["test"]["records"] == 821
+
+    def test_reads_a_split_whose_first_model_is_absent(self, tmp_path):
+        write(tmp_path, "test", "cross", "with_body", slugs=["bge_base"], size=42)
+        assert mod.measured_counts(tmp_path, "with_body")["test"]["records"] == 42
 
 
 class TestScoreTable:
