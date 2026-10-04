@@ -180,27 +180,53 @@ class TestWatch:
         assert mod.watch(tmp_path, "*.progress", 0.0, True, out) == 0
         assert "1/10" in out.getvalue()
 
-    def test_stops_when_every_job_is_finished(self, tmp_path):
-        state(tmp_path, "a", done=10, total=10)
-        out = io.StringIO()
-        assert mod.watch(tmp_path, "*.progress", 0.0, False, out) == 0
-
     def test_reports_a_failure_in_the_exit_code(self, tmp_path):
         state(tmp_path, "a", done=10, total=10, failed=1)
         out = io.StringIO()
-        assert mod.watch(tmp_path, "*.progress", 0.0, False, out) == 1
+        assert mod.watch(tmp_path, "*.progress", 0.0, True, out) == 1
 
-    def test_keeps_reading_until_the_jobs_settle(self, tmp_path, monkeypatch):
-        path = state(tmp_path, "a", done=1)
+    def test_keeps_watching_after_every_job_has_finished(self, tmp_path, monkeypatch):
+        state(tmp_path, "a", done=10, total=10)
+        rounds = []
+
+        def later(seconds):
+            rounds.append(seconds)
+            if len(rounds) == 2:
+                raise KeyboardInterrupt
+
+        monkeypatch.setattr(mod.time, "sleep", later)
+        with pytest.raises(KeyboardInterrupt):
+            mod.watch(tmp_path, "*.progress", 5.0, False, io.StringIO())
+        assert rounds == [5.0, 5.0]
+
+    def test_picks_up_a_job_that_starts_later(self, tmp_path, monkeypatch):
+        state(tmp_path, "test_cross_a", done=10, total=10)
+        rounds = []
+
+        def later(_seconds):
+            rounds.append(1)
+            if len(rounds) == 1:
+                state(tmp_path, "test_within_a", done=1, total=10)
+            else:
+                raise KeyboardInterrupt
+
+        monkeypatch.setattr(mod.time, "sleep", later)
+        out = io.StringIO()
+        with pytest.raises(KeyboardInterrupt):
+            mod.watch(tmp_path, "*.progress", 0.0, False, out)
+        assert "test_within_a" in out.getvalue()
+
+    def test_sleeps_between_reads(self, tmp_path, monkeypatch):
+        state(tmp_path, "a", done=1)
         sleeps = []
 
-        def finish(seconds):
+        def stop(seconds):
             sleeps.append(seconds)
-            path.write_text("done=10 total=10 elapsed=1 eta=0 failed=0 label=z\n")
+            raise KeyboardInterrupt
 
-        monkeypatch.setattr(mod.time, "sleep", finish)
-        out = io.StringIO()
-        assert mod.watch(tmp_path, "*.progress", 5.0, False, out) == 0
+        monkeypatch.setattr(mod.time, "sleep", stop)
+        with pytest.raises(KeyboardInterrupt):
+            mod.watch(tmp_path, "*.progress", 5.0, False, io.StringIO())
         assert sleeps == [5.0]
 
     def test_leaves_out_the_job_logs(self, tmp_path):
@@ -222,6 +248,22 @@ class TestWatch:
         out = io.StringIO()
         assert mod.watch(tmp_path, "*.progress", 0.0, True, out) == 0
         assert "no job progress found" in out.getvalue()
+
+    def test_waits_for_the_first_job_of_a_run(self, tmp_path, monkeypatch):
+        rounds = []
+
+        def later(_seconds):
+            rounds.append(1)
+            if len(rounds) == 1:
+                state(tmp_path, "a", done=1, total=10)
+            else:
+                raise KeyboardInterrupt
+
+        monkeypatch.setattr(mod.time, "sleep", later)
+        out = io.StringIO()
+        with pytest.raises(KeyboardInterrupt):
+            mod.watch(tmp_path, "*.progress", 0.0, False, out)
+        assert "1/10" in out.getvalue()
 
 
 class TestBuildParser:

@@ -163,7 +163,7 @@ def watch(
     once: bool,
     out: TextIO,
 ) -> int:
-    """Draw the progress of every matching log until the jobs finish.
+    """Draw the progress of every matching job until the viewer stops.
 
     Args:
         directory: The directory holding the progress files.
@@ -173,7 +173,7 @@ def watch(
         out: Where to write.
 
     Returns:
-        The exit code. 1 when any job reports a failure.
+        The exit code. 1 when a single block holds a failure.
     """
     redraw = 0
     animate = out.isatty() and not once
@@ -182,8 +182,7 @@ def watch(
         lines = render(states)
         draw(lines, out, redraw if animate else 0)
         redraw = len(lines)
-        settled = bool(states) and all(s.finished or s.failed for s in states)
-        if once or settled:
+        if once:
             return 1 if any(s.failed for s in states) else 0
         time.sleep(interval)
 
@@ -203,7 +202,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Glob the progress file names must match",
     )
     ap.add_argument("--interval", type=float, default=DEFAULT_INTERVAL)
-    ap.add_argument("--once", action="store_true", help="Draw one block and stop")
+    ap.add_argument(
+        "--once",
+        action="store_true",
+        help="Draw one block and stop, exiting non-zero if a job failed",
+    )
     return ap
 
 
