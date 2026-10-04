@@ -43,11 +43,11 @@ stage() {
     "$@"
 }
 
-stage 1 "cross-query, test" bash scripts/h1/measurement.sh test
+stage 1 "cross-query, test" bash scripts/h1/cross_query.sh test
 stage 2 "within-query, test" bash scripts/h1/within_query.sh test
-stage 3 "cross-query, nq_val" bash scripts/h1/measurement.sh nq_val
+stage 3 "cross-query, nq_val" bash scripts/h1/cross_query.sh nq_val
 stage 4 "within-query, nq_val" bash scripts/h1/within_query.sh nq_val
-stage 5 "cross-query, all" bash scripts/h1/measurement.sh all
+stage 5 "cross-query, all" bash scripts/h1/cross_query.sh all
 stage 6 "within-query, all" bash scripts/h1/within_query.sh all
 
 echo

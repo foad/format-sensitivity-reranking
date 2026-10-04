@@ -1,4 +1,4 @@
-"""Tests for scripts.h1.nq_h1_measurement."""
+"""Tests for scripts.h1.cross_query."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import json
 
 import pytest
 import torch
-from scripts.h1 import nq_h1_measurement as mod
+from scripts.h1 import cross_query as mod
 from tests.fakes import LogitModel, PairTokenizer
 
 from fsr.corpus.layout import split_dir

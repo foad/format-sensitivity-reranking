@@ -20,9 +20,9 @@ See [`../docs/reproduction.md`](../docs/reproduction.md) for exact commands and 
 
 ## `h1/`
  - `run.sh`: the full H1 pass.
- - `measurement.sh`: cross-query sensitivity for one split, one model per GPU.
+ - `cross_query.sh`: cross-query sensitivity for one split, one model per GPU.
  - `within_query.sh`: builds the shared candidate cache once, then scores one model per GPU.
- - `nq_h1_measurement.py`, `within_query.py`: the measurements themselves.
+ - `cross_query.py`, `within_query.py`: the measurements themselves.
 
 ## `h2/`
  - `sweep.sh`: Phase-1 lambda selection, then Phase-2 five-fold hold-one-out, parameterised by model.

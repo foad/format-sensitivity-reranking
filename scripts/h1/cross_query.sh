@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Cross-query format sensitivity for one record set.
+# The score axis: cross-query format sensitivity for one split.
 #
 # Usage:
-#   bash scripts/h1/measurement.sh [SPLIT]
+#   bash scripts/h1/cross_query.sh [SPLIT]
 #
 # Environment:
 #   GPUS         comma-separated GPUs to spread models across (default 0)
@@ -31,7 +31,7 @@ case "$SPLIT" in
         ;;
 esac
 
-MEASURE=scripts/h1/nq_h1_measurement.py
+MEASURE=scripts/h1/cross_query.py
 DATA_ROOT="${DATA_ROOT:-data/nq}"
 OUT_DIR="$DATA_ROOT/h1"
 mkdir -p "$OUT_DIR"

@@ -1,6 +1,21 @@
-"""Within-query rank disturbance across metadata formats.
+"""The answer axis: format sensitivity inside one query.
 
-Writes `{split}_{tag}.json`.
+Scores the gold passage and its BM25 negatives under each of the five
+metadata formats. It then measures how far the ranking inside a candidate
+list moves with the format. Every model in the roster is measured under the
+two conditions the score axis uses:
+
+  1. `with_body`: the passage is rendered metadata followed by budgeted body
+     prose. This is the primary condition.
+  2. `metadata_only`: the passage is the rendered metadata block alone.
+
+The two conditions share one candidate list per query, so they cover
+identical queries.
+
+A model that fails to load or to score is recorded in `models_failed` and does
+not stop the other models. Results are written after each model completes.
+
+Writes `{split}_within_{mode}.json` to the output directory.
 """
 
 from __future__ import annotations
@@ -31,6 +46,18 @@ from fsr.formats import FORMAT_NAMES, FORMATS
 from fsr.models.loading import load_model, load_tokenizer
 from fsr.models.registry import BASE_MODEL_IDS, BASE_MODELS, by_slug
 from fsr.passages import MAX_TOKENS
+from fsr.reporting import (
+    NAME_WIDTH,
+    ProgressCounter,
+    failures_block,
+    format_duration,
+    heading,
+    model_heading,
+    report_elapsed,
+    report_saved,
+    shorten,
+    table,
+)
 from fsr.scoring import score_batch
 from fsr.within_query import (
     conditional_inconsistency_from_matrices,
@@ -96,6 +123,8 @@ def score_all_formats(
     device: str,
     with_body: bool = True,
     verbose: bool = True,
+    counter: ProgressCounter | None = None,
+    label: str = "",
 ) -> dict[str, np.ndarray]:
     """Score every candidate of every query, once per format.
 
@@ -107,6 +136,8 @@ def score_all_formats(
         device: The device to score on.
         with_body: Whether a candidate carries its body text.
         verbose: Whether to report each format as it completes.
+        counter: The progress counter of the job, if one is running.
+        label: What to prefix each counted format with.
 
     Returns:
         One (n_queries, n_candidates) array per format.
@@ -133,6 +164,8 @@ def score_all_formats(
                 f"gold mean={matrix[:, 0].mean():+.3f}  "
                 f"neg mean={matrix[:, 1:].mean():+.3f}"
             )
+        if counter is not None:
+            counter.step(f"{label}/{name}" if label else name)
     return matrices
 
 
@@ -210,36 +243,37 @@ def report_summary(
         split: The split measured.
         n_queries: The queries measured.
     """
-    rule = "=" * 100
-    print(f"\n{rule}")
-    print(
+    heading(
         f"WITHIN-QUERY SUMMARY - split={split}  "
         f"n_queries={n_queries}  candidates={n_candidates}"
     )
-    print(rule)
-    print(
-        f"{'model':<48} {'max flip%':>10} {'min tau':>9} {'top1 chg%':>10} "
-        f"{'fmt-dep%':>9} {'delta/S':>9}"
+    table(
+        (
+            ("model", NAME_WIDTH),
+            ("max flip%", 10),
+            ("min tau", 9),
+            ("top1 chg%", 10),
+            ("fmt-dep%", 9),
+            ("delta/S", 9),
+        ),
+        [
+            [
+                shorten(model_name),
+                f"{summary['max_flip_rate_pct']:.1f}%",
+                f"{summary['min_kendall_tau']:.3f}",
+                f"{summary['max_top1_changed_pct']:.1f}%",
+                f"{entry['gold_top1']['gold_top1_format_dependent_pct']:.1f}%",
+                f"{entry['scale_diagnostic']['ratio']:.3f}",
+            ]
+            for model_name, entry in results.items()
+            for summary in [entry["within_query"]["summary"]]
+        ],
     )
-    print("-" * 102)
-    for model_name, entry in results.items():
-        summary = entry["within_query"]["summary"]
-        short = model_name if len(model_name) <= 48 else "..." + model_name[-45:]
-        print(
-            f"{short:<48} {summary['max_flip_rate_pct']:>9.1f}% "
-            f"{summary['min_kendall_tau']:>9.3f} "
-            f"{summary['max_top1_changed_pct']:>9.1f}% "
-            f"{entry['gold_top1']['gold_top1_format_dependent_pct']:>8.1f}% "
-            f"{entry['scale_diagnostic']['ratio']:>9.3f}"
-        )
     print(
         "\n  fmt-dep% = queries whose gold ranks first under some formats "
         "but not others."
     )
-    if failures:
-        print(f"\nFAILURES ({len(failures)}):")
-        for failure in failures:
-            print(f"  {failure['model']:<48} [{failure['stage']}] {failure['error']}")
+    failures_block(failures)
 
 
 def load_tokenizers(model_ids: list[str]) -> dict[str, Any]:
@@ -306,7 +340,8 @@ def prepare_queries(
             tokenizers,
             args.negatives,
         )
-        print(f"  {stats['n_kept']} queries kept  ({time.time() - started:.1f}s)")
+        print(f"  {stats['n_kept']} queries kept")
+        report_elapsed("built candidate lists", started)
         cache_path.write_text(json.dumps({"prepared": prepared, "prep_stats": stats}))
         print(f"  cached -> {cache_path}")
 
@@ -456,8 +491,9 @@ def main() -> None:
             )
         )
 
+    counter = ProgressCounter(len(models) * len(modes) * len(FORMAT_NAMES))
     for model_name in models:
-        print(f"\n{'-' * 70}\n{model_name}\n{'-' * 70}")
+        model_heading(model_name)
         try:
             model = load_model(
                 model_name,
@@ -490,12 +526,14 @@ def main() -> None:
                     args.batch_size,
                     device,
                     with_body=mode == "with_body",
+                    counter=counter,
+                    label=mode,
                 )
                 entry = summarise_model(matrices, args.store_matrices)
                 results[mode][model_name] = entry
                 report_model(entry)
                 save(mode)
-            print(f"  ({time.time() - started:.1f}s)")
+            report_elapsed("scored", started)
         except Exception as error:
             print(f"  scoring failed: {type(error).__name__}: {error}")
             failures.append(
@@ -513,8 +551,8 @@ def main() -> None:
             results[mode], failures, n_candidates, f"{args.split}/{mode}", len(prepared)
         )
         save(mode)
-        size = out_paths[mode].stat().st_size / 1e6
-        print(f"\nSaved -> {out_paths[mode]}  ({size:.1f} MB)")
+        report_saved(out_paths[mode], mode)
+    print(f"\nPass complete in {format_duration(counter.elapsed)}", flush=True)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 import numpy as np
 import pytest
@@ -12,6 +13,7 @@ from tests.fakes import LogitModel, PairTokenizer, WordTokenizer
 from fsr.corpus.layout import split_dir
 from fsr.formats import FORMAT_NAMES
 from fsr.models.registry import BASE_MODEL_IDS, BASE_MODELS
+from fsr.reporting import parse_progress
 
 SENTENCE = "The bridge opened in 1946 and carries the road across the river. "
 TOKENIZERS = {"word": WordTokenizer()}
@@ -314,6 +316,45 @@ def run_main(monkeypatch, tmp_path, *extra, model=None):
     )
     mod.main()
     return root / mod.OUT_SUBDIR / "test_within_with_body.json"
+
+
+class TestProgressReporting:
+    def test_counts_every_format_of_every_mode(self, monkeypatch, tmp_path, capsys):
+        run_main(monkeypatch, tmp_path, "--mode", "both")
+        lines = [
+            parse_progress(x)
+            for x in capsys.readouterr().out.split("\n")
+            if parse_progress(x)
+        ]
+        assert [x["done"] for x in lines] == [str(i) for i in range(1, 11)]
+        assert {x["total"] for x in lines} == {"10"}
+
+    def test_labels_each_unit_with_its_mode_and_format(
+        self, monkeypatch, tmp_path, capsys
+    ):
+        run_main(monkeypatch, tmp_path, "--mode", "with_body")
+        lines = [
+            parse_progress(x)
+            for x in capsys.readouterr().out.split("\n")
+            if parse_progress(x)
+        ]
+        assert [x["label"] for x in lines] == [
+            f"with_body/{name}" for name in FORMAT_NAMES
+        ]
+
+    def test_stamps_the_model_banner(self, monkeypatch, tmp_path, capsys):
+        run_main(monkeypatch, tmp_path)
+        assert re.search(
+            r"model/a   \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}", capsys.readouterr().out
+        )
+
+    def test_reports_the_total_time_of_the_pass(self, monkeypatch, tmp_path, capsys):
+        run_main(monkeypatch, tmp_path)
+        assert "Pass complete in 0:00:" in capsys.readouterr().out
+
+    def test_reports_the_time_each_model_took(self, monkeypatch, tmp_path, capsys):
+        run_main(monkeypatch, tmp_path)
+        assert "scored in 0:00:" in capsys.readouterr().out
 
 
 class TestMain:

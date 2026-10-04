@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Within-query measurement for one split.
+# The answer axis: within-query format sensitivity for one split.
 #
 # Usage:
 #   bash scripts/h1/within_query.sh [SPLIT]
