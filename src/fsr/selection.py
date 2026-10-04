@@ -11,10 +11,23 @@ from typing import Any
 
 import numpy as np
 
-from fsr.formats import FORMAT_NAMES
-from fsr.metrics import DEFAULT_SEED, bootstrap_ci_of_mean
+from fsr.comparison import NI_MARGIN, delta_mrr_ci, mean_mrr_per_query
+from fsr.metrics import DEFAULT_SEED
 
-NI_MARGIN = 0.03
+__all__ = [
+    "LAMBDA",
+    "NI_MARGIN",
+    "RANK",
+    "SWEEPS",
+    "Sweep",
+    "candidate_row",
+    "cis_overlap",
+    "delta_mrr_ci",
+    "extract_value",
+    "mean_mrr_per_query",
+    "select",
+    "select_winner",
+]
 
 
 def _median(ordered: Sequence[dict[str, Any]]) -> dict[str, Any]:
@@ -78,41 +91,6 @@ def extract_value(path: Path, sweep: Sweep) -> str:
     if not found:
         raise ValueError(f"no {sweep.name} in {path.name}")
     return found.group(1)
-
-
-def mean_mrr_per_query(guardrail: dict[str, Any]) -> np.ndarray:
-    """Return the reciprocal rank of each query, averaged over the formats.
-
-    Args:
-        guardrail: The ranking guardrail section of an evaluation.
-
-    Returns:
-        One value per query.
-    """
-    by_format = guardrail["per_format_reciprocal_ranks"]
-    return np.stack(
-        [np.asarray(by_format[name]) for name in FORMAT_NAMES], axis=0
-    ).mean(axis=0)
-
-
-def delta_mrr_ci(
-    rr_base: np.ndarray,
-    rr_trained: np.ndarray,
-    seed: int = DEFAULT_SEED,
-) -> tuple[float, float, float]:
-    """Compare a trained arm against the baseline, query by query.
-
-    Args:
-        rr_base: The baseline reciprocal ranks.
-        rr_trained: The trained reciprocal ranks, for the same queries.
-        seed: The seed for the resample.
-
-    Returns:
-        The mean change, and the lower and upper bounds of its interval.
-    """
-    delta = rr_trained - rr_base
-    low, high = bootstrap_ci_of_mean(delta, seed=seed)
-    return float(delta.mean()), low, high
 
 
 def cis_overlap(a_low: float, a_high: float, b_low: float, b_high: float) -> bool:

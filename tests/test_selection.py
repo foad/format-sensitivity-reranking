@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 
 from fsr.formats import FORMAT_NAMES
-from fsr.metrics import bootstrap_ci_of_mean
 from fsr.selection import (
     LAMBDA,
     NI_MARGIN,
@@ -16,9 +15,7 @@ from fsr.selection import (
     Sweep,
     candidate_row,
     cis_overlap,
-    delta_mrr_ci,
     extract_value,
-    mean_mrr_per_query,
     select,
     select_winner,
 )
@@ -84,45 +81,6 @@ class TestSweeps:
     def test_a_rank_tie_takes_the_smallest(self):
         ordered = [{"rank": "4"}, {"rank": "8"}, {"rank": "16"}]
         assert RANK.pick(ordered)["rank"] == "4"
-
-
-class TestMeanMrrPerQuery:
-    def test_averages_over_the_formats(self):
-        ranks = {f: [1.0, 0.5] for f in FORMAT_NAMES}
-        ranks[FORMAT_NAMES[0]] = [0.0, 0.5]
-        out = mean_mrr_per_query({"per_format_reciprocal_ranks": ranks})
-        assert out[0] == pytest.approx(4 / len(FORMAT_NAMES))
-        assert out[1] == pytest.approx(0.5)
-
-    def test_returns_one_value_per_query(self):
-        assert len(mean_mrr_per_query(guardrail([1.0, 0.5, 0.25]))) == 3
-
-
-class TestDeltaMrrCi:
-    def test_reports_the_mean_change(self):
-        base = np.array([0.5, 0.5, 0.5])
-        trained = np.array([0.6, 0.7, 0.8])
-        mean, _, _ = delta_mrr_ci(base, trained)
-        assert mean == pytest.approx(0.2)
-
-    def test_the_interval_brackets_the_mean(self):
-        base = np.array([0.5] * 20)
-        trained = np.array([0.6] * 10 + [0.4] * 10)
-        mean, low, high = delta_mrr_ci(base, trained)
-        assert low <= mean <= high
-
-    def test_matches_the_shared_bootstrap(self):
-        base = np.array([0.5, 0.4, 0.3, 0.9])
-        trained = np.array([0.6, 0.2, 0.8, 0.1])
-        _, low, high = delta_mrr_ci(base, trained, seed=7)
-        assert (low, high) == bootstrap_ci_of_mean(trained - base, seed=7)
-
-    def test_the_seed_fixes_the_interval(self):
-        base = np.array([0.5, 0.4, 0.3, 0.9])
-        trained = np.array([0.6, 0.2, 0.8, 0.1])
-        assert delta_mrr_ci(base, trained, seed=1) == delta_mrr_ci(
-            base, trained, seed=1
-        )
 
 
 class TestCisOverlap:

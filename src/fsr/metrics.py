@@ -77,16 +77,27 @@ def per_format_summary(scores_per_fmt: ScoresPerFormat) -> dict[str, dict[str, f
     }
 
 
+def cohen_d(a: Sequence[float], b: Sequence[float]) -> float:
+    """Compute the paired Cohen's d of two aligned score sets.
+
+    Args:
+        a: The scores of one condition.
+        b: The scores of the other, for the same records.
+
+    Returns:
+        The mean of the paired differences divided by their standard
+        deviation.
+    """
+    diff = np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
+    return float(diff.mean() / (diff.std() + COHEN_D_EPSILON))
+
+
 def pairwise_cohen_d(
     scores_per_fmt: ScoresPerFormat,
     *,
     formats: Sequence[str] = FORMAT_NAMES,
 ) -> tuple[list[dict[str, Any]], float, str | None]:
     """Compute the paired Cohen's d for each pair of formats.
-
-    The effect size is the mean of the paired score differences divided by their
-    standard deviation. The Wilcoxon signed-rank p-value is 1.0 if every
-    difference is zero.
 
     Args:
         scores_per_fmt: The per-record scores, by format name, aligned across
@@ -104,7 +115,7 @@ def pairwise_cohen_d(
         a = np.array(scores_per_fmt[f1])
         b = np.array(scores_per_fmt[f2])
         diff = a - b
-        d = float(diff.mean() / (diff.std() + COHEN_D_EPSILON))
+        d = cohen_d(a, b)
         if not diff.any():
             wp = 1.0
         else:
