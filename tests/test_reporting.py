@@ -6,7 +6,6 @@ import pytest
 
 from fsr.reporting import (
     NAME_WIDTH,
-    PROGRESS_TAG,
     ProgressCounter,
     eta_seconds,
     failures_block,
@@ -14,7 +13,7 @@ from fsr.reporting import (
     heading,
     model_heading,
     parse_progress,
-    progress,
+    progress_line,
     report_elapsed,
     report_saved,
     shorten,
@@ -100,76 +99,108 @@ class TestModelHeading:
         assert lines[2] == "-" * 8
 
 
-class TestProgress:
-    def test_reports_every_field(self, capsys):
-        line = progress(3, 10, "with_body/yaml", 60.0)
-        assert capsys.readouterr().out.strip() == line
+class TestProgressLine:
+    def test_reports_every_field(self):
+        line = progress_line(3, 10, "with_body/yaml", 60.0)
         assert parse_progress(line) == {
             "done": "3",
             "total": "10",
             "elapsed": "60.0",
             "eta": "140.0",
+            "failed": "0",
             "label": "with_body/yaml",
         }
 
-    def test_starts_with_the_tag(self, capsys):
-        assert progress(1, 2, "a", 1.0).startswith(PROGRESS_TAG)
-        capsys.readouterr()
+    def test_reports_no_time_left_at_the_end(self):
+        assert parse_progress(progress_line(10, 10, "a", 50.0))["eta"] == "0.0"
 
-    def test_reports_no_time_left_at_the_end(self, capsys):
-        assert parse_progress(progress(10, 10, "a", 50.0))["eta"] == "0.0"
-        capsys.readouterr()
+    def test_marks_a_failure(self):
+        assert (
+            parse_progress(progress_line(3, 10, "a", 1.0, failed=True))["failed"] == "1"
+        )
+
+    def test_ends_without_a_newline(self):
+        assert not progress_line(1, 2, "a", 1.0).endswith("\n")
 
 
 class TestProgressCounter:
-    def test_counts_from_one(self, capsys):
-        counter = ProgressCounter(4)
+    def test_counts_from_one(self, tmp_path):
+        counter = ProgressCounter(4, tmp_path / "j.progress")
         assert parse_progress(counter.step("a"))["done"] == "1"
         assert parse_progress(counter.step("b"))["done"] == "2"
-        capsys.readouterr()
 
-    def test_carries_the_total(self, capsys):
+    def test_writes_its_opening_state(self, tmp_path):
+        path = tmp_path / "j.progress"
+        ProgressCounter(4, path)
+        assert parse_progress(path.read_text())["done"] == "0"
+
+    def test_replaces_the_file_at_each_unit(self, tmp_path):
+        path = tmp_path / "j.progress"
+        counter = ProgressCounter(4, path)
+        counter.step("a")
+        counter.step("b")
+        assert path.read_text().count("\n") == 1
+        assert parse_progress(path.read_text())["label"] == "b"
+
+    def test_creates_the_directory(self, tmp_path):
+        path = tmp_path / "runs" / "j.progress"
+        ProgressCounter(2, path)
+        assert path.exists()
+
+    def test_keeps_no_file_without_a_path(self, tmp_path):
+        counter = ProgressCounter(2)
+        assert parse_progress(counter.step("a"))["done"] == "1"
+        assert list(tmp_path.iterdir()) == []
+
+    def test_carries_the_total(self):
         assert parse_progress(ProgressCounter(7).step("a"))["total"] == "7"
-        capsys.readouterr()
 
-    def test_labels_each_unit(self, capsys):
+    def test_labels_each_unit(self):
         assert parse_progress(ProgressCounter(2).step("x/y"))["label"] == "x/y"
-        capsys.readouterr()
 
-    def test_measures_from_the_given_start(self, capsys, monkeypatch):
+    def test_measures_from_the_given_start(self, monkeypatch):
         monkeypatch.setattr("fsr.reporting.time.time", lambda: 60.0)
         counter = ProgressCounter(2, started=0.0)
         assert parse_progress(counter.step("a"))["elapsed"] == "60.0"
-        capsys.readouterr()
 
     def test_reports_the_time_since_it_began(self, monkeypatch):
         monkeypatch.setattr("fsr.reporting.time.time", lambda: 90.0)
         assert ProgressCounter(2, started=30.0).elapsed == pytest.approx(60.0)
 
-    def test_spans_the_phases_of_one_job(self, capsys):
-        counter = ProgressCounter(4)
+    def test_marks_a_failure_and_keeps_the_count(self, tmp_path):
+        path = tmp_path / "j.progress"
+        counter = ProgressCounter(4, path)
+        counter.step("a")
+        counter.fail()
+        fields = parse_progress(path.read_text())
+        assert fields["failed"] == "1"
+        assert fields["done"] == "1"
+
+    def test_spans_the_phases_of_one_job(self, tmp_path):
+        path = tmp_path / "j.progress"
+        counter = ProgressCounter(4, path)
         for mode in ("with_body", "metadata_only"):
             for fmt in ("yaml", "json"):
                 counter.step(f"{mode}/{fmt}")
         assert counter.done == 4
-        lines = [parse_progress(x) for x in capsys.readouterr().out.strip().split("\n")]
-        assert [x["done"] for x in lines] == ["1", "2", "3", "4"]
+        assert parse_progress(path.read_text())["done"] == "4"
 
 
 class TestParseProgress:
-    def test_ignores_an_ordinary_line(self):
-        assert parse_progress("  scored yaml  (mean=+0.598)") is None
+    def test_reads_a_state_line(self):
+        assert parse_progress("done=7 total=10 label=x/y")["label"] == "x/y"
 
-    def test_ignores_an_empty_line(self):
+    def test_tolerates_a_trailing_newline(self):
+        assert parse_progress("done=7 total=10\n")["total"] == "10"
+
+    def test_reports_nothing_for_an_empty_file(self):
         assert parse_progress("") is None
 
-    def test_reads_a_line_from_a_log(self):
-        line = f"{PROGRESS_TAG} done=7 total=10 elapsed=1.5 eta=0.6 label=x/y"
-        assert parse_progress(line)["label"] == "x/y"
+    def test_reports_nothing_for_a_line_with_no_field(self):
+        assert parse_progress("  scored yaml  ") is None
 
     def test_skips_a_token_with_no_value(self):
-        line = f"{PROGRESS_TAG} done=1 stray total=2"
-        assert parse_progress(line) == {"done": "1", "total": "2"}
+        assert parse_progress("done=1 stray total=2") == {"done": "1", "total": "2"}
 
 
 COLUMNS = (("model", 10), ("max |d|", 8), ("ranking", 0))

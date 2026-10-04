@@ -231,6 +231,7 @@ def run_mode(
     for model_name in models:
         if model_name not in tokenizers:
             print(f"\n  Skipping {model_name} (tokenizer missing)")
+            counter.fail()
             failures.append(
                 {
                     "model": model_name,
@@ -250,6 +251,7 @@ def run_mode(
             force_eager_attn=args.eager_attn,
         )
         if model is None:
+            counter.fail()
             failures.append(
                 {
                     "model": model_name,
@@ -285,6 +287,7 @@ def run_mode(
             save_partial()
         except Exception as e:
             print(f"  x scoring failed for {model_name}: {type(e).__name__}: {e}")
+            counter.fail()
             failures.append(
                 {
                     "model": model_name,
@@ -355,6 +358,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ap.add_argument("--batch-size", type=int, default=16)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument(
+        "--progress-file",
+        type=Path,
+        default=None,
+        help="File to keep the live progress of this job in",
+    )
     ap.add_argument("--in-dir", type=Path, default=DEFAULT_IN_DIR)
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     ap.add_argument("--limit", type=int, default=None, help="Cap records for testing")
@@ -449,7 +458,9 @@ def main() -> None:
         print("  No eligible records; stopping.")
         return
 
-    counter = ProgressCounter(len(modes) * len(FORMATS) * len(args.models))
+    counter = ProgressCounter(
+        len(modes) * len(FORMATS) * len(args.models), args.progress_file
+    )
     for mode in modes:
         run_mode(
             mode,

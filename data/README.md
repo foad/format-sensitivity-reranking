@@ -31,6 +31,7 @@ nq/h1/{split}_{axis}_{mode}_{model}.json
 
 Each file also records its split and mode, so the name is an index rather than
 the only description. A `.log` beside it holds the run output.
+A `.progress` file holds the live state of a running job and is not kept.
 
 `all` (pooled) is `train`, `dev` and `test` from `nq_train` together.
 It overlaps the H2 training data, so is only used to describe the effect at scale as part of the robustness checks.

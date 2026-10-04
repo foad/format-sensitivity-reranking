@@ -44,9 +44,12 @@ SUFFIX=""
 [ -n "${LIMIT:-}" ] && SUFFIX="_limit${LIMIT}"
 
 job_command() { JOB_CMD=("$MEASURE" "${COMMON[@]}" --models "$1"
-                         --out-tag "${1}${SUFFIX}"); }
+                         --out-tag "${1}${SUFFIX}"
+                         --progress-file "$(job_progress "$1")"); }
 job_output() { echo "$OUT_DIR/${SPLIT}_within_with_body_${1}${SUFFIX}.json"; }
 job_log() { echo "$OUT_DIR/${SPLIT}_within_${1}${SUFFIX}.log"; }
+# The watcher reads this; it is machine state, so it stays out of the log.
+job_progress() { echo "$OUT_DIR/${SPLIT}_within_${1}${SUFFIX}.progress"; }
 
 if [ -n "${MODELS:-}" ]; then
     IFS=', ' read -ra MODEL_LIST <<< "$MODELS"

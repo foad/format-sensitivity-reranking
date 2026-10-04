@@ -2,7 +2,7 @@
 
 Usage:
     uv run python scripts/watch.py
-    uv run python scripts/watch.py --pattern 'test_cross_*.log'
+    uv run python scripts/watch.py --pattern 'test_cross_*.progress'
 """
 
 from __future__ import annotations
@@ -15,13 +15,12 @@ from pathlib import Path
 from typing import TextIO
 
 from fsr.cli import DEFAULT_DATA_ROOT
-from fsr.reporting import format_duration, parse_progress
+from fsr.reporting import PROGRESS_SUFFIX, format_duration, parse_progress
 
 RESULTS_SUBDIR = "h1"
-DEFAULT_PATTERN = "*.log"
+DEFAULT_PATTERN = "*" + PROGRESS_SUFFIX
 BAR_WIDTH = 24
 DEFAULT_INTERVAL = 5.0
-FAILURE_MARKER = "FAILURES ("
 CURSOR_UP = "\033[{n}A"
 INTERRUPTED = 130
 
@@ -31,7 +30,7 @@ class JobState:
     """What one job's log says about its progress.
 
     Attributes:
-        name: The log file name, without its suffix.
+        name: The job name, from the progress file name.
         done: The units the job has completed.
         total: The units the job will complete. 0 before the first unit.
         label: What the job finished last.
@@ -55,34 +54,33 @@ class JobState:
 
 
 def read_state(path: Path) -> JobState:
-    """Return what a log says about its job.
+    """Return what a progress file says about its job.
 
     Args:
-        path: The log file.
+        path: The progress file.
 
     Returns:
-        The state. A log with no progress line reports zero units.
+        The state. A file that is absent, empty or part written reports zero
+        units, since a job replaces the whole line at each one.
     """
     try:
-        text = path.read_text(errors="replace")
+        fields = parse_progress(path.read_text(errors="replace"))
     except OSError:
-        text = ""
-    latest = None
-    for line in text.splitlines():
-        fields = parse_progress(line)
-        if fields:
-            latest = fields
-    if latest is None:
-        return JobState(path.stem, 0, 0, "", 0.0, 0.0, FAILURE_MARKER in text)
-    return JobState(
-        name=path.stem,
-        done=int(latest.get("done", 0)),
-        total=int(latest.get("total", 0)),
-        label=latest.get("label", ""),
-        elapsed=float(latest.get("elapsed", 0.0)),
-        eta=float(latest.get("eta", 0.0)),
-        failed=FAILURE_MARKER in text,
-    )
+        fields = None
+    if fields is None:
+        return JobState(path.stem, 0, 0, "", 0.0, 0.0, False)
+    try:
+        return JobState(
+            name=path.stem,
+            done=int(fields.get("done", 0)),
+            total=int(fields.get("total", 0)),
+            label=fields.get("label", ""),
+            elapsed=float(fields.get("elapsed", 0.0)),
+            eta=float(fields.get("eta", 0.0)),
+            failed=fields.get("failed") == "1",
+        )
+    except ValueError:
+        return JobState(path.stem, 0, 0, "", 0.0, 0.0, False)
 
 
 def render_bar(done: int, total: int, width: int = BAR_WIDTH) -> str:
@@ -111,7 +109,7 @@ def render(states: list[JobState]) -> list[str]:
         The lines to print.
     """
     if not states:
-        return ["no job logs found"]
+        return ["no job progress found"]
     width = max(len(s.name) for s in states)
     lines = []
     for state in states:
@@ -119,13 +117,15 @@ def render(states: list[JobState]) -> list[str]:
             note = "FAILED"
         elif state.finished:
             note = f"done in {format_duration(state.elapsed)}"
-        elif state.total:
+        elif not state.total:
+            note = "waiting"
+        elif not state.done:
+            note = f"starting  {format_duration(state.elapsed)}"
+        else:
             note = (
                 f"{state.label}  {format_duration(state.elapsed)}"
                 f"  eta {format_duration(state.eta)}"
             )
-        else:
-            note = "waiting"
         lines.append(
             f"  {state.name:<{width}}  {render_bar(state.done, state.total)}"
             f" {state.done:>3}/{state.total:<3}  {note}"
@@ -166,8 +166,8 @@ def watch(
     """Draw the progress of every matching log until the jobs finish.
 
     Args:
-        directory: The directory holding the logs.
-        pattern: The glob the log names must match.
+        directory: The directory holding the progress files.
+        pattern: The glob the progress file names must match.
         interval: The seconds between reads.
         once: Whether to draw a single block and stop.
         out: Where to write.
@@ -178,11 +178,7 @@ def watch(
     redraw = 0
     animate = out.isatty() and not once
     while True:
-        states = [
-            read_state(path)
-            for path in sorted(directory.glob(pattern))
-            if not path.name.endswith(".hare.log")
-        ]
+        states = [read_state(path) for path in sorted(directory.glob(pattern))]
         lines = render(states)
         draw(lines, out, redraw if animate else 0)
         redraw = len(lines)
@@ -199,10 +195,12 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument(
         "--results-subdir",
         default=RESULTS_SUBDIR,
-        help="Directory under the corpus root that holds the logs",
+        help="Directory under the corpus root that holds the jobs",
     )
     ap.add_argument(
-        "--pattern", default=DEFAULT_PATTERN, help="Glob the log names must match"
+        "--pattern",
+        default=DEFAULT_PATTERN,
+        help="Glob the progress file names must match",
     )
     ap.add_argument("--interval", type=float, default=DEFAULT_INTERVAL)
     ap.add_argument("--once", action="store_true", help="Draw one block and stop")

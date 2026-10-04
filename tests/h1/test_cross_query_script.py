@@ -503,9 +503,10 @@ class TestMain:
         assert {p["n_records"] for p in payloads.values()} == {3}
         assert {p["drop_stats"]["dropped"] for p in payloads.values()} == {2}
 
-    def test_progress_spans_both_modes_of_one_job(self, monkeypatch, tmp_path, capsys):
+    def test_keeps_the_progress_of_the_whole_job(self, monkeypatch, tmp_path):
         self._corpus(tmp_path)
         self._patch(monkeypatch, tmp_path)
+        progress = tmp_path / "job.progress"
         monkeypatch.setattr(
             "sys.argv",
             [
@@ -518,18 +519,59 @@ class TestMain:
                 str(tmp_path),
                 "--out-dir",
                 str(tmp_path),
+                "--progress-file",
+                str(progress),
             ],
         )
         mod.main()
-        lines = [
-            parse_progress(x)
-            for x in capsys.readouterr().out.split("\n")
-            if parse_progress(x)
-        ]
-        assert [x["done"] for x in lines] == [str(i) for i in range(1, 11)]
-        assert {x["total"] for x in lines} == {"10"}
-        assert lines[0]["label"] == "metadata_only/yaml"
-        assert lines[-1]["label"] == "with_body/markdown"
+        fields = parse_progress(progress.read_text())
+        assert (fields["done"], fields["total"]) == ("10", "10")
+        assert fields["label"] == "with_body/markdown"
+        assert fields["failed"] == "0"
+
+    def test_keeps_no_progress_file_unless_asked(self, monkeypatch, tmp_path):
+        self._corpus(tmp_path)
+        self._patch(monkeypatch, tmp_path)
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "prog",
+                "--mode",
+                "with_body",
+                "--models",
+                "m/a",
+                "--in-dir",
+                str(tmp_path),
+                "--out-dir",
+                str(tmp_path),
+            ],
+        )
+        mod.main()
+        assert list(tmp_path.glob("*.progress")) == []
+
+    def test_keeps_the_progress_out_of_the_log(self, monkeypatch, tmp_path, capsys):
+        self._corpus(tmp_path)
+        self._patch(monkeypatch, tmp_path)
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "prog",
+                "--mode",
+                "with_body",
+                "--models",
+                "m/a",
+                "--in-dir",
+                str(tmp_path),
+                "--out-dir",
+                str(tmp_path),
+                "--progress-file",
+                str(tmp_path / "job.progress"),
+            ],
+        )
+        mod.main()
+        out = capsys.readouterr().out
+        assert "done=" not in out
+        assert "total=" not in out
 
     def test_reports_the_total_time_of_the_pass(self, monkeypatch, tmp_path, capsys):
         self._corpus(tmp_path)

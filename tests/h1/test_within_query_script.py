@@ -319,28 +319,42 @@ def run_main(monkeypatch, tmp_path, *extra, model=None):
 
 
 class TestProgressReporting:
-    def test_counts_every_format_of_every_mode(self, monkeypatch, tmp_path, capsys):
-        run_main(monkeypatch, tmp_path, "--mode", "both")
-        lines = [
-            parse_progress(x)
-            for x in capsys.readouterr().out.split("\n")
-            if parse_progress(x)
-        ]
-        assert [x["done"] for x in lines] == [str(i) for i in range(1, 11)]
-        assert {x["total"] for x in lines} == {"10"}
+    def test_keeps_the_progress_of_the_whole_job(self, monkeypatch, tmp_path):
+        progress = tmp_path / "job.progress"
+        run_main(
+            monkeypatch,
+            tmp_path,
+            "--mode",
+            "both",
+            "--progress-file",
+            str(progress),
+        )
+        fields = parse_progress(progress.read_text())
+        assert (fields["done"], fields["total"]) == ("10", "10")
+        assert fields["label"] == "with_body/markdown"
 
-    def test_labels_each_unit_with_its_mode_and_format(
-        self, monkeypatch, tmp_path, capsys
-    ):
-        run_main(monkeypatch, tmp_path, "--mode", "with_body")
-        lines = [
-            parse_progress(x)
-            for x in capsys.readouterr().out.split("\n")
-            if parse_progress(x)
-        ]
-        assert [x["label"] for x in lines] == [
-            f"with_body/{name}" for name in FORMAT_NAMES
-        ]
+    def test_labels_each_unit_with_its_mode_and_format(self, monkeypatch, tmp_path):
+        progress = tmp_path / "job.progress"
+        run_main(
+            monkeypatch,
+            tmp_path,
+            "--mode",
+            "with_body",
+            "--progress-file",
+            str(progress),
+        )
+        fields = parse_progress(progress.read_text())
+        assert fields["label"] == f"with_body/{FORMAT_NAMES[-1]}"
+        assert fields["total"] == "5"
+
+    def test_keeps_the_progress_out_of_the_log(self, monkeypatch, tmp_path, capsys):
+        run_main(
+            monkeypatch,
+            tmp_path,
+            "--progress-file",
+            str(tmp_path / "job.progress"),
+        )
+        assert "done=" not in capsys.readouterr().out
 
     def test_stamps_the_model_banner(self, monkeypatch, tmp_path, capsys):
         run_main(monkeypatch, tmp_path)

@@ -387,6 +387,12 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--negatives", type=int, default=DEFAULT_NEGATIVES)
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument(
+        "--progress-file",
+        type=Path,
+        default=None,
+        help="File to keep the live progress of this job in",
+    )
     ap.add_argument("--out-dir", type=Path, default=None)
     ap.add_argument(
         "--out-tag",
@@ -491,7 +497,9 @@ def main() -> None:
             )
         )
 
-    counter = ProgressCounter(len(models) * len(modes) * len(FORMAT_NAMES))
+    counter = ProgressCounter(
+        len(models) * len(modes) * len(FORMAT_NAMES), args.progress_file
+    )
     for model_name in models:
         model_heading(model_name)
         try:
@@ -507,6 +515,7 @@ def main() -> None:
                 print(f"  adapter: {args.lora_adapter}")
         except Exception as error:
             print(f"  model load failed: {type(error).__name__}: {error}")
+            counter.fail()
             failures.append(
                 {"model": model_name, "stage": "model_load", "error": str(error)}
             )
@@ -536,6 +545,7 @@ def main() -> None:
             report_elapsed("scored", started)
         except Exception as error:
             print(f"  scoring failed: {type(error).__name__}: {error}")
+            counter.fail()
             failures.append(
                 {"model": model_name, "stage": "scoring", "error": str(error)}
             )
