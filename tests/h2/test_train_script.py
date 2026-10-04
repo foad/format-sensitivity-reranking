@@ -118,26 +118,6 @@ def log_of(data_root, arm_name=DEFAULT_ARM, slug=SLUG):
     return read_log(train_dir(data_root, slug, arm_name) / LOG_NAME)
 
 
-class TestResolveModel:
-    def test_accepts_a_slug(self):
-        assert mod.resolve_model("bge_base").slug == "bge_base"
-
-    def test_accepts_an_identifier(self):
-        assert mod.resolve_model("BAAI/bge-reranker-base").slug == "bge_base"
-
-    def test_rejects_an_unknown_name(self):
-        with pytest.raises(SystemExit, match="unknown model 'nope'"):
-            mod.resolve_model("nope")
-
-    def test_rejects_an_unregistered_identifier(self):
-        with pytest.raises(SystemExit, match="unknown model"):
-            mod.resolve_model("some/other-model")
-
-    def test_names_the_known_slugs_when_it_refuses(self):
-        with pytest.raises(SystemExit, match="minilm_l6"):
-            mod.resolve_model("nope")
-
-
 class TestTrainingFormats:
     def test_keeps_every_format_when_none_is_held_out(self):
         assert mod.training_formats(None) == list(FORMAT_NAMES)

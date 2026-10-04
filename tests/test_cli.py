@@ -5,7 +5,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+import pytest
+
 from fsr import cli
+from fsr.cli import resolve_model
 
 
 def parser():
@@ -112,3 +115,23 @@ class TestReportWritten:
         out.write_text("{}")
         cli.report_written(out, 8188)
         assert "8,188 records" in capsys.readouterr().out
+
+
+class TestResolveModel:
+    def test_accepts_a_slug(self):
+        assert resolve_model("bge_base").slug == "bge_base"
+
+    def test_accepts_an_identifier(self):
+        assert resolve_model("BAAI/bge-reranker-base").slug == "bge_base"
+
+    def test_rejects_an_unknown_name(self):
+        with pytest.raises(SystemExit, match="unknown model 'nope'"):
+            resolve_model("nope")
+
+    def test_rejects_an_unregistered_identifier(self):
+        with pytest.raises(SystemExit, match="unknown model"):
+            resolve_model("some/other-model")
+
+    def test_names_the_known_slugs_when_it_refuses(self):
+        with pytest.raises(SystemExit, match="minilm_l6"):
+            resolve_model("nope")

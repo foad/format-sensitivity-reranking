@@ -7,6 +7,8 @@ from collections.abc import Iterable, Sequence
 from itertools import islice
 from pathlib import Path
 
+from fsr.models.registry import MODELS, Model, by_id, by_slug
+
 DEFAULT_DATA_ROOT = Path("data") / "nq"
 
 
@@ -79,3 +81,25 @@ def report_written(path: Path, records: int | None = None) -> None:
     if records is not None:
         detail = f"{records:,} records, {detail}"
     print(f"Wrote {path}  ({detail})")
+
+
+def resolve_model(name: str) -> Model:
+    """Return the registry entry for a slug or an identifier.
+
+    Args:
+        name: A registry slug or a Hugging Face identifier.
+
+    Returns:
+        The model.
+
+    Raises:
+        SystemExit: If the name is in neither form.
+    """
+    found = by_id(name) if "/" in name else None
+    if found is not None:
+        return found
+    try:
+        return by_slug(name)
+    except ValueError:
+        known = ", ".join(m.slug for m in MODELS)
+        raise SystemExit(f"unknown model {name!r}. Expected one of: {known}") from None

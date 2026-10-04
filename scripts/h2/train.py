@@ -17,13 +17,12 @@ import numpy as np
 import torch
 from transformers import get_scheduler
 
-from fsr.cli import add_data_root_arg
+from fsr.cli import add_data_root_arg, resolve_model
 from fsr.corpus.splitting import load_records
 from fsr.formats import FORMAT_NAMES
 from fsr.h2_layout import ADAPTER_NAME, arm, train_dir
 from fsr.models.adapters import build_adapted_model
 from fsr.models.loading import load_tokenizer
-from fsr.models.registry import MODELS, Model, by_id, by_slug
 from fsr.reporting import ProgressCounter, heading, report_elapsed
 from fsr.training.checkpoint import CHECKPOINT_NAME, load_checkpoint
 from fsr.training.data import (
@@ -42,29 +41,6 @@ DEFAULT_MAX_STEPS = 500
 DEFAULT_WARMUP_STEPS = 30
 DEFAULT_EVAL_EVERY = 50
 HELD_OUT_NONE = "none"
-
-
-def resolve_model(name: str) -> Model:
-    """Return the registry entry for a slug or an identifier.
-
-    Args:
-        name: A registry slug or a Hugging Face identifier.
-
-    Returns:
-        The model.
-
-    Raises:
-        SystemExit: If the name is in neither form. The output path is built
-            from the slug, so an unregistered model has nowhere to write.
-    """
-    found = by_id(name) if "/" in name else None
-    if found is not None:
-        return found
-    try:
-        return by_slug(name)
-    except ValueError:
-        known = ", ".join(m.slug for m in MODELS)
-        raise SystemExit(f"unknown model {name!r}. Expected one of: {known}") from None
 
 
 def training_formats(held_out: str | None) -> list[str]:
