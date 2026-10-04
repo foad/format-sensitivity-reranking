@@ -231,6 +231,16 @@ class TestBuildParser:
 
 
 class TestMain:
+    def test_stopping_it_is_not_an_error(self, tmp_path, monkeypatch):
+        log(tmp_path / "h1", "a", [progress_line(1, 10)])
+        monkeypatch.setattr("sys.argv", ["prog", "--data-root", str(tmp_path)])
+
+        def interrupt(_seconds):
+            raise KeyboardInterrupt
+
+        monkeypatch.setattr(mod.time, "sleep", interrupt)
+        assert mod.main() == mod.INTERRUPTED == 130
+
     def test_watches_the_directory_the_arguments_name(self, tmp_path, monkeypatch):
         directory = tmp_path / "h1"
         log(directory, "a", [progress_line(10, 10)])

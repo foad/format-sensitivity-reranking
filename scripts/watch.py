@@ -23,6 +23,7 @@ BAR_WIDTH = 24
 DEFAULT_INTERVAL = 5.0
 FAILURE_MARKER = "FAILURES ("
 CURSOR_UP = "\033[{n}A"
+INTERRUPTED = 130
 
 
 @dataclass(frozen=True)
@@ -215,13 +216,16 @@ def main() -> int:
         The exit code.
     """
     args = build_parser().parse_args()
-    return watch(
-        args.data_root / args.results_subdir,
-        args.pattern,
-        args.interval,
-        args.once,
-        sys.stdout,
-    )
+    try:
+        return watch(
+            args.data_root / args.results_subdir,
+            args.pattern,
+            args.interval,
+            args.once,
+            sys.stdout,
+        )
+    except KeyboardInterrupt:
+        return INTERRUPTED
 
 
 if __name__ == "__main__":
