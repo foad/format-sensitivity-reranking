@@ -5,12 +5,14 @@ from pathlib import Path
 import pytest
 
 from fsr.h2_layout import (
+    ADAPTER_CONFIG_NAME,
     ADAPTER_NAME,
     AXES,
     BASE_ARM,
     PHASE1_FOLD,
     SPLITS,
     SWEEPS,
+    adapter_config_path,
     adapter_dir,
     arm,
     comparison_path,
@@ -175,3 +177,19 @@ class TestNoProtocolQualifier:
 
     def test_no_path_names_an_environment(self):
         assert "hex" not in str(train_dir(ROOT, "minilm_l6", arm(None, 0)))
+
+
+class TestAdapterConfigPath:
+    def test_sits_inside_the_adapter_directory(self):
+        assert adapter_config_path(ROOT, "m", "yaml_lam0").parent == adapter_dir(
+            ROOT, "m", "yaml_lam0"
+        )
+
+    def test_names_the_configuration_file(self):
+        assert adapter_config_path(ROOT, "m", "yaml_lam0").name == ADAPTER_CONFIG_NAME
+        assert ADAPTER_CONFIG_NAME == "adapter_config.json"
+
+    def test_two_arms_stay_apart(self):
+        assert adapter_config_path(ROOT, "m", "yaml_lam0") != adapter_config_path(
+            ROOT, "m", "json_lam0"
+        )

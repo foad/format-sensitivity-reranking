@@ -13,7 +13,7 @@ from transformers import get_scheduler
 
 from fsr.corpus.layout import NEGATIVES_NAME, split_dir
 from fsr.formats import FORMAT_NAMES
-from fsr.h2_layout import ADAPTER_NAME, train_dir
+from fsr.h2_layout import ADAPTER_NAME, adapter_config_path, train_dir
 from fsr.models.adapters import AdaptedModel
 from fsr.models.registry import by_slug
 from fsr.reporting import parse_progress
@@ -286,21 +286,36 @@ class TestRun:
 
 
 class TestSkipAndForce:
+    def saved_adapter(self, data_root, arm_name=DEFAULT_ARM):
+        """Leave the adapter a finished run would have saved."""
+        path = adapter_config_path(data_root, SLUG, arm_name)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{}")
+        return path
+
     @pytest.mark.usefixtures("fake_model")
     def test_skips_a_finished_arm(self, monkeypatch, data_root, capsys):
-        (train_dir(data_root, SLUG, DEFAULT_ARM) / ADAPTER_NAME).mkdir(parents=True)
+        self.saved_adapter(data_root)
         run(monkeypatch, data_root)
         assert "Skipping" in capsys.readouterr().out
 
     @pytest.mark.usefixtures("fake_model")
-    def test_writes_nothing_when_it_skips(self, monkeypatch, data_root):
+    def test_trains_again_over_an_adapter_that_was_never_written(
+        self, monkeypatch, data_root
+    ):
         (train_dir(data_root, SLUG, DEFAULT_ARM) / ADAPTER_NAME).mkdir(parents=True)
+        run(monkeypatch, data_root)
+        assert (train_dir(data_root, SLUG, DEFAULT_ARM) / LOG_NAME).exists()
+
+    @pytest.mark.usefixtures("fake_model")
+    def test_writes_nothing_when_it_skips(self, monkeypatch, data_root):
+        self.saved_adapter(data_root)
         run(monkeypatch, data_root)
         assert not (train_dir(data_root, SLUG, DEFAULT_ARM) / LOG_NAME).exists()
 
     @pytest.mark.usefixtures("fake_model")
     def test_force_trains_over_a_finished_arm(self, monkeypatch, data_root):
-        (train_dir(data_root, SLUG, DEFAULT_ARM) / ADAPTER_NAME).mkdir(parents=True)
+        self.saved_adapter(data_root)
         run(monkeypatch, data_root, "--force")
         assert (train_dir(data_root, SLUG, DEFAULT_ARM) / LOG_NAME).exists()
 

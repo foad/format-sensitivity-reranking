@@ -20,7 +20,7 @@ from transformers import get_scheduler
 from fsr.cli import add_data_root_arg, resolve_model
 from fsr.corpus.splitting import load_records
 from fsr.formats import FORMAT_NAMES
-from fsr.h2_layout import ADAPTER_NAME, arm, train_dir
+from fsr.h2_layout import ADAPTER_NAME, adapter_config_path, arm, train_dir
 from fsr.models.adapters import build_adapted_model
 from fsr.models.loading import load_tokenizer
 from fsr.reporting import ProgressCounter, heading, report_elapsed
@@ -149,7 +149,8 @@ def main() -> None:
     log_path = run_dir / LOG_NAME
     checkpoint_path = run_dir / CHECKPOINT_NAME
 
-    if adapter_path.exists() and not args.force:
+    saved = adapter_config_path(args.data_root, model_entry.slug, arm_name)
+    if saved.exists() and not args.force:
         print(f"Skipping {model_entry.slug} {arm_name}: {adapter_path} is present.")
         return
 

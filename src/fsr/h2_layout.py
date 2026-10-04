@@ -9,6 +9,7 @@ TRAIN_SUBDIR = "train"
 SELECTION_SUBDIR = "selection"
 COMPARISON_SUBDIR = "comparison"
 ADAPTER_NAME = "adapter"
+ADAPTER_CONFIG_NAME = "adapter_config.json"
 
 BASE_ARM = "base"
 PHASE1_FOLD = "5fmt"
@@ -135,3 +136,17 @@ def comparison_path(data_root: Path, model: str, contrast: str) -> Path:
         The file.
     """
     return h2_dir(data_root) / COMPARISON_SUBDIR / f"{model}_{contrast}.json"
+
+
+def adapter_config_path(data_root: Path, model: str, arm_name: str) -> Path:
+    """Return the file whose presence means an adapter was saved in full.
+
+    Args:
+        data_root: The corpus directory.
+        model: The registry slug.
+        arm_name: The trained condition, from `arm`.
+
+    Returns:
+        The configuration file inside the adapter directory.
+    """
+    return adapter_dir(data_root, model, arm_name) / ADAPTER_CONFIG_NAME
