@@ -18,6 +18,12 @@
 #   MAX_STEPS    optimiser steps per arm (default the published budget)
 #   LIMIT        cap on records, for a smoke pass
 #   FORCE        1 to redo every stage
+#
+# Batch sizes:
+#   EVAL_BATCH      pairs scored at once by the score axis and the prose check
+#   WQ_BATCH        pairs scored at once by the answer axis
+#   PHYSICAL_BATCH  the physical batch size for training
+#   GRAD_ACCUM      the gradient accumulation steps for training
 
 set -euo pipefail
 
@@ -48,6 +54,34 @@ STAGES="${STAGES:-0,1,2,3,4,5,6,7,8}"
 read -ra LAMBDA_LIST <<< "${LAMBDAS:-0 0.01 0.1 1 10}"
 read -ra FOLD_LIST <<< "${FOLDS:-yaml json toml inline_kv markdown}"
 mkdir -p "$OUT_DIR"
+
+# The registry holds the batch geometry each model was published with.
+REGISTRY_CONFIG="$(PYTHONPATH="$REPO_ROOT/src" python3 -m fsr.models.registry \
+    --config "$MODEL")"
+registry_value() { sed -n "s/^$1=//p" <<< "$REGISTRY_CONFIG" | tr -d "'"; }
+EFFECTIVE_BATCH=$(( $(registry_value PHYSICAL_BATCH) * $(registry_value GRAD_ACCUM) ))
+
+EVAL_ARGS=()
+[ -n "${EVAL_BATCH:-}" ] && EVAL_ARGS+=(--batch-size "$EVAL_BATCH")
+WQ_ARGS=()
+[ -n "${WQ_BATCH:-}" ] && WQ_ARGS+=(--batch-size "$WQ_BATCH")
+
+TRAIN_BATCH_ARGS=()
+if [ -n "${PHYSICAL_BATCH:-}" ] || [ -n "${GRAD_ACCUM:-}" ]; then
+    if [ -z "${PHYSICAL_BATCH:-}" ] || [ -z "${GRAD_ACCUM:-}" ]; then
+        echo "ERROR: set PHYSICAL_BATCH and GRAD_ACCUM together." >&2
+        exit 2
+    fi
+    if [ "$(( PHYSICAL_BATCH * GRAD_ACCUM ))" -ne "$EFFECTIVE_BATCH" ]; then
+        echo "ERROR: PHYSICAL_BATCH x GRAD_ACCUM is" \
+             "$(( PHYSICAL_BATCH * GRAD_ACCUM )), and $MODEL trains at" \
+             "$EFFECTIVE_BATCH. A different effective batch is a different" \
+             "experiment." >&2
+        exit 2
+    fi
+    TRAIN_BATCH_ARGS+=(--physical-batch "$PHYSICAL_BATCH"
+                       --grad-accum "$GRAD_ACCUM")
+fi
 
 COMMON=(--data-root "$DATA_ROOT" --model "$MODEL")
 TRAIN_ARGS=()
@@ -90,7 +124,8 @@ baseline_eval() {
     job_name() { echo "${1}_cross_${MODEL}_base"; }
     job_command() {
         JOB_CMD=(scripts/h2/eval.py "${COMMON[@]}" --baseline --split "$1"
-                 "${LIMIT_ARGS[@]}" --progress-file "$(job_progress "$1")")
+                 "${EVAL_ARGS[@]}" "${LIMIT_ARGS[@]}"
+                 --progress-file "$(job_progress "$1")")
     }
     job_output() { echo "$OUT_DIR/${1}_cross_${MODEL}_base.json"; }
     fsr_dispatch dev test
@@ -100,7 +135,8 @@ train_phase1() {
     job_name() { echo "train_${MODEL}_$(arm_of none "$1")"; }
     job_command() {
         JOB_CMD=(scripts/h2/train.py "${COMMON[@]}" --lambda-inv "$1"
-                 "${TRAIN_ARGS[@]}" "${TRAIN_LIMIT_ARGS[@]}"
+                 "${TRAIN_ARGS[@]}" "${TRAIN_BATCH_ARGS[@]}"
+                 "${TRAIN_LIMIT_ARGS[@]}"
                  --progress-file "$(job_progress "$1")")
     }
     job_output() { echo "$TRAIN_DIR/${MODEL}_$(arm_of none "$1")/adapter/adapter_config.json"; }
@@ -111,7 +147,8 @@ eval_phase1() {
     job_name() { echo "dev_cross_${MODEL}_$(arm_of none "$1")"; }
     job_command() {
         JOB_CMD=(scripts/h2/eval.py "${COMMON[@]}" --split dev --lambda-inv "$1"
-                 "${LIMIT_ARGS[@]}" --progress-file "$(job_progress "$1")")
+                 "${EVAL_ARGS[@]}" "${LIMIT_ARGS[@]}"
+                 --progress-file "$(job_progress "$1")")
     }
     job_output() { echo "$OUT_DIR/dev_cross_${MODEL}_$(arm_of none "$1").json"; }
     fsr_dispatch "${LAMBDA_LIST[@]}"
@@ -144,7 +181,8 @@ train_folds() {
     job_name() { echo "train_${MODEL}_$(arm_of "$1" "$WEIGHT")"; }
     job_command() {
         JOB_CMD=(scripts/h2/train.py "${COMMON[@]}" --held-out-format "$1"
-                 --lambda-inv "$WEIGHT" "${TRAIN_ARGS[@]}" "${TRAIN_LIMIT_ARGS[@]}"
+                 --lambda-inv "$WEIGHT" "${TRAIN_ARGS[@]}" "${TRAIN_BATCH_ARGS[@]}"
+                 "${TRAIN_LIMIT_ARGS[@]}"
                  --progress-file "$(job_progress "$1")")
     }
     job_output() {
@@ -166,7 +204,8 @@ eval_folds() {
     job_command() {
         set -- $1
         JOB_CMD=(scripts/h2/eval.py "${COMMON[@]}" --split test
-                 --held-out-format "$1" --lambda-inv "$2" "${LIMIT_ARGS[@]}"
+                 --held-out-format "$1" --lambda-inv "$2"
+                 "${EVAL_ARGS[@]}" "${LIMIT_ARGS[@]}"
                  --progress-file "$(progress_for "test_cross_${MODEL}_$(arm_of "$1" "$2")")")
     }
     job_output() { set -- $1; echo "$OUT_DIR/test_cross_${MODEL}_$(arm_of "$1" "$2").json"; }
@@ -184,7 +223,7 @@ within_folds() {
         JOB_CMD=(scripts/within_query.py --data-root "$DATA_ROOT" --split test
                  --mode with_body --models "$MODEL"
                  --lora-adapter "$TRAIN_DIR/${MODEL}_${ARM}/adapter"
-                 --out-path "$OUT" "${LIMIT_ARGS[@]}"
+                 --out-path "$OUT" "${WQ_ARGS[@]}" "${LIMIT_ARGS[@]}"
                  --progress-file "$(progress_for "test_within_${MODEL}_${ARM}")")
     }
     job_output() { set -- $1; echo "$OUT_DIR/test_within_${MODEL}_$(arm_of "$1" "$2").json"; }
@@ -215,7 +254,8 @@ prose_rank() {
         local SELECT=(--arm "$1")
         [ "$1" = "base" ] && SELECT=(--baseline)
         JOB_CMD=(scripts/h2/eval_prose.py "${COMMON[@]}" "${SELECT[@]}"
-                 "${LIMIT_ARGS[@]}" --progress-file "$(job_progress "$1")")
+                 "${EVAL_ARGS[@]}" "${LIMIT_ARGS[@]}"
+                 --progress-file "$(job_progress "$1")")
     }
     job_output() { echo "$OUT_DIR/prose_mrr_${MODEL}_${1}.json"; }
     local WEIGHT="$1" ARMS=(base)
@@ -249,6 +289,10 @@ echo "H2 pass for $MODEL"
 echo "  weights: ${LAMBDA_LIST[*]}"
 echo "  folds:   ${FOLD_LIST[*]}"
 echo "  stages:  $STAGES"
+echo "  batches: train ${PHYSICAL_BATCH:-$(registry_value PHYSICAL_BATCH)}" \
+     "x ${GRAD_ACCUM:-$(registry_value GRAD_ACCUM)}," \
+     "eval ${EVAL_BATCH:-$(registry_value EVAL_BATCH)}," \
+     "answer axis ${WQ_BATCH:-32}"
 echo "  results: $OUT_DIR/"
 
 stage 0 "baseline eval, dev and test" baseline_eval
