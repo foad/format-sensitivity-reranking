@@ -278,3 +278,22 @@ class TestReportElapsed:
         monkeypatch.setattr("fsr.reporting.time.time", lambda: 100.0)
         assert report_elapsed("scored", 40.0) == pytest.approx(60.0)
         assert "scored in 0:01:00" in capsys.readouterr().out
+
+
+class TestResumedCounter:
+    def test_starts_from_the_units_already_done(self, tmp_path):
+        counter = ProgressCounter(10, tmp_path / "job.progress", done=4)
+        assert counter.done == 4
+
+    def test_writes_the_resumed_state_at_once(self, tmp_path):
+        path = tmp_path / "job.progress"
+        ProgressCounter(10, path, done=4)
+        assert parse_progress(path.read_text())["done"] == "4"
+
+    def test_counts_on_from_there(self, tmp_path):
+        counter = ProgressCounter(10, tmp_path / "job.progress", done=4)
+        counter.step("next")
+        assert counter.done == 5
+
+    def test_starts_at_zero_by_default(self, tmp_path):
+        assert ProgressCounter(10, tmp_path / "job.progress").done == 0

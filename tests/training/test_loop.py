@@ -5,6 +5,7 @@ import pytest
 import torch
 from tests.fakes import HashingPairTokenizer, ScoringModel
 
+from fsr.reporting import PROGRESS_SUFFIX, ProgressCounter, parse_progress
 from fsr.training.batch import TrainRecord
 from fsr.training.checkpoint import CHECKPOINT_NAME, load_checkpoint
 from fsr.training.log import EVAL, LOG_NAME, STEP, TrainLog, events, read_log, rewind
@@ -63,7 +64,17 @@ def config(**overrides):
     return LoopConfig(**base)
 
 
-def run(tmp_path, corpus, dev, *, seed=0, cfg=None, start_step=0, checkpoint=False):
+def run(
+    tmp_path,
+    corpus,
+    dev,
+    *,
+    seed=0,
+    cfg=None,
+    start_step=0,
+    checkpoint=False,
+    counter=None,
+):
     model, tokenizer, optimizer, scheduler = build(seed)
     sampler = np.random.default_rng(seed)
     with TrainLog(tmp_path / LOG_NAME) as log:
@@ -81,6 +92,7 @@ def run(tmp_path, corpus, dev, *, seed=0, cfg=None, start_step=0, checkpoint=Fal
             log=log,
             checkpoint_path=(tmp_path / CHECKPOINT_NAME) if checkpoint else None,
             start_step=start_step,
+            counter=counter,
         )
     return model, optimizer, scheduler, sampler, result
 
@@ -346,3 +358,61 @@ class TestResumeEquality:
             )
         steps = [r["step"] for r in events(read_log(broken / LOG_NAME), STEP)]
         assert steps == sorted(set(steps))
+
+
+class TestProgress:
+    def test_runs_without_a_counter(self, tmp_path, corpus, dev):
+        _, _, _, _, result = run(tmp_path, corpus, dev)
+        assert result.step == 4
+
+    def test_counts_one_unit_per_step(self, tmp_path, corpus, dev):
+        counter = ProgressCounter(4, tmp_path / ("job" + PROGRESS_SUFFIX))
+        run(tmp_path, corpus, dev, counter=counter)
+        assert counter.done == 4
+
+    def test_writes_the_state_the_watcher_reads(self, tmp_path, corpus, dev):
+        path = tmp_path / ("job" + PROGRESS_SUFFIX)
+        run(tmp_path, corpus, dev, counter=ProgressCounter(4, path))
+        fields = parse_progress(path.read_text())
+        assert fields["done"] == "4"
+        assert fields["total"] == "4"
+        assert fields["failed"] == "0"
+
+    def test_labels_a_plain_step_with_the_loss(self, tmp_path, corpus, dev):
+        counter = ProgressCounter(4, tmp_path / ("job" + PROGRESS_SUFFIX))
+        run(tmp_path, corpus, dev, counter=counter, cfg=config(eval_every=4))
+        run_label = counter.label
+        assert run_label.startswith("loss=")
+
+    def test_labels_an_evaluation_step_with_the_development_score(
+        self, tmp_path, corpus, dev
+    ):
+        counter = ProgressCounter(4, tmp_path / ("job" + PROGRESS_SUFFIX))
+        run(tmp_path, corpus, dev, counter=counter, cfg=config(eval_every=2))
+        assert "dev|d|=" in counter.label
+
+    def test_a_resumed_job_continues_the_count(self, tmp_path, corpus, dev):
+        counter = ProgressCounter(6, tmp_path / ("job" + PROGRESS_SUFFIX), done=3)
+        run(
+            tmp_path,
+            corpus,
+            dev,
+            counter=counter,
+            start_step=3,
+            cfg=config(max_steps=6, eval_every=3),
+        )
+        assert counter.done == 6
+
+    def test_a_resumed_job_reports_a_full_bar_at_the_end(self, tmp_path, corpus, dev):
+        path = tmp_path / ("job" + PROGRESS_SUFFIX)
+        counter = ProgressCounter(6, path, done=3)
+        run(
+            tmp_path,
+            corpus,
+            dev,
+            counter=counter,
+            start_step=3,
+            cfg=config(max_steps=6, eval_every=3),
+        )
+        fields = parse_progress(path.read_text())
+        assert fields["done"] == fields["total"] == "6"

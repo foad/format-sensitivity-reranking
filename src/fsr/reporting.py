@@ -121,7 +121,11 @@ class ProgressCounter:
     """
 
     def __init__(
-        self, total: int, path: Path | None = None, started: float | None = None
+        self,
+        total: int,
+        path: Path | None = None,
+        started: float | None = None,
+        done: int = 0,
     ) -> None:
         """Start a counter and write its opening state.
 
@@ -129,10 +133,11 @@ class ProgressCounter:
             total: The units the job will complete.
             path: The file to keep the state in. None keeps no file.
             started: The time the job began. The default is the current time.
+            done: The units a resumed job has already completed.
         """
         self.total = total
         self.path = path
-        self.done = 0
+        self.done = done
         self.failed = False
         self.label = ""
         self.started = time.time() if started is None else started

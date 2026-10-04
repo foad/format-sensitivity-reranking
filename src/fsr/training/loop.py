@@ -13,6 +13,7 @@ import torch
 
 from fsr.formats import FORMATS
 from fsr.metrics import pairwise_cohen_d, per_format_summary
+from fsr.reporting import ProgressCounter
 from fsr.scoring import score_batch
 from fsr.training.batch import TrainRecord, compute_loss, forward_batch
 from fsr.training.checkpoint import save_checkpoint, should_checkpoint
@@ -137,6 +138,7 @@ def train(
     log: TrainLog,
     checkpoint_path: Path | None = None,
     start_step: int = 0,
+    counter: ProgressCounter | None = None,
 ) -> TrainResult:
     """Run the optimiser until the step budget is spent.
 
@@ -158,6 +160,7 @@ def train(
         log: The log to write to.
         checkpoint_path: The checkpoint file. None disables checkpointing.
         start_step: The steps a resumed run has already taken.
+        counter: The progress counter of the job, if one is running.
 
     Returns:
         The steps completed, the seconds spent, and the last development
@@ -225,7 +228,8 @@ def train(
                 elapsed_s=elapsed,
             )
 
-        if step % config.eval_every == 0 or step == config.max_steps:
+        evaluated = step % config.eval_every == 0 or step == config.max_steps
+        if evaluated:
             model.eval()
             with torch.no_grad():
                 max_abs_d, summary = dev_sensitivity(
@@ -251,6 +255,12 @@ def train(
                 dev_max_d_pair=summary["max_d_pair"],
                 dev_summary=summary,
             )
+
+        if counter is not None:
+            label = f"loss={loss_avg:.4f}"
+            if evaluated:
+                label = f"{label} dev|d|={max_abs_d:.4f}"
+            counter.step(label)
 
         if checkpoint_path is not None and should_checkpoint(
             step, config.checkpoint_every
