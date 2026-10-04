@@ -7,6 +7,7 @@ import pytest
 from fsr.reporting import (
     NAME_WIDTH,
     PROGRESS_TAG,
+    ProgressCounter,
     eta_seconds,
     failures_block,
     format_duration,
@@ -65,7 +66,7 @@ class TestShorten:
         assert len(out) == 10
 
     def test_marks_a_cut_name(self):
-        assert shorten("y" * 60).startswith("…")
+        assert shorten("y" * 60).startswith("...")
 
     def test_keeps_a_name_of_exactly_the_width(self):
         assert shorten("z" * NAME_WIDTH) == "z" * NAME_WIDTH
@@ -118,6 +119,41 @@ class TestProgress:
     def test_reports_no_time_left_at_the_end(self, capsys):
         assert parse_progress(progress(10, 10, "a", 50.0))["eta"] == "0.0"
         capsys.readouterr()
+
+
+class TestProgressCounter:
+    def test_counts_from_one(self, capsys):
+        counter = ProgressCounter(4)
+        assert parse_progress(counter.step("a"))["done"] == "1"
+        assert parse_progress(counter.step("b"))["done"] == "2"
+        capsys.readouterr()
+
+    def test_carries_the_total(self, capsys):
+        assert parse_progress(ProgressCounter(7).step("a"))["total"] == "7"
+        capsys.readouterr()
+
+    def test_labels_each_unit(self, capsys):
+        assert parse_progress(ProgressCounter(2).step("x/y"))["label"] == "x/y"
+        capsys.readouterr()
+
+    def test_measures_from_the_given_start(self, capsys, monkeypatch):
+        monkeypatch.setattr("fsr.reporting.time.time", lambda: 60.0)
+        counter = ProgressCounter(2, started=0.0)
+        assert parse_progress(counter.step("a"))["elapsed"] == "60.0"
+        capsys.readouterr()
+
+    def test_reports_the_time_since_it_began(self, monkeypatch):
+        monkeypatch.setattr("fsr.reporting.time.time", lambda: 90.0)
+        assert ProgressCounter(2, started=30.0).elapsed == pytest.approx(60.0)
+
+    def test_spans_the_phases_of_one_job(self, capsys):
+        counter = ProgressCounter(4)
+        for mode in ("with_body", "metadata_only"):
+            for fmt in ("yaml", "json"):
+                counter.step(f"{mode}/{fmt}")
+        assert counter.done == 4
+        lines = [parse_progress(x) for x in capsys.readouterr().out.strip().split("\n")]
+        assert [x["done"] for x in lines] == ["1", "2", "3", "4"]
 
 
 class TestParseProgress:

@@ -11,6 +11,7 @@ from tests.fakes import LogitModel, PairTokenizer
 
 from fsr.corpus.layout import split_dir
 from fsr.models.registry import BASE_MODEL_IDS, BASE_MODELS
+from fsr.reporting import ProgressCounter, parse_progress, shorten
 
 FORMAT_COUNT = 5
 
@@ -208,6 +209,7 @@ class TestRunMode:
             "cpu",
             None,
             None,
+            ProgressCounter(10),
         )
         data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert data["models_probed"] == ["model/a", "model/b"]
@@ -226,6 +228,7 @@ class TestRunMode:
             "cpu",
             None,
             None,
+            ProgressCounter(10),
         )
         data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert data["models_failed"][0]["stage"] == "tokenizer_load"
@@ -242,6 +245,7 @@ class TestRunMode:
             "cpu",
             None,
             None,
+            ProgressCounter(10),
         )
         data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert data["models_failed"][0]["stage"] == "model_load"
@@ -263,6 +267,7 @@ class TestRunMode:
             "cpu",
             None,
             None,
+            ProgressCounter(10),
         )
         data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert len(data["models_failed"]) == 2
@@ -280,6 +285,7 @@ class TestRunMode:
             "cpu",
             {"model/a": 1},
             {"dropped": 0, "budget_min": 400},
+            ProgressCounter(10),
         )
         data = json.loads((tmp_path / "test_cross_with_body.json").read_text())
         assert data["tightest_tokeniser_counts"] == {"model/a": 1}
@@ -299,6 +305,7 @@ class TestRunMode:
             "cpu",
             {"model/a": 2},
             {"dropped": 3, "budget_min": 400},
+            ProgressCounter(10),
         )
         data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert data["tightest_tokeniser_counts"] == {"model/a": 2}
@@ -316,6 +323,7 @@ class TestRunMode:
             "cpu",
             {"model/a": 2},
             {"dropped": 0, "budget_min": 400},
+            ProgressCounter(10),
         )
         data = json.loads((tmp_path / "test_cross_with_body.json").read_text())
         assert data["record_ids"] == ["7", "8"]
@@ -335,6 +343,7 @@ class TestRunMode:
             "cuda",
             None,
             None,
+            ProgressCounter(10),
         )
         assert len(calls) == len(toks)
 
@@ -352,6 +361,7 @@ class TestRunMode:
             "cpu",
             None,
             None,
+            ProgressCounter(10),
         )
         assert calls == []
 
@@ -370,8 +380,11 @@ class TestRunMode:
             "cpu",
             None,
             None,
+            ProgressCounter(10),
         )
-        assert "..." in capsys.readouterr().out
+        out = capsys.readouterr().out
+        assert shorten(long_name) in out
+        assert out.count(long_name) == 1
 
 
 class TestBuildParser:
@@ -489,6 +502,54 @@ class TestMain:
         )
         assert {p["n_records"] for p in payloads.values()} == {3}
         assert {p["drop_stats"]["dropped"] for p in payloads.values()} == {2}
+
+    def test_progress_spans_both_modes_of_one_job(self, monkeypatch, tmp_path, capsys):
+        self._corpus(tmp_path)
+        self._patch(monkeypatch, tmp_path)
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "prog",
+                "--mode",
+                "both",
+                "--models",
+                "m/a",
+                "--in-dir",
+                str(tmp_path),
+                "--out-dir",
+                str(tmp_path),
+            ],
+        )
+        mod.main()
+        lines = [
+            parse_progress(x)
+            for x in capsys.readouterr().out.split("\n")
+            if parse_progress(x)
+        ]
+        assert [x["done"] for x in lines] == [str(i) for i in range(1, 11)]
+        assert {x["total"] for x in lines} == {"10"}
+        assert lines[0]["label"] == "metadata_only/yaml"
+        assert lines[-1]["label"] == "with_body/markdown"
+
+    def test_reports_the_total_time_of_the_pass(self, monkeypatch, tmp_path, capsys):
+        self._corpus(tmp_path)
+        self._patch(monkeypatch, tmp_path)
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "prog",
+                "--mode",
+                "with_body",
+                "--models",
+                "m/a",
+                "--in-dir",
+                str(tmp_path),
+                "--out-dir",
+                str(tmp_path),
+            ],
+        )
+        mod.main()
+        assert "Pass complete in 0:00:" in capsys.readouterr().out
 
     def test_with_body_mode_reports_the_budget_distribution(
         self, monkeypatch, tmp_path, capsys
@@ -614,6 +675,7 @@ class TestOutTag:
             "cpu",
             None,
             None,
+            ProgressCounter(10),
         )
         assert (tmp_path / "test_cross_metadata_only.json").exists()
 
@@ -628,6 +690,7 @@ class TestOutTag:
             "cpu",
             None,
             None,
+            ProgressCounter(10),
         )
         assert (tmp_path / "test_cross_metadata_only_bge_base.json").exists()
 

@@ -224,7 +224,7 @@ def report_summary(
     print("-" * 102)
     for model_name, entry in results.items():
         summary = entry["within_query"]["summary"]
-        short = model_name if len(model_name) <= 48 else "…" + model_name[-47:]
+        short = model_name if len(model_name) <= 48 else "..." + model_name[-45:]
         print(
             f"{short:<48} {summary['max_flip_rate_pct']:>9.1f}% "
             f"{summary['min_kendall_tau']:>9.3f} "

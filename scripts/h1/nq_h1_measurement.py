@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +36,18 @@ from fsr.models.registry import (
     by_slug,
 )
 from fsr.passages import MIN_BODY_TOKENS, prepare_records_with_body
+from fsr.reporting import (
+    NAME_WIDTH,
+    ProgressCounter,
+    failures_block,
+    format_duration,
+    heading,
+    model_heading,
+    report_elapsed,
+    report_saved,
+    shorten,
+    table,
+)
 from fsr.scoring import score_batch
 
 DEFAULT_IN_DIR = Path("data") / "nq"
@@ -176,6 +189,7 @@ def run_mode(
     device: str,
     tightest_counts: dict[str, int] | None,
     drop_stats: dict[str, int] | None,
+    counter: ProgressCounter,
 ) -> None:
     """Score every model for one mode and write the results.
 
@@ -188,10 +202,9 @@ def run_mode(
         device: The device to score on.
         tightest_counts: The tightest-tokenizer counts of the body budget.
         drop_stats: The drop and budget statistics of the body budget.
+        counter: The progress counter of the whole job.
     """
-    print(f"\n{'=' * 70}")
-    print(f"MODE: {mode}   n_records = {len(records)}")
-    print(f"{'=' * 70}")
+    heading(f"MODE: {mode}   n_records = {len(records)}", width=70)
 
     suffix = f"_{args.out_tag}" if args.out_tag else ""
     out_path = args.out_dir / f"{args.split}_{AXIS}_{mode}{suffix}.json"
@@ -228,7 +241,8 @@ def run_mode(
             save_partial()
             continue
 
-        print(f"\n{'-' * 70}\n{model_name}\n{'-' * 70}")
+        model_heading(model_name)
+        model_started = time.time()
         model = try_load_model(
             model_name,
             device,
@@ -255,6 +269,7 @@ def run_mode(
                 )
                 scores_per_fmt[fmt_name] = scores
                 print(f"  scored {fmt_name}  (mean={np.mean(scores):+.3f})")
+                counter.step(f"{mode}/{fmt_name}")
 
             stats_out = format_sensitivity_summary(scores_per_fmt, seed=args.seed)
             all_results[model_name] = {"scores": scores_per_fmt, "stats": stats_out}
@@ -266,6 +281,7 @@ def run_mode(
                 f"  max flip %:  {s['max_flip_rate_pct']:.1f}%  ({s['max_flip_pair']})"
             )
             print(f"  ranking:     {' > '.join(s['format_ranking_by_mean'])}")
+            report_elapsed("scored", model_started)
             save_partial()
         except Exception as e:
             print(f"  x scoring failed for {model_name}: {type(e).__name__}: {e}")
@@ -282,29 +298,31 @@ def run_mode(
         if device == "cuda":
             torch.cuda.empty_cache()
 
-    print(f"\n\n{'=' * 100}")
-    print(f"CROSS-MODEL SUMMARY - {mode}  (n={len(records)})")
-    print(f"{'=' * 100}")
-    header = f"{'model':<48} {'max |d|':>10} {'min rho':>8} {'max flip%':>10}  ranking"
-    print(header)
-    print("-" * 130)
-    for model_name, res in all_results.items():
-        s = res["stats"]["summary"]
-        short = model_name if len(model_name) <= 48 else "..." + model_name[-45:]
-        print(
-            f"{short:<48} {s['max_abs_cohen_d']:>10.3f} "
-            f"{s['min_spearman_rho']:>8.3f} {s['max_flip_rate_pct']:>9.1f}%  "
-            f"{' > '.join(s['format_ranking_by_mean'])}"
-        )
-
-    if failures:
-        print(f"\n{'=' * 100}\nFAILURES  ({len(failures)})\n{'=' * 100}")
-        for f in failures:
-            print(f"  {f['model']:<48} [{f['stage']}] {f['error']}")
+    heading(f"CROSS-MODEL SUMMARY - {mode}  (n={len(records)})")
+    table(
+        (
+            ("model", NAME_WIDTH),
+            ("max |d|", 10),
+            ("min rho", 8),
+            ("max flip%", 10),
+            ("ranking", 0),
+        ),
+        [
+            [
+                shorten(model_name),
+                f"{s['max_abs_cohen_d']:.3f}",
+                f"{s['min_spearman_rho']:.3f}",
+                f"{s['max_flip_rate_pct']:.1f}%",
+                " > ".join(s["format_ranking_by_mean"]),
+            ]
+            for model_name, res in all_results.items()
+            for s in [res["stats"]["summary"]]
+        ],
+    )
+    failures_block(failures)
 
     save_partial()
-    size_mb = out_path.stat().st_size / 1e6
-    print(f"\nSaved {mode} results -> {out_path}  ({size_mb:.1f} MB)")
+    report_saved(out_path, mode)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -431,6 +449,7 @@ def main() -> None:
         print("  No eligible records; stopping.")
         return
 
+    counter = ProgressCounter(len(modes) * len(FORMATS) * len(args.models))
     for mode in modes:
         run_mode(
             mode,
@@ -441,7 +460,9 @@ def main() -> None:
             device,
             tightest_counts,
             drop_stats,
+            counter,
         )
+    print(f"\nPass complete in {format_duration(counter.elapsed)}", flush=True)
 
 
 if __name__ == "__main__":

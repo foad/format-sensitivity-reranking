@@ -166,7 +166,7 @@ class TestParseInfobox:
         assert stats["oversized_dropped"] == 1
 
     def test_strips_a_bullet_from_a_key(self):
-        pairs, _ = parse_infobox(infobox(row("• Born", "1946")))
+        pairs, _ = parse_infobox(infobox(row("\u2022 Born", "1946")))
         assert pairs == [("Born", "1946")]
 
 

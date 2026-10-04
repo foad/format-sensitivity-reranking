@@ -178,7 +178,7 @@ class TestReporting:
     def test_shortens_a_long_model_name(self, capsys):
         entry = mod.summarise_model(matrices())
         mod.report_summary({"x" * 60: entry}, [], 3, "test", 4)
-        assert "…" in capsys.readouterr().out
+        assert "..." in capsys.readouterr().out
 
     def test_reports_failures(self, capsys):
         failures = [{"model": "model/b", "stage": "scoring", "error": "boom"}]

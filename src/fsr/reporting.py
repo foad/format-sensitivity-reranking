@@ -60,9 +60,9 @@ def shorten(name: str, width: int = NAME_WIDTH) -> str:
         width: The column width.
 
     Returns:
-        The name, with a leading ellipsis when it was cut.
+        The name, marked with a leading `...` when it was cut.
     """
-    return name if len(name) <= width else "…" + name[-(width - 1) :]
+    return name if len(name) <= width else "..." + name[-(width - 3) :]
 
 
 def heading(title: str, width: int = WIDE_RULE) -> None:
@@ -108,6 +108,38 @@ def progress(done: int, total: int, label: str, elapsed: float) -> str:
     )
     print(line, flush=True)
     return line
+
+
+class ProgressCounter:
+    """Counts the units of one job as its phases complete."""
+
+    def __init__(self, total: int, started: float | None = None) -> None:
+        """Start a counter.
+
+        Args:
+            total: The units the job will complete.
+            started: The time the job began. The default is the current time.
+        """
+        self.total = total
+        self.done = 0
+        self.started = time.time() if started is None else started
+
+    def step(self, label: str) -> str:
+        """Count one unit and report it.
+
+        Args:
+            label: What the job just finished.
+
+        Returns:
+            The progress line, as printed.
+        """
+        self.done += 1
+        return progress(self.done, self.total, label, time.time() - self.started)
+
+    @property
+    def elapsed(self) -> float:
+        """Return the seconds since the job began."""
+        return time.time() - self.started
 
 
 def parse_progress(line: str) -> dict[str, str] | None:
