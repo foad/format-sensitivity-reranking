@@ -39,7 +39,6 @@ mkdir -p "$OUT_DIR"
 COMMON=(--data-root "$DATA_ROOT" --split "$SPLIT"
         --mode "${MODE:-both}" --batch-size "${BATCH_SIZE:-32}")
 [ -n "${LIMIT:-}" ] && COMMON+=(--limit "$LIMIT")
-[ "${FORCE:-0}" = "1" ] && COMMON+=(--force)
 SUFFIX=""
 [ -n "${LIMIT:-}" ] && SUFFIX="_limit${LIMIT}"
 
@@ -64,9 +63,11 @@ fi
 CACHE="$OUT_DIR/${SPLIT}_candidates${SUFFIX}.json"
 if [ ! -f "$CACHE" ] || [ "${FORCE:-0}" = "1" ]; then
     echo "building candidate lists for $SPLIT"
+    PREPARE=("${COMMON[@]}" --prepare-only)
+    [ "${FORCE:-0}" = "1" ] && PREPARE+=(--force)
     GPU="$(fsr_gpus | head -1)" fsr_run \
         "$OUT_DIR/${SPLIT}_candidates${SUFFIX}.log" \
-        "$MEASURE" "${COMMON[@]}" --prepare-only
+        "$MEASURE" "${PREPARE[@]}"
 else
     echo "reusing candidate lists at $CACHE"
 fi
