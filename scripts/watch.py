@@ -98,6 +98,18 @@ def read_state(path: Path) -> JobState:
         return JobState(path.stem, 0, 0, "", 0.0, 0.0, False)
 
 
+def by_start(state: JobState) -> tuple[float, str]:
+    """Return the key that orders jobs by when they began.
+
+    Args:
+        state: The state of one job.
+
+    Returns:
+        The key, breaking a tie by name.
+    """
+    return (-state.live_elapsed, state.name)
+
+
 def render_bar(done: int, total: int, width: int = BAR_WIDTH) -> str:
     """Return a fixed-width bar.
 
@@ -195,7 +207,9 @@ def watch(
     redraw = 0
     animate = out.isatty() and not once
     while True:
-        states = [read_state(path) for path in sorted(directory.glob(pattern))]
+        states = sorted(
+            (read_state(path) for path in directory.glob(pattern)), key=by_start
+        )
         lines = render(states)
         draw(lines, out, redraw if animate else 0)
         redraw = len(lines)

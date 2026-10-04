@@ -136,6 +136,70 @@ class TestLiveEstimates:
         assert s.live_eta < s.eta
 
 
+class TestByStart:
+    def started(self, tmp_path, name, ago, elapsed=0.0, **over):
+        """Write a job that began `ago` seconds back."""
+        path = state(tmp_path, name, elapsed=elapsed, **over)
+        return age_file(path, ago - elapsed)
+
+    def test_orders_by_when_each_job_began(self, tmp_path):
+        self.started(tmp_path, "late", ago=100)
+        self.started(tmp_path, "early", ago=900)
+        states = sorted(
+            (mod.read_state(p) for p in tmp_path.glob("*.progress")), key=mod.by_start
+        )
+        assert [s.name for s in states] == ["early", "late"]
+
+    def test_ignores_the_name(self, tmp_path):
+        self.started(tmp_path, "aaa", ago=100)
+        self.started(tmp_path, "zzz", ago=900)
+        states = sorted(
+            (mod.read_state(p) for p in tmp_path.glob("*.progress")), key=mod.by_start
+        )
+        assert [s.name for s in states] == ["zzz", "aaa"]
+
+    def test_counts_work_already_done_before_the_last_write(self, tmp_path):
+        # Both files were written a moment ago, but one job has run longer.
+        self.started(tmp_path, "short", ago=60, elapsed=60.0)
+        self.started(tmp_path, "long", ago=3600, elapsed=3600.0)
+        states = sorted(
+            (mod.read_state(p) for p in tmp_path.glob("*.progress")), key=mod.by_start
+        )
+        assert [s.name for s in states] == ["long", "short"]
+
+    def test_a_finished_earlier_job_stays_above_a_running_later_one(self, tmp_path):
+        self.started(tmp_path, "earlier", ago=3600, elapsed=900.0, done=10, total=10)
+        self.started(tmp_path, "later", ago=600, elapsed=600.0, done=2)
+        states = sorted(
+            (mod.read_state(p) for p in tmp_path.glob("*.progress")), key=mod.by_start
+        )
+        assert [s.name for s in states] == ["earlier", "later"]
+
+    def test_breaks_a_tie_by_name(self):
+        blank = mod.JobState("b", 0, 0, "", 0.0, 0.0, False)
+        other = mod.JobState("a", 0, 0, "", 0.0, 0.0, False)
+        assert [s.name for s in sorted([blank, other], key=mod.by_start)] == ["a", "b"]
+
+    def test_a_job_with_no_state_yet_sorts_last(self, tmp_path):
+        self.started(tmp_path, "running", ago=600, elapsed=600.0)
+        state(tmp_path, "pending", done=0, total=0, elapsed=0.0)
+        states = sorted(
+            (mod.read_state(p) for p in tmp_path.glob("*.progress")), key=mod.by_start
+        )
+        assert [s.name for s in states] == ["running", "pending"]
+
+    def test_holds_for_names_of_another_phase(self, tmp_path):
+        self.started(tmp_path, "bge_base_5fmt_lam0.1", ago=900, elapsed=900.0)
+        self.started(tmp_path, "bge_base_yaml_lam0", ago=120, elapsed=120.0)
+        states = sorted(
+            (mod.read_state(p) for p in tmp_path.glob("*.progress")), key=mod.by_start
+        )
+        assert [s.name for s in states] == [
+            "bge_base_5fmt_lam0.1",
+            "bge_base_yaml_lam0",
+        ]
+
+
 class TestRenderBar:
     def test_is_empty_at_the_start(self):
         assert mod.render_bar(0, 10, width=4) == "[----]"
@@ -302,6 +366,15 @@ class TestWatch:
         out = io.StringIO()
         mod.watch(tmp_path, "*.progress", 0.0, True, out)
         assert "1 jobs" in out.getvalue()
+
+    def test_lists_the_jobs_in_the_order_they_began(self, tmp_path):
+        age_file(state(tmp_path, "aaa_started_late", done=1, elapsed=60.0), 0)
+        age_file(state(tmp_path, "zzz_started_early", done=1, elapsed=3600.0), 0)
+        out = io.StringIO()
+        mod.watch(tmp_path, "*.progress", 0.0, True, out)
+        lines = out.getvalue().splitlines()
+        assert "zzz_started_early" in lines[0]
+        assert "aaa_started_late" in lines[1]
 
     def test_honours_the_pattern(self, tmp_path):
         state(tmp_path, "test_cross_a", done=10, total=10)
