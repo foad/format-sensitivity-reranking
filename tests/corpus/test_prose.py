@@ -7,13 +7,17 @@ from fsr.corpus.prose import (
     ANSWER_IN_INFOBOX,
     NO_LONG_ANSWER,
     NO_VERIFIED_ANSWER,
+    PROSE_NEGATIVES,
     SKIP_REASONS,
     TOO_SHORT,
     ProseStats,
     answer_in_text,
+    as_candidate,
+    build_prose_eval,
     clean_html_to_text,
     iter_prose,
     match_example,
+    prose_doc,
 )
 
 PROSE = (
@@ -250,3 +254,122 @@ class TestIterProse:
         monkeypatch.setattr("fsr.corpus.prose.PROGRESS_EVERY", 1)
         list(iter_prose(verbose=True))
         assert "scanned 1," in capsys.readouterr().out
+
+
+def prose_record(rid, title, text, answers=("1946",)):
+    return {
+        "id": str(rid),
+        "title": title,
+        "question": f"who built bridge {rid}",
+        "long_answer_text": text,
+        "long_answer_chars": len(text),
+        "short_answers": list(answers),
+    }
+
+
+def corpus(n_articles=20, per_article=1):
+    return [
+        prose_record(
+            f"{a}-{b}",
+            f"Article {a}",
+            f"The bridge {a} opened in 194{a % 10} near the town of Place{a}.",
+        )
+        for a in range(n_articles)
+        for b in range(per_article)
+    ]
+
+
+class TestProseDoc:
+    def test_indexes_the_title_and_the_passage(self):
+        record = prose_record(1, "Bridge", "Opened in 1946.")
+        assert prose_doc(record) == "Bridge Opened in 1946."
+
+    def test_carries_no_markup(self):
+        assert "<" not in prose_doc(prose_record(1, "T", "Plain text."))
+
+
+class TestAsCandidate:
+    def test_keeps_the_ranking_fields(self):
+        record = prose_record(1, "Bridge", "Opened in 1946.")
+        assert as_candidate(record) == {
+            "id": "1",
+            "title": "Bridge",
+            "text": "Opened in 1946.",
+        }
+
+    def test_drops_the_question_and_the_answers(self):
+        candidate = as_candidate(prose_record(1, "Bridge", "Text."))
+        assert "question" not in candidate
+        assert "short_answers" not in candidate
+
+
+class TestBuildProseEval:
+    def test_covers_every_record(self):
+        records = corpus()
+        resolved, _, _ = build_prose_eval(records, k=5, verbose=False)
+        assert [r["id"] for r in resolved] == [r["id"] for r in records]
+
+    def test_gives_each_record_the_asked_negatives(self):
+        resolved, _, _ = build_prose_eval(corpus(), k=5, verbose=False)
+        assert all(len(r["negatives"]) == 5 for r in resolved)
+
+    def test_defaults_to_fifteen_negatives(self):
+        resolved, _, _ = build_prose_eval(corpus(n_articles=30), verbose=False)
+        assert len(resolved[0]["negatives"]) == PROSE_NEGATIVES == 15
+
+    def test_the_positive_is_the_record_itself(self):
+        records = corpus()
+        resolved, _, _ = build_prose_eval(records, k=5, verbose=False)
+        assert resolved[0]["positive"] == as_candidate(records[0])
+
+    def test_never_draws_a_negative_from_the_same_article(self):
+        records = corpus(n_articles=20, per_article=2)
+        resolved, _, _ = build_prose_eval(records, k=5, verbose=False)
+        for entry in resolved:
+            assert all(n["title"] != entry["title"] for n in entry["negatives"])
+
+    def test_draws_each_negative_from_a_distinct_article(self):
+        resolved, _, _ = build_prose_eval(corpus(), k=5, verbose=False)
+        for entry in resolved:
+            titles = [n["title"] for n in entry["negatives"]]
+            assert len(set(titles)) == len(titles)
+
+    def test_carries_the_question_and_the_answers(self):
+        resolved, _, _ = build_prose_eval(corpus(), k=5, verbose=False)
+        assert resolved[0]["question"].startswith("who built")
+        assert resolved[0]["short_answers"] == ["1946"]
+
+    def test_counts_the_distinct_articles(self):
+        _, _, n_articles = build_prose_eval(
+            corpus(n_articles=12, per_article=2), k=5, verbose=False
+        )
+        assert n_articles == 12
+
+    def test_counts_the_records_that_needed_the_fill(self):
+        _, filled, _ = build_prose_eval(corpus(n_articles=20), k=5, verbose=False)
+        assert filled >= 0
+
+    def test_the_fill_runs_when_retrieval_is_title_poor(self):
+        crowd = [
+            prose_record(f"c{i}", "Crowded", "bridge opened 1946 town place")
+            for i in range(60)
+        ]
+        rest = [
+            prose_record(f"d{i}", f"Distinct {i}", "unrelated prose about lichen")
+            for i in range(8)
+        ]
+        _, filled, _ = build_prose_eval(crowd + rest, k=5, verbose=False)
+        assert filled > 0
+
+    def test_refuses_a_corpus_with_too_few_articles(self):
+        with pytest.raises(ValueError, match="negatives available"):
+            build_prose_eval(corpus(n_articles=3), k=5, verbose=False)
+
+    def test_the_seed_fixes_the_result(self):
+        first, _, _ = build_prose_eval(corpus(), k=5, seed=3, verbose=False)
+        second, _, _ = build_prose_eval(corpus(), k=5, seed=3, verbose=False)
+        assert first == second
+
+    def test_reports_progress_when_asked(self, capsys):
+        build_prose_eval(corpus(), k=5, verbose=True)
+        assert "Indexing" in capsys.readouterr().out

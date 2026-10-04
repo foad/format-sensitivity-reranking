@@ -47,7 +47,8 @@ def plan(
         force: Whether each derived stage rebuilds outputs that are already present.
         fetch: Whether to write the raw cache first and parse from it.
         cache_k: How many negatives to mine for each query.
-        prose: Whether to collect the prose-answered subset as well.
+        prose: Whether to collect the prose-answered subset and mine its
+            negatives as well.
 
     Returns:
         The stages, starting with the raw cache when it is asked for.
@@ -70,6 +71,7 @@ def plan(
     )
     if prose:
         stages.append(Stage("prose", "prose.py", [*limited, *rebuild]))
+        stages.append(Stage("prose_eval", "prose_eval.py", [*root, *rebuild]))
     stages.append(Stage("validate", "validate.py", root))
     return stages
 

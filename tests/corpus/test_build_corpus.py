@@ -90,7 +90,7 @@ class TestProseStage:
 
     def test_runs_before_validation(self):
         stages = names(mod.plan(DATA_ROOT, prose=True))
-        assert stages.index("prose") == stages.index("validate") - 1
+        assert stages.index("prose") < stages.index("validate")
 
     def test_takes_the_data_root(self):
         assert "--data-root" in args_of(mod.plan(DATA_ROOT, prose=True), "prose")

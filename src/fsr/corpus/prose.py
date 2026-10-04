@@ -10,6 +10,7 @@ from datasets import load_dataset
 
 from fsr.corpus.config import DEFAULT
 from fsr.corpus.infobox import find_infobox_ranges, in_any_range
+from fsr.corpus.negatives import build_negatives
 from fsr.corpus.nq import PROGRESS_EVERY, short_answer_texts
 from fsr.corpus.wikitext import TAG_RE, WS_RE
 
@@ -183,3 +184,70 @@ def iter_prose(
 
     if verbose:
         print(f"Done: scanned {stats.scanned:,}, matched {stats.matched:,}")
+
+
+PROSE_NEGATIVES = 15
+PROSE_CANDIDATE_MULTIPLIER = 6
+PROSE_SEED = 42
+
+
+def prose_doc(record: dict) -> str:
+    """Return the indexed text of a prose record.
+
+    Args:
+        record: A prose record.
+
+    Returns:
+        The text to index.
+    """
+    return f"{record['title']} {record['long_answer_text']}"
+
+
+def as_candidate(record: dict) -> dict[str, str]:
+    """Return the fields a ranking candidate carries."""
+    return {
+        "id": record["id"],
+        "title": record["title"],
+        "text": record["long_answer_text"],
+    }
+
+
+def build_prose_eval(
+    records: list[dict],
+    k: int = PROSE_NEGATIVES,
+    seed: int = PROSE_SEED,
+    verbose: bool = True,
+) -> tuple[list[dict], int, int]:
+    """Attach mined negatives to every prose record.
+
+    Args:
+        records: The prose records.
+        k: How many negatives each record keeps.
+        seed: The seed for the random fill.
+        verbose: Whether to report progress.
+
+    Returns:
+        The resolved records and the count that needed the random fill.
+    """
+    negatives, filled = build_negatives(
+        records,
+        records,
+        cache_k=k,
+        seed=seed,
+        verbose=verbose,
+        to_doc=prose_doc,
+        multiplier=PROSE_CANDIDATE_MULTIPLIER,
+    )
+    by_id = {r["id"]: r for r in records}
+    resolved = [
+        {
+            "id": r["id"],
+            "title": r["title"],
+            "question": r["question"],
+            "positive": as_candidate(r),
+            "negatives": [as_candidate(by_id[nid]) for nid in negatives[r["id"]]],
+            "short_answers": r["short_answers"],
+        }
+        for r in records
+    ]
+    return resolved, filled, len({r["title"] for r in records})

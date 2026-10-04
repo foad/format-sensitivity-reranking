@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from rank_bm25 import BM25Okapi
@@ -53,11 +54,15 @@ def record_to_doc(record: dict) -> str:
     return f"{record['title']} {kv} {record['body']}"
 
 
-def build_index(corpus_records: list[dict]) -> NegativeIndex:
+def build_index(
+    corpus_records: list[dict],
+    to_doc: Callable[[dict], str] = record_to_doc,
+) -> NegativeIndex:
     """Index the corpus for retrieval.
 
     Args:
         corpus_records: The records to index.
+        to_doc: The text of a record to index.
 
     Returns:
         The index and its lookups.
@@ -67,7 +72,7 @@ def build_index(corpus_records: list[dict]) -> NegativeIndex:
     title_to_ids: dict[str, list[str]] = {}
     for rid, title in zip(ids, titles, strict=True):
         title_to_ids.setdefault(title, []).append(rid)
-    bm25 = BM25Okapi([tokenize(record_to_doc(r)) for r in corpus_records])
+    bm25 = BM25Okapi([tokenize(to_doc(r)) for r in corpus_records])
     return NegativeIndex(bm25, ids, titles, title_to_ids)
 
 
@@ -76,6 +81,7 @@ def mine_for_query(
     query: dict,
     rng: random.Random,
     cache_k: int = DEFAULT.cache_k,
+    multiplier: int = CANDIDATE_MULTIPLIER,
 ) -> tuple[list[str], bool]:
     """Return the hard negatives of one query.
 
@@ -88,6 +94,8 @@ def mine_for_query(
         query: The query record.
         rng: The source of randomness for the fill.
         cache_k: How many negatives to return.
+        multiplier: How many retrieved candidates to consider for each
+            negative kept before the filters reduce them.
 
     Returns:
         The negative record ids, and whether the fill was used.
@@ -96,7 +104,7 @@ def mine_for_query(
         ValueError: If the corpus holds too few distinct titles.
     """
     scores = index.bm25.get_scores(tokenize(query["question"]))
-    top_idxs = scores.argsort()[::-1][: cache_k * CANDIDATE_MULTIPLIER]
+    top_idxs = scores.argsort()[::-1][: cache_k * multiplier]
     gold_title = query["title"]
 
     picked_ids: list[str] = []
@@ -136,6 +144,8 @@ def build_negatives(
     cache_k: int = DEFAULT.cache_k,
     seed: int = DEFAULT.negatives_seed,
     verbose: bool = True,
+    to_doc: Callable[[dict], str] = record_to_doc,
+    multiplier: int = CANDIDATE_MULTIPLIER,
 ) -> tuple[dict[str, list[str]], int]:
     """Mine hard negatives for every query.
 
@@ -145,13 +155,16 @@ def build_negatives(
         cache_k: How many negatives to cache per query.
         seed: The seed for the random fill.
         verbose: Whether to report progress.
+        to_doc: The text of a record to index.
+        multiplier: How many retrieved candidates to consider for each
+            negative kept.
 
     Returns:
         The negatives by query id, and how many queries needed the fill.
     """
     if verbose:
         print(f"Indexing {len(corpus_records):,} corpus records...")
-    index = build_index(corpus_records)
+    index = build_index(corpus_records, to_doc)
 
     rng = random.Random(seed)
     negatives: dict[str, list[str]] = {}
@@ -159,7 +172,7 @@ def build_negatives(
     for i, query in enumerate(queries):
         if verbose and i and i % PROGRESS_EVERY == 0:
             print(f"  mined {i:,} / {len(queries):,} queries")
-        picked, filled = mine_for_query(index, query, rng, cache_k)
+        picked, filled = mine_for_query(index, query, rng, cache_k, multiplier)
         negatives[query["id"]] = picked
         filled_count += filled
     return negatives, filled_count
