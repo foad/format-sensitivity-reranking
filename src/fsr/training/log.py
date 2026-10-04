@@ -8,6 +8,8 @@ from pathlib import Path
 from types import TracebackType
 from typing import Any
 
+from fsr.reporting import eta_seconds, format_duration
+
 LOG_NAME = "train.jsonl"
 
 RUN = "run"
@@ -127,35 +129,6 @@ def rewind(path: Path, step: int) -> int:
         text = "".join(json.dumps(r, default=str) + "\n" for r in kept)
         path.write_text(text, encoding="utf-8")
     return dropped
-
-
-def eta_seconds(step: int, max_steps: int, elapsed: float) -> float:
-    """Return the seconds left at the rate reached so far.
-
-    Args:
-        step: The steps completed.
-        max_steps: The steps the run will take.
-        elapsed: The seconds spent so far.
-
-    Returns:
-        The estimate.
-    """
-    if step <= 0:
-        return 0.0
-    return max(max_steps - step, 0) * elapsed / step
-
-
-def format_duration(seconds: float) -> str:
-    """Return a duration as hours, minutes and seconds.
-
-    Args:
-        seconds: The duration.
-
-    Returns:
-        The duration as `h:mm:ss`.
-    """
-    whole = int(seconds)
-    return f"{whole // 3600}:{whole // 60 % 60:02d}:{whole % 60:02d}"
 
 
 def step_line(
