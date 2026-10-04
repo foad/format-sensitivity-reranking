@@ -27,6 +27,7 @@ from fsr.corpus.splitting import load_records
 from fsr.formats import FORMAT_NAMES, FORMATS
 from fsr.h2_layout import BASE_ARM, adapter_dir, arm, result_path
 from fsr.metrics import (
+    DEFAULT_N_BOOT,
     bootstrap_ci_of_max_abs_d,
     bootstrap_ci_of_mean,
     format_sensitivity_summary,
@@ -156,6 +157,7 @@ def guardrail_payload(
     per_format_rr: dict[str, list[float]],
     record_ids: list[str],
     seed: int,
+    n_boot: int = DEFAULT_N_BOOT,
 ) -> dict[str, Any]:
     """Summarise the ranking guardrail.
 
@@ -164,6 +166,7 @@ def guardrail_payload(
         per_format_rr: The per-record reciprocal ranks of each format.
         record_ids: The records the guardrail covered.
         seed: The seed for the interval resample.
+        n_boot: Resamples behind the interval.
 
     Returns:
         The guardrail section of the output.
@@ -174,7 +177,9 @@ def guardrail_payload(
         "per_format_reciprocal_ranks": per_format_rr,
         "mean_mrr": float(np.mean(list(per_format_mrr.values()))),
         "min_mrr": float(min(per_format_mrr.values())),
-        "all_format_rr_mean_ci95": bootstrap_ci_of_mean(pooled, seed=seed),
+        "all_format_rr_mean_ci95": bootstrap_ci_of_mean(
+            pooled, n_boot=n_boot, seed=seed
+        ),
         "neg_count_per_query": MRR_NEG_COUNT,
         "record_ids": record_ids,
     }
@@ -226,6 +231,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Replace the classifier head. The default is the registry entry",
     )
     ap.add_argument("--no-mrr", action="store_true", help="Skip the ranking guardrail")
+    ap.add_argument(
+        "--n-boot",
+        type=int,
+        default=DEFAULT_N_BOOT,
+        help="Resamples behind each interval",
+    )
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument(
         "--progress-file",
@@ -303,7 +314,9 @@ def main() -> None:
     print(f"  mean |d|:   {reported['mean_abs_cohen_d']:.3f}")
     print(f"  min rho:    {reported['min_spearman_rho']:.3f}")
     print(f"  max flip:   {reported['max_flip_rate_pct']:.1f}%")
-    low, high = bootstrap_ci_of_max_abs_d(scores_per_fmt, seed=args.seed)
+    low, high = bootstrap_ci_of_max_abs_d(
+        scores_per_fmt, n_boot=args.n_boot, seed=args.seed
+    )
     print(f"  max |d| 95% interval: [{low:.3f}, {high:.3f}]")
     report_elapsed("format scoring", started)
 
@@ -320,7 +333,11 @@ def main() -> None:
             model, tokenizer, covered, negatives, corpus, batch_size, device, counter
         )
         guardrail = guardrail_payload(
-            per_format_mrr, per_format_rr, [r["id"] for r in covered], args.seed
+            per_format_mrr,
+            per_format_rr,
+            [r["id"] for r in covered],
+            args.seed,
+            args.n_boot,
         )
         print(f"\n  mean MRR:   {guardrail['mean_mrr']:.4f}")
         print(f"  worst MRR:  {guardrail['min_mrr']:.4f}")
@@ -341,6 +358,7 @@ def main() -> None:
                 "body_budget_stats": budget_stats,
                 "format_sensitivity": summary,
                 "max_abs_d_ci95": [low, high],
+                "n_boot": args.n_boot,
                 "mrr_guardrail": guardrail,
                 "scores_per_fmt": scores_per_fmt,
                 "record_ids": [r["id"] for r in prepared],

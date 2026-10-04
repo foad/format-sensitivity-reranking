@@ -81,6 +81,8 @@ def run(monkeypatch, data_root, *extra, model=SLUG):
             str(data_root),
             "--batch-size",
             "8",
+            "--n-boot",
+            "50",
             *extra,
         ],
     )
@@ -408,3 +410,16 @@ class TestLimit:
     def test_caps_the_records_on_request(self, monkeypatch, data_root):
         run(monkeypatch, data_root, "--baseline", "--limit", "2")
         assert payload(data_root)["n_records_input"] == 2
+
+
+class TestResampleCount:
+    def test_defaults_to_the_published_count(self):
+        from fsr.metrics import DEFAULT_N_BOOT
+
+        args = mod.build_parser().parse_args(["--model", SLUG])
+        assert args.n_boot == DEFAULT_N_BOOT == 10_000
+
+    @pytest.mark.usefixtures("fake_model")
+    def test_records_the_count_it_used(self, monkeypatch, data_root):
+        run(monkeypatch, data_root, "--baseline")
+        assert payload(data_root)["n_boot"] == 50
