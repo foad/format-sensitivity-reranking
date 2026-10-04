@@ -93,3 +93,34 @@ class TestScoreBatch:
         assert len(score_batch(model, tok, PAIRS, 1, "cpu")) == len(
             score_batch(model, tok, PAIRS, 7, "cpu")
         )
+
+
+class TestBatchCallback:
+    def test_reports_after_every_batch(self):
+        pairs = [("q", f"p{i}") for i in range(10)]
+        seen = []
+        score_batch(
+            LogitModel(), PairTokenizer(), pairs, 4, "cpu", on_batch=seen.append
+        )
+        assert seen == [4, 8, 10]
+
+    def test_reports_the_running_total(self):
+        pairs = [("q", f"p{i}") for i in range(6)]
+        seen = []
+        score_batch(
+            LogitModel(), PairTokenizer(), pairs, 2, "cpu", on_batch=seen.append
+        )
+        assert seen[-1] == len(pairs)
+
+    def test_scores_match_without_a_callback(self):
+        pairs = [("q", f"p{i}") for i in range(10)]
+        with_callback = score_batch(
+            LogitModel(), PairTokenizer(), pairs, 4, "cpu", on_batch=lambda _n: None
+        )
+        without = score_batch(LogitModel(), PairTokenizer(), pairs, 4, "cpu")
+        assert with_callback == without
+
+    def test_reports_nothing_for_no_pairs(self):
+        seen = []
+        score_batch(LogitModel(), PairTokenizer(), [], 4, "cpu", on_batch=seen.append)
+        assert seen == []

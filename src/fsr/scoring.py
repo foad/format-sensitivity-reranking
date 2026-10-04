@@ -9,7 +9,7 @@ import, and only when the attribute is missing.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Any
 
 import torch
@@ -62,6 +62,7 @@ def score_batch(
     batch_size: int,
     device: str,
     max_tokens: int = MAX_TOKENS,
+    on_batch: Callable[[int], None] | None = None,
 ) -> list[float]:
     """Score every query and passage pair.
 
@@ -72,6 +73,8 @@ def score_batch(
         batch_size: The number of pairs to encode at once.
         device: The device to move each batch to.
         max_tokens: The encoding length at which a pair is truncated.
+        on_batch: Called with the number of pairs scored so far, after each
+            batch. It does not affect how the pairs are batched.
 
     Returns:
         One score per pair, in the order given.
@@ -89,4 +92,6 @@ def score_batch(
         ).to(device)
         batch_scores = extract_score_from_logits(model(**enc).logits)
         scores.extend(batch_scores.float().cpu().tolist())
+        if on_batch is not None:
+            on_batch(len(scores))
     return scores
