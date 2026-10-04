@@ -6,16 +6,28 @@ import numpy as np
 import pytest
 
 from fsr.comparison import (
+    ALL_FORMATS,
+    IN_TRAINING,
+    MIN_SUBSET_RECORDS,
     NI_MARGIN,
+    OOD,
     PRIMARY_THRESHOLD,
     STRETCH_THRESHOLD,
+    SUBSET_NAMES,
     all_pair_deltas,
+    bands_crossed,
     bootstrap_delta_max_d,
     bootstrap_delta_mrr,
     cohen_band,
+    compare,
     delta_mrr_ci,
+    held_out_transfer,
     max_abs_d_over_pairs,
+    max_d_section,
     mean_mrr_per_query,
+    pair_subsets,
+    relative_change,
+    slice_scores,
 )
 from fsr.formats import FORMAT_NAMES
 from fsr.metrics import bootstrap_ci_of_mean, cohen_d
@@ -237,3 +249,244 @@ class TestBootstrapDeltaMrr:
         mean, low, high = delta_mrr_ci(base, trained, seed=2)
         out = bootstrap_delta_mrr(base, trained, seed=2)
         assert out == {"delta_mean": mean, "delta_ci": [low, high]}
+
+
+class TestPairSubsets:
+    def test_covers_every_pair(self):
+        subsets = pair_subsets("yaml")
+        assert len(subsets[ALL_FORMATS]) == len(PAIRS)
+
+    def test_splits_the_pairs_in_two(self):
+        subsets = pair_subsets("yaml")
+        assert len(subsets[IN_TRAINING]) + len(subsets[OOD]) == len(PAIRS)
+
+    def test_the_held_out_pairs_all_involve_it(self):
+        assert all("yaml" in p for p in pair_subsets("yaml")[OOD])
+
+    def test_the_training_pairs_never_involve_it(self):
+        assert all("yaml" not in p for p in pair_subsets("yaml")[IN_TRAINING])
+
+    def test_four_pairs_involve_the_held_out_format(self):
+        assert len(pair_subsets("toml")[OOD]) == len(FORMAT_NAMES) - 1
+
+    def test_the_names_are_the_published_ones(self):
+        assert SUBSET_NAMES == (ALL_FORMATS, IN_TRAINING, OOD)
+
+
+class TestBandsCrossed:
+    def test_a_fall_of_one_band_counts_minus_one(self):
+        assert bands_crossed(0.9, 0.6) == -1
+
+    def test_a_fall_of_three_bands_counts_minus_three(self):
+        assert bands_crossed(0.9, 0.1) == -3
+
+    def test_no_change_counts_zero(self):
+        assert bands_crossed(0.9, 0.85) == 0
+
+    def test_a_rise_counts_positive(self):
+        assert bands_crossed(0.1, 0.9) == 3
+
+
+class TestRelativeChange:
+    def test_reports_the_share_of_the_baseline(self):
+        assert relative_change(0.8, 0.4) == pytest.approx(-0.5)
+
+    def test_returns_none_at_a_zero_baseline(self):
+        assert relative_change(0.0, 0.4) is None
+
+
+class TestSliceScores:
+    def test_keeps_the_given_positions(self):
+        per_format = {name: [0.0, 1.0, 2.0, 3.0] for name in FORMAT_NAMES}
+        sliced = slice_scores(per_format, [1, 3])
+        assert sliced[FORMAT_NAMES[0]] == [1.0, 3.0]
+
+    def test_covers_every_format(self):
+        per_format = {name: [0.0, 1.0] for name in FORMAT_NAMES}
+        assert set(slice_scores(per_format, [0])) == set(FORMAT_NAMES)
+
+
+class TestMaxDSection:
+    def test_reports_both_runs_with_their_bands(self):
+        base = scores({FORMAT_NAMES[0]: 3.0})
+        trained = scores({}, seed=1)
+        section = max_d_section(base, trained, PAIRS)
+        assert section["baseline"] > section["trained"]
+        assert section["baseline_band"] == "large"
+
+    def test_names_the_pair_behind_each(self):
+        base = scores({FORMAT_NAMES[0]: 3.0})
+        section = max_d_section(base, base, PAIRS)
+        assert section["baseline_pair"] == section["trained_pair"]
+
+
+def evaluation(offsets, n=40, seed=0, ranks=None, ids=None):
+    per_format = scores(offsets, n=n, seed=seed)
+    record_ids = ids or [f"r{i}" for i in range(n)]
+    rr = ranks if ranks is not None else [0.5] * n
+    return {
+        "n_records_kept": n,
+        "scores_per_fmt": per_format,
+        "record_ids": record_ids,
+        "mrr_guardrail": {
+            "per_format_reciprocal_ranks": {f: list(rr) for f in FORMAT_NAMES},
+            "record_ids": record_ids,
+        },
+    }
+
+
+class TestHeldOutTransfer:
+    def test_reports_the_change_on_the_held_out_format(self):
+        base = evaluation({}, ranks=[0.4] * 30)
+        trained = evaluation({}, ranks=[0.6] * 30, seed=1)
+        out = held_out_transfer(base["mrr_guardrail"], trained["mrr_guardrail"], "yaml")
+        assert out["delta_mrr"] == pytest.approx(0.2)
+        assert out["held_out_format"] == "yaml"
+
+    def test_covers_every_training_format(self):
+        base = evaluation({}, ranks=[0.4] * 30)
+        trained = evaluation({}, ranks=[0.6] * 30, seed=1)
+        out = held_out_transfer(base["mrr_guardrail"], trained["mrr_guardrail"], "yaml")
+        assert set(out["training_format_delta_mrr_per_fmt"]) == set(FORMAT_NAMES) - {
+            "yaml"
+        }
+
+    def test_a_matched_change_gives_a_ratio_of_one(self):
+        base = evaluation({}, ranks=[0.4] * 30)
+        trained = evaluation({}, ranks=[0.6] * 30, seed=1)
+        out = held_out_transfer(base["mrr_guardrail"], trained["mrr_guardrail"], "yaml")
+        assert out["transfer_ratio"] == pytest.approx(1.0)
+
+    def test_an_unmoved_training_set_gives_no_ratio(self):
+        base = evaluation({}, ranks=[0.5] * 30)
+        out = held_out_transfer(base["mrr_guardrail"], base["mrr_guardrail"], "yaml")
+        assert np.isnan(out["transfer_ratio"])
+
+    def test_restricts_to_the_given_queries(self):
+        base = evaluation({}, ranks=[0.4] * 10 + [0.9] * 20)
+        trained = evaluation({}, ranks=[0.6] * 10 + [0.9] * 20, seed=1)
+        whole = held_out_transfer(
+            base["mrr_guardrail"], trained["mrr_guardrail"], "yaml"
+        )
+        part = held_out_transfer(
+            base["mrr_guardrail"], trained["mrr_guardrail"], "yaml", 0, range(10)
+        )
+        assert part["delta_mrr"] > whole["delta_mrr"]
+
+
+class TestCompare:
+    def result(self, **kwargs):
+        base = evaluation({FORMAT_NAMES[0]: 3.0}, ranks=[0.5] * 40)
+        trained = evaluation({}, seed=1, ranks=[0.5] * 40)
+        return compare(base, trained, FORMAT_NAMES[0], n_boot=100, **kwargs)
+
+    def test_covers_every_subset(self):
+        out = self.result()
+        assert set(out["point_estimates_max_d"]) == set(SUBSET_NAMES)
+        assert set(out["bootstrap_delta_max_d"]) == set(SUBSET_NAMES)
+
+    def test_reports_one_row_per_pair(self):
+        assert len(self.result()["per_pair_delta"]) == len(PAIRS)
+
+    def test_carries_the_held_out_format(self):
+        assert self.result()["held_out_format"] == FORMAT_NAMES[0]
+
+    def test_applies_the_thresholds_to_the_training_pairs(self):
+        out = self.result()
+        verdict = out["in_training_verdict"]
+        trained = out["point_estimates_max_d"][IN_TRAINING]["trained"]
+        assert verdict["primary_pass"] == (trained < PRIMARY_THRESHOLD)
+        assert verdict["stretch_pass"] == (trained < STRETCH_THRESHOLD)
+
+    def test_describes_the_held_out_pairs_without_a_threshold(self):
+        descriptive = self.result()["ood_descriptive"]
+        assert "cohen_bands_crossed" in descriptive
+        assert "primary_pass" not in descriptive
+
+    def test_reports_the_ranking_guardrail(self):
+        guardrail = self.result()["mrr_non_inferiority"]
+        assert guardrail["margin"] == NI_MARGIN
+        assert guardrail["passed"] is True
+
+    def test_reports_the_transfer(self):
+        assert self.result()["heldout_transfer"]["held_out_format"] == FORMAT_NAMES[0]
+
+    def test_skips_the_subset_when_none_is_given(self):
+        assert self.result()["metadata_only_subset"] is None
+
+    def test_refuses_evaluations_of_different_sizes(self):
+        base = evaluation({}, n=40)
+        trained = evaluation({}, n=30, seed=1)
+        with pytest.raises(ValueError, match="kept 40 records"):
+            compare(base, trained, "yaml", n_boot=10)
+
+    def test_reports_no_guardrail_when_one_is_absent(self):
+        base = evaluation({}, ranks=[0.5] * 40)
+        trained = evaluation({}, seed=1, ranks=[0.5] * 40)
+        trained["mrr_guardrail"] = None
+        out = compare(base, trained, "yaml", n_boot=10)
+        assert out["mrr_non_inferiority"]["passed"] is None
+        assert out["heldout_transfer"] is None
+
+    def test_refuses_guardrails_of_different_sizes(self):
+        base = evaluation({}, n=40, ranks=[0.5] * 40)
+        trained = evaluation({}, n=40, seed=1, ranks=[0.5] * 30)
+        with pytest.raises(ValueError, match="40 and 30 queries"):
+            compare(base, trained, "yaml", n_boot=10)
+
+
+class TestMetadataOnlySubset:
+    def pair(self, n=40, ranks=None):
+        base = evaluation({FORMAT_NAMES[0]: 3.0}, n=n, ranks=ranks or [0.4] * n)
+        trained = evaluation({}, n=n, seed=1, ranks=ranks or [0.6] * n)
+        return base, trained
+
+    def test_measures_the_named_records(self):
+        base, trained = self.pair()
+        ids = set(base["record_ids"][:25])
+        out = compare(base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids)[
+            "metadata_only_subset"
+        ]
+        assert out["n_records"] == 25
+
+    def test_reports_both_pair_subsets(self):
+        base, trained = self.pair()
+        ids = set(base["record_ids"][:25])
+        out = compare(base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids)[
+            "metadata_only_subset"
+        ]
+        assert set(out["point_estimates_max_d"]) == {IN_TRAINING, OOD}
+
+    def test_skips_a_subset_that_is_too_small(self):
+        base, trained = self.pair()
+        ids = set(base["record_ids"][: MIN_SUBSET_RECORDS - 1])
+        out = compare(base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids)
+        assert out["metadata_only_subset"] is None
+
+    def test_measures_ranking_on_the_subset(self):
+        base, trained = self.pair()
+        ids = set(base["record_ids"][:25])
+        out = compare(base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids)[
+            "metadata_only_subset"
+        ]
+        assert out["mrr"]["n_records"] == 25
+        assert out["mrr"]["overall_delta_mrr_bootstrap"]["delta_mean"] > 0
+
+    def test_skips_ranking_when_the_guardrail_covers_too_few(self):
+        base, trained = self.pair()
+        for payload in (base, trained):
+            payload["mrr_guardrail"]["record_ids"] = ["x"] * 40
+        ids = set(base["record_ids"][:25])
+        out = compare(base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids)[
+            "metadata_only_subset"
+        ]
+        assert out["mrr"] is None
+
+    def test_skips_ranking_when_a_guardrail_is_absent(self):
+        base, trained = self.pair()
+        trained["mrr_guardrail"] = None
+        ids = set(base["record_ids"][:25])
+        out = compare(base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids)[
+            "metadata_only_subset"
+        ]
+        assert out["mrr"] is None
