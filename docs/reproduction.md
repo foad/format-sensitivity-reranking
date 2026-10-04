@@ -58,6 +58,13 @@ holds the build parameters and a digest of every file written.
 GPUS=0,1,2 bash scripts/h1/run.sh
 ```
 
+Each model writes its own log. To watch every job at once, from a second
+shell:
+
+```bash
+uv run python scripts/watch.py
+```
+
 | Stage | Axis | Records | Default |
 |---|---|---|---|
 | 1, 2 | cross-query, within-query | `test`, the reported result | on |

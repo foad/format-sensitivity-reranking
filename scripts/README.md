@@ -4,6 +4,15 @@ Pipeline entry points, run via `uv run`
 
 See [`../docs/reproduction.md`](../docs/reproduction.md) for exact commands and outputs.
 
+## Watching a run
+
+`watch.py` draws one progress bar per job from the progress log lines.
+
+```sh
+uv run python scripts/watch.py
+uv run python scripts/watch.py --pattern 'all_cross_*.log'
+```
+
 ## `corpus/`
  - `build_corpus.py`: run every stage below in order, then validate. Stops at the first stage that fails.
  - `fetch.py`: stream Natural Questions and cache the raw infobox HTML. Optional.
@@ -20,9 +29,9 @@ See [`../docs/reproduction.md`](../docs/reproduction.md) for exact commands and 
 
 ## `h1/`
  - `run.sh`: the full H1 pass.
- - `cross_query.sh`: cross-query sensitivity for one split, one model per GPU.
- - `within_query.sh`: builds the shared candidate cache once, then scores one model per GPU.
- - `cross_query.py`, `within_query.py`: the measurements themselves.
+ - `cross_query.sh`: the score axis for one split, one model per GPU.
+ - `within_query.sh`: the answer axis for one split. Builds the shared candidate cache once, then scores one model per GPU.
+ - `cross_query.py`, `within_query.py`: the two axes, one script each.
 
 ## `h2/`
  - `sweep.sh`: Phase-1 lambda selection, then Phase-2 five-fold hold-one-out, parameterised by model.
