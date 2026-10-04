@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-# Environemnt settings to reduce parallelism overhead in tokenizers.
+# Environment settings to reduce parallelism overhead in tokenizers.
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 os.environ.setdefault("RAYON_NUM_THREADS", "1")
 
@@ -395,6 +395,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ap.add_argument("--out-dir", type=Path, default=None)
     ap.add_argument(
+        "--out-path",
+        type=Path,
+        default=None,
+        help="Write the result to this file. Needs a single --mode",
+    )
+    ap.add_argument(
         "--out-tag",
         default="",
         help="Appended to the file name, to keep parallel runs apart",
@@ -438,13 +444,19 @@ def main() -> None:
         return
     args.out_dir = args.out_dir or args.data_root / OUT_SUBDIR
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    split_path = split_dir(args.data_root)
-    suffix = f"_{args.out_tag}" if args.out_tag else ""
     modes = list(MODES) if args.mode == "both" else [args.mode]
-    out_paths = {
-        mode: args.out_dir / f"{args.split}_{AXIS}_{mode}{suffix}.json"
-        for mode in modes
-    }
+    if args.out_path is not None:
+        if len(modes) != 1:
+            raise SystemExit("--out-path needs a single --mode, not both.")
+        args.out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_paths = {modes[0]: args.out_path}
+    else:
+        suffix = f"_{args.out_tag}" if args.out_tag else ""
+        out_paths = {
+            mode: args.out_dir / f"{args.split}_{AXIS}_{mode}{suffix}.json"
+            for mode in modes
+        }
+    split_path = split_dir(args.data_root)
 
     if args.lora_adapter and len(args.models) != 1:
         raise SystemExit(

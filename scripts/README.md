@@ -25,16 +25,21 @@ uv run python scripts/watch.py --pattern 'all_cross_*.log'
 
 `local.sh` launches a measurement locally on the device named by `GPU`, falling back to `CUDA_VISIBLE_DEVICES`. Setting `FSR_RUNNER` uses a different runner.
 
-`dispatch.sh` spreads per-model jobs across `GPUS` in waves, skipping a model whose output is present. With several GPUs the screen shows one line per model and each model's detail goes to its own log.
+`dispatch.sh` spreads jobs across `GPUS` in waves, skipping a job whose output is present. A job is named by a key the caller chooses: a model slug for the H1 passes, a trained arm for the H2 waves. With several GPUs the screen shows one line per job and each job's detail goes to its own log.
+
+## Shared measurements
+
+`within_query.py` measures the answer axis: how far the ranking inside one query's candidate list moves with the metadata format. H1 runs it on the untrained roster and H2 runs it on each trained adapter.
 
 ## `h1/`
  - `run.sh`: the full H1 pass.
  - `cross_query.sh`: the score axis for one split, one model per GPU.
  - `within_query.sh`: the answer axis for one split. Builds the shared candidate cache once, then scores one model per GPU.
- - `cross_query.py`, `within_query.py`: the two axes, one script each.
+ - `cross_query.py`: the score axis measurement.
 
 ## `h2/`
- - `sweep.sh`: Phase-1 lambda selection, then Phase-2 five-fold hold-one-out, parameterised by model.
- - `train.py`, `eval.py`, `compare.py`, `select_lambda.py`: per-run building blocks.
- - `tanh_ablation.py`: the tanh classifier head test.
- - `*_nonbox*`: capability preservation ablation.
+ - `train.py`: train one adapter under the ranking and invariance objective.
+ - `eval.py`: the score axis and the ranking guardrail for one arm.
+ - `select.py`: choose the invariance weight, or the adapter rank.
+ - `compare.py`: one trained fold against the untrained baseline.
+ - `eval_prose.py`, `compare_prose.py`: the capability check on ordinary prose.

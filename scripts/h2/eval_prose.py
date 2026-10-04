@@ -1,7 +1,7 @@
 """Rank ordinary prose without relying on infobox metadata.
 
 The mitigation phase trains on infobox metadata. This evaluates the models
-on ordinary prose passages to detect whether a model has achieved invariance
+on ordinary prose passages. It detects whether a model has achieved invariance
 at the cost of forgetting how to rank non-metadata passages.
 
 Writes `h2/prose_mrr_{model}_{arm}.json`.

@@ -1,4 +1,4 @@
-"""Tests for scripts.h1.within_query."""
+"""Tests for scripts.within_query."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import re
 
 import numpy as np
 import pytest
-from scripts.h1 import within_query as mod
+from scripts import within_query as mod
 from tests.fakes import LogitModel, PairTokenizer, WordTokenizer
 
 from fsr.corpus.layout import split_dir
@@ -617,3 +617,49 @@ class TestScoringModes:
             verbose=False,
         )
         assert any("body" in p for batch in seen for p in batch)
+
+
+class TestOutPath:
+    def test_writes_to_the_named_file(self, monkeypatch, tmp_path):
+        target = tmp_path / "h2" / "test_within_minilm_l6_yaml_lam1.json"
+        run_main(
+            monkeypatch, tmp_path, "--mode", "with_body", "--out-path", str(target)
+        )
+        assert target.exists()
+
+    def test_writes_nowhere_else(self, monkeypatch, tmp_path):
+        target = tmp_path / "h2" / "result.json"
+        run_main(
+            monkeypatch, tmp_path, "--mode", "with_body", "--out-path", str(target)
+        )
+        assert [p.name for p in target.parent.glob("*.json")] == ["result.json"]
+
+    def test_creates_the_directory(self, monkeypatch, tmp_path):
+        target = tmp_path / "deep" / "nested" / "result.json"
+        run_main(
+            monkeypatch, tmp_path, "--mode", "with_body", "--out-path", str(target)
+        )
+        assert target.exists()
+
+    def test_refuses_both_modes(self, monkeypatch, tmp_path):
+        target = tmp_path / "result.json"
+        with pytest.raises(SystemExit, match="needs a single --mode"):
+            run_main(monkeypatch, tmp_path, "--mode", "both", "--out-path", str(target))
+
+    def test_the_default_naming_is_unchanged(self, monkeypatch, tmp_path):
+        out = run_main(monkeypatch, tmp_path, "--mode", "with_body")
+        assert out.exists()
+        assert out.name == "test_within_with_body.json"
+
+    def test_the_out_tag_still_names_the_file(self, monkeypatch, tmp_path):
+        run_main(monkeypatch, tmp_path, "--mode", "with_body", "--out-tag", "alpha")
+        assert (tmp_path / mod.OUT_SUBDIR / "test_within_with_body_alpha.json").exists()
+
+    def test_the_candidate_cache_stays_in_the_output_directory(
+        self, monkeypatch, tmp_path
+    ):
+        target = tmp_path / "h2" / "result.json"
+        run_main(
+            monkeypatch, tmp_path, "--mode", "with_body", "--out-path", str(target)
+        )
+        assert (tmp_path / mod.OUT_SUBDIR / "test_candidates.json").exists()

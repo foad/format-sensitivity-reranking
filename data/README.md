@@ -12,7 +12,7 @@ download it from the release and unpack into `data/`, or build it manually.
 | `nq/parsed_{train,validation}.json` | Infobox `(k,v)` pairs, body text, and quality flags | `scripts/corpus/parse.py` |
 | `nq/splits/` | Article-level 80/10/10 splits, and the BM25 hard negatives | `scripts/corpus/split.py`, `negatives.py` |
 | `nq/h1/*.json` | Per-model H1 results, both axes and both modes. Tracked | `scripts/h1/run.sh` |
-| `nq/h1/*_candidates*.json` | Candidate lists, rebuilt by the measurement | `scripts/h1/within_query.py` |
+| `nq/h1/*_candidates*.json` | Candidate lists, rebuilt by the measurement | `scripts/within_query.py` |
 | `nq/h2_compare/`, `h2_selection/` | H2 result JSONs | H2 sweep scripts |
 | `nq/matched_{train,validation}.json` | The raw Wikipedia HTML cache (2.9 GB). Only needed to re-parse without re-streaming. | `scripts/corpus/fetch.py` |
 

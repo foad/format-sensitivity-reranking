@@ -31,7 +31,7 @@ case "$SPLIT" in
         ;;
 esac
 
-MEASURE=scripts/h1/within_query.py
+MEASURE=scripts/within_query.py
 DATA_ROOT="${DATA_ROOT:-data/nq}"
 OUT_DIR="$DATA_ROOT/h1"
 mkdir -p "$OUT_DIR"
