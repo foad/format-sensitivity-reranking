@@ -75,16 +75,16 @@ class LogitModel:
 
 
 class HashingPairTokenizer:
-    """A tokenizer that encodes query and passage pairs into fixed-width vectors."""
+    """A tokenizer that serves both the budget call and the scoring call."""
 
     def __init__(self, width: int = 4) -> None:
         """Store the encoding width."""
         self.width = width
 
-    def __call__(self, queries, passages=None, **_kwargs) -> Encoding:
-        """Return an encoding of one row per query."""
-        import torch
-
+    def __call__(self, queries, passages=None, **kwargs) -> Any:
+        """Return word offsets for one text, or an encoded batch."""
+        if isinstance(queries, str):
+            return WordTokenizer()(queries, passages, **kwargs)
         passages = passages if passages is not None else [""] * len(queries)
         rows = []
         for query, passage in zip(queries, passages, strict=True):
