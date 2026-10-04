@@ -177,6 +177,7 @@ def delta_mrr_ci(
     rr_base: np.ndarray,
     rr_trained: np.ndarray,
     seed: int = DEFAULT_SEED,
+    n_boot: int = DEFAULT_N_BOOT,
 ) -> tuple[float, float, float]:
     """Compare ranking quality before and after training, query by query.
 
@@ -184,12 +185,13 @@ def delta_mrr_ci(
         rr_base: The baseline reciprocal ranks.
         rr_trained: The trained reciprocal ranks, for the same queries.
         seed: The seed for the resample.
+        n_boot: The number of replicates.
 
     Returns:
         The mean change, and the lower and upper bounds of its interval.
     """
     delta = rr_trained - rr_base
-    low, high = bootstrap_ci_of_mean(delta, seed=seed)
+    low, high = bootstrap_ci_of_mean(delta, n_boot=n_boot, seed=seed)
     return float(delta.mean()), low, high
 
 
@@ -197,6 +199,7 @@ def bootstrap_delta_mrr(
     rr_base: np.ndarray,
     rr_trained: np.ndarray,
     seed: int = DEFAULT_SEED,
+    n_boot: int = DEFAULT_N_BOOT,
 ) -> dict[str, Any]:
     """Report the change in ranking quality as a section of an output.
 
@@ -204,11 +207,12 @@ def bootstrap_delta_mrr(
         rr_base: The baseline reciprocal ranks.
         rr_trained: The trained reciprocal ranks, for the same queries.
         seed: The seed for the resample.
+        n_boot: The number of replicates.
 
     Returns:
         The mean change and its interval.
     """
-    mean, low, high = delta_mrr_ci(rr_base, rr_trained, seed)
+    mean, low, high = delta_mrr_ci(rr_base, rr_trained, seed, n_boot)
     return {"delta_mean": mean, "delta_ci": [low, high]}
 
 
@@ -560,3 +564,32 @@ def _non_inferiority(
         "delta_mrr_bootstrap": boot,
         "passed": boot["delta_ci"][0] > -NI_MARGIN,
     }
+
+
+def paired_reciprocal_ranks(
+    base: dict[str, Any], trained: dict[str, Any]
+) -> tuple[list[str], np.ndarray, np.ndarray]:
+    """Line up two rankings on the records they share.
+
+    Args:
+        base: A ranking result holding `record_ids` and `reciprocal_ranks`.
+        trained: The ranking result to compare it against.
+
+    Returns:
+        The reciprocal-rank arrays aligned to the shared record identifiers.
+
+    Raises:
+        ValueError: If the two share no record.
+    """
+    base_by_id = dict(zip(base["record_ids"], base["reciprocal_ranks"], strict=True))
+    trained_by_id = dict(
+        zip(trained["record_ids"], trained["reciprocal_ranks"], strict=True)
+    )
+    shared = [rid for rid in base["record_ids"] if rid in trained_by_id]
+    if not shared:
+        raise ValueError("the two rankings share no record")
+    return (
+        shared,
+        np.array([base_by_id[rid] for rid in shared]),
+        np.array([trained_by_id[rid] for rid in shared]),
+    )

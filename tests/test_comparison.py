@@ -26,6 +26,7 @@ from fsr.comparison import (
     max_d_section,
     mean_mrr_per_query,
     pair_subsets,
+    paired_reciprocal_ranks,
     relative_change,
     slice_scores,
 )
@@ -490,3 +491,59 @@ class TestMetadataOnlySubset:
             "metadata_only_subset"
         ]
         assert out["mrr"] is None
+
+
+class TestPairedReciprocalRanks:
+    def ranking(self, ids, ranks):
+        return {"record_ids": list(ids), "reciprocal_ranks": list(ranks)}
+
+    def test_lines_up_matching_rankings(self):
+        base = self.ranking(["a", "b"], [0.5, 0.25])
+        trained = self.ranking(["a", "b"], [1.0, 0.5])
+        shared, rr_base, rr_trained = paired_reciprocal_ranks(base, trained)
+        assert shared == ["a", "b"]
+        assert rr_base.tolist() == [0.5, 0.25]
+        assert rr_trained.tolist() == [1.0, 0.5]
+
+    def test_keeps_the_baseline_order(self):
+        base = self.ranking(["b", "a"], [0.25, 0.5])
+        trained = self.ranking(["a", "b"], [1.0, 0.5])
+        shared, _, rr_trained = paired_reciprocal_ranks(base, trained)
+        assert shared == ["b", "a"]
+        assert rr_trained.tolist() == [0.5, 1.0]
+
+    def test_keeps_only_the_shared_records(self):
+        base = self.ranking(["a", "b", "c"], [0.5, 0.25, 1.0])
+        trained = self.ranking(["b", "c"], [0.5, 1.0])
+        shared, rr_base, _ = paired_reciprocal_ranks(base, trained)
+        assert shared == ["b", "c"]
+        assert rr_base.tolist() == [0.25, 1.0]
+
+    def test_refuses_rankings_with_nothing_in_common(self):
+        base = self.ranking(["a"], [0.5])
+        trained = self.ranking(["b"], [0.5])
+        with pytest.raises(ValueError, match="share no record"):
+            paired_reciprocal_ranks(base, trained)
+
+
+class TestResampleCount:
+    def test_a_smaller_count_still_brackets_the_change(self):
+        base = np.array([0.5] * 40)
+        trained = np.array([0.6] * 20 + [0.4] * 20)
+        mean, low, high = delta_mrr_ci(base, trained, n_boot=50)
+        assert low <= mean <= high
+
+    def test_the_count_changes_the_interval(self):
+        rng = np.random.default_rng(0)
+        base = rng.random(40)
+        trained = rng.random(40)
+        assert delta_mrr_ci(base, trained, n_boot=50) != delta_mrr_ci(
+            base, trained, n_boot=500
+        )
+
+    def test_the_section_form_takes_the_count_too(self):
+        base = np.array([0.5] * 20)
+        trained = np.array([0.6] * 20)
+        mean, low, high = delta_mrr_ci(base, trained, seed=3, n_boot=80)
+        out = bootstrap_delta_mrr(base, trained, seed=3, n_boot=80)
+        assert out == {"delta_mean": mean, "delta_ci": [low, high]}
