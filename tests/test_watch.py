@@ -6,6 +6,15 @@ import pytest
 from scripts import watch as mod
 
 
+def age_file(path, seconds):
+    """Backdate a progress file, as if the job wrote it that long ago."""
+    import os
+
+    written = os.stat(path).st_mtime - seconds
+    os.utime(path, (written, written))
+    return path
+
+
 def state(
     directory,
     name,
@@ -75,6 +84,58 @@ class TestReadState:
         assert mod.read_state(state(tmp_path, "j", done=11, total=10)).finished
 
 
+class TestLiveEstimates:
+    def test_counts_the_time_since_the_job_wrote(self, tmp_path):
+        path = age_file(state(tmp_path, "a", elapsed=60.0, eta=300.0), 120)
+        s = mod.read_state(path)
+        assert s.elapsed == 60.0
+        assert s.eta == 300.0
+        assert s.live_elapsed == pytest.approx(180.0, abs=2)
+        assert s.live_eta == pytest.approx(180.0, abs=2)
+
+    def test_a_fresh_file_reads_as_written(self, tmp_path):
+        s = mod.read_state(state(tmp_path, "a", elapsed=60.0, eta=300.0))
+        assert s.live_elapsed == pytest.approx(60.0, abs=2)
+        assert s.live_eta == pytest.approx(300.0, abs=2)
+
+    def test_the_estimate_stops_at_zero(self, tmp_path):
+        path = age_file(state(tmp_path, "a", elapsed=60.0, eta=30.0), 600)
+        assert mod.read_state(path).live_eta == 0.0
+
+    def test_the_time_run_keeps_rising_past_the_estimate(self, tmp_path):
+        path = age_file(state(tmp_path, "a", elapsed=60.0, eta=30.0), 600)
+        assert mod.read_state(path).live_elapsed == pytest.approx(660.0, abs=2)
+
+    def test_a_new_line_resets_the_estimate(self, tmp_path):
+        path = age_file(state(tmp_path, "a", done=1, eta=300.0), 120)
+        assert mod.read_state(path).live_eta == pytest.approx(180.0, abs=2)
+        state(tmp_path, "a", done=2, eta=280.0)
+        assert mod.read_state(path).live_eta == pytest.approx(280.0, abs=2)
+
+    def test_the_line_counts_down_between_writes(self, tmp_path):
+        path = age_file(state(tmp_path, "a", done=1, eta=300.0), 120)
+        s = mod.read_state(path)
+        line = mod.render([s])[0]
+        assert f"eta {mod.format_duration(s.live_eta)}" in line
+        assert mod.format_duration(s.eta) not in line
+
+    def test_a_spent_estimate_says_overdue(self, tmp_path):
+        path = age_file(state(tmp_path, "a", done=1, eta=30.0), 600)
+        line = mod.render([mod.read_state(path)])[0]
+        assert "eta overdue" in line
+        assert "0:11:00" in line
+
+    def test_a_finished_job_is_not_extrapolated(self, tmp_path):
+        path = age_file(state(tmp_path, "a", done=10, total=10, elapsed=90.0), 600)
+        assert "done in 0:01:30" in mod.render([mod.read_state(path)])[0]
+
+    def test_the_run_line_counts_down_too(self, tmp_path):
+        path = age_file(state(tmp_path, "a", done=1, eta=600.0), 120)
+        s = mod.read_state(path)
+        assert f"eta {mod.format_duration(s.live_eta)}" in mod.render([s])[-1]
+        assert s.live_eta < s.eta
+
+
 class TestRenderBar:
     def test_is_empty_at_the_start(self):
         assert mod.render_bar(0, 10, width=4) == "[----]"
@@ -107,9 +168,10 @@ class TestRender:
         assert len(mod.render(states)) == 3
 
     def test_a_running_job_shows_its_label_and_time_left(self, tmp_path):
-        s = mod.read_state(state(tmp_path, "a", done=1, label="x/y"))
-        assert "x/y" in mod.render([s])[0]
-        assert "eta 0:00:30" in mod.render([s])[0]
+        s = mod.read_state(state(tmp_path, "a", done=1, label="x/y", eta=300.0))
+        line = mod.render([s])[0]
+        assert "x/y" in line
+        assert f"eta {mod.format_duration(s.live_eta)}" in line
 
     def test_a_finished_job_shows_how_long_it_took(self, tmp_path):
         s = mod.read_state(state(tmp_path, "a", done=10, total=10, elapsed=90))
@@ -141,7 +203,11 @@ class TestRender:
             mod.read_state(state(tmp_path, "a", eta=30)),
             mod.read_state(state(tmp_path, "b", eta=600)),
         ]
-        assert "eta 0:10:00" in mod.render(states)[-1]
+        longest = max(s.live_eta for s in states)
+        assert f"eta {mod.format_duration(longest)}" in mod.render(states)[-1]
+
+    def test_a_job_that_cannot_be_read_has_no_age(self, tmp_path):
+        assert mod.read_state(tmp_path / "absent.progress").age == 0.0
 
     def test_the_run_line_gives_no_time_left_when_all_are_done(self, tmp_path):
         s = mod.read_state(state(tmp_path, "a", done=10, total=10))

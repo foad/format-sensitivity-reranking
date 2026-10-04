@@ -34,9 +34,10 @@ class JobState:
         done: The units the job has completed.
         total: The units the job will complete. 0 before the first unit.
         label: What the job finished last.
-        elapsed: The seconds the job has run.
-        eta: The seconds the job has left.
-        failed: Whether the log reports a failure.
+        elapsed: The seconds the job had run when it wrote this.
+        eta: The seconds the job had left when it wrote this.
+        failed: Whether the job reports a failure.
+        age: The seconds since the job wrote this.
     """
 
     name: str
@@ -46,11 +47,22 @@ class JobState:
     elapsed: float
     eta: float
     failed: bool
+    age: float = 0.0
 
     @property
     def finished(self) -> bool:
         """Report whether the job completed every unit."""
         return self.total > 0 and self.done >= self.total
+
+    @property
+    def live_elapsed(self) -> float:
+        """Return the seconds the job has run, counting the time since."""
+        return self.elapsed + self.age
+
+    @property
+    def live_eta(self) -> float:
+        """Return the seconds the job has left, counting the time since."""
+        return max(self.eta - self.age, 0.0)
 
 
 def read_state(path: Path) -> JobState:
@@ -65,8 +77,10 @@ def read_state(path: Path) -> JobState:
     """
     try:
         fields = parse_progress(path.read_text(errors="replace"))
+        age = max(time.time() - path.stat().st_mtime, 0.0)
     except OSError:
         fields = None
+        age = 0.0
     if fields is None:
         return JobState(path.stem, 0, 0, "", 0.0, 0.0, False)
     try:
@@ -78,6 +92,7 @@ def read_state(path: Path) -> JobState:
             elapsed=float(fields.get("elapsed", 0.0)),
             eta=float(fields.get("eta", 0.0)),
             failed=fields.get("failed") == "1",
+            age=age,
         )
     except ValueError:
         return JobState(path.stem, 0, 0, "", 0.0, 0.0, False)
@@ -120,12 +135,14 @@ def render(states: list[JobState]) -> list[str]:
         elif not state.total:
             note = "waiting"
         elif not state.done:
-            note = f"starting  {format_duration(state.elapsed)}"
+            note = f"starting  {format_duration(state.live_elapsed)}"
         else:
-            note = (
-                f"{state.label}  {format_duration(state.elapsed)}"
-                f"  eta {format_duration(state.eta)}"
+            left = (
+                f"eta {format_duration(state.live_eta)}"
+                if state.live_eta
+                else "eta overdue"
             )
+            note = f"{state.label}  {format_duration(state.live_elapsed)}  {left}"
         lines.append(
             f"  {state.name:<{width}}  {render_bar(state.done, state.total)}"
             f" {state.done:>3}/{state.total:<3}  {note}"
@@ -133,7 +150,7 @@ def render(states: list[JobState]) -> list[str]:
     done = sum(s.done for s in states)
     total = sum(s.total for s in states)
     running = [s for s in states if s.total and not s.finished and not s.failed]
-    eta = max((s.eta for s in running), default=0.0)
+    eta = max((s.live_eta for s in running), default=0.0)
     lines.append(
         f"  {'':<{width}}  {len(states)} jobs, {done}/{total} units"
         f"{f', eta {format_duration(eta)}' if running else ''}"
