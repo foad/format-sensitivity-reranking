@@ -285,22 +285,41 @@ class TestRunMode:
         assert data["tightest_tokeniser_counts"] == {"model/a": 1}
         assert data["drop_stats"]["dropped"] == 0
 
-    def test_metadata_only_mode_omits_the_budget_metadata(self, monkeypatch, tmp_path):
+    def test_metadata_only_mode_records_the_budget_metadata(
+        self, monkeypatch, tmp_path
+    ):
         self._patch_loaders(monkeypatch)
         toks = {"model/a": PairTokenizer()}
         mod.run_mode(
             "metadata_only",
-            [record()],
+            [record("1"), record("2")],
             list(toks),
             toks,
             self._args(tmp_path),
             "cpu",
-            None,
-            None,
+            {"model/a": 2},
+            {"dropped": 3, "budget_min": 400},
         )
         data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
-        assert "tightest_tokeniser_counts" not in data
-        assert "drop_stats" not in data
+        assert data["tightest_tokeniser_counts"] == {"model/a": 2}
+        assert data["drop_stats"]["dropped"] == 3
+
+    def test_records_the_identifier_of_every_record_scored(self, monkeypatch, tmp_path):
+        self._patch_loaders(monkeypatch)
+        toks = {"model/a": PairTokenizer()}
+        mod.run_mode(
+            "with_body",
+            [record("7"), record("8")],
+            list(toks),
+            toks,
+            self._args(tmp_path),
+            "cpu",
+            {"model/a": 2},
+            {"dropped": 0, "budget_min": 400},
+        )
+        data = json.loads((tmp_path / "test_cross_with_body.json").read_text())
+        assert data["record_ids"] == ["7", "8"]
+        assert data["n_records"] == len(data["record_ids"])
 
     def test_releases_gpu_memory_after_each_model(self, monkeypatch, tmp_path):
         calls = []
@@ -428,6 +447,48 @@ class TestMain:
         mod.main()
         data = json.loads((tmp_path / "test_cross_metadata_only.json").read_text())
         assert data["n_records"] == 3
+
+    def test_both_modes_score_one_record_set(self, monkeypatch, tmp_path):
+        self._corpus(tmp_path, n=5)
+        self._patch(monkeypatch, tmp_path)
+        # The budget keeps three of the five records.
+        monkeypatch.setattr(
+            mod,
+            "prepare_records_with_body",
+            lambda recs, _toks: (
+                [
+                    {**r, "truncated_body": "b", "body_budget_tokens": 400}
+                    for r in recs[:3]
+                ],
+                {"dropped": 2, "tightest_counts": {"m/a": 3}},
+            ),
+        )
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "prog",
+                "--mode",
+                "both",
+                "--models",
+                "m/a",
+                "--in-dir",
+                str(tmp_path),
+                "--out-dir",
+                str(tmp_path),
+            ],
+        )
+        mod.main()
+        payloads = {
+            mode: json.loads((tmp_path / f"test_cross_{mode}.json").read_text())
+            for mode in ("with_body", "metadata_only")
+        }
+        assert payloads["with_body"]["record_ids"] == ["0", "1", "2"]
+        assert (
+            payloads["with_body"]["record_ids"]
+            == payloads["metadata_only"]["record_ids"]
+        )
+        assert {p["n_records"] for p in payloads.values()} == {3}
+        assert {p["drop_stats"]["dropped"] for p in payloads.values()} == {2}
 
     def test_with_body_mode_reports_the_budget_distribution(
         self, monkeypatch, tmp_path, capsys

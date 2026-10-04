@@ -6,8 +6,8 @@ Runs each model in the roster over each format renderer, under two conditions:
      prose. This is the primary condition.
   2. `metadata_only`: the passage is the rendered metadata block alone.
 
-The body budget for `with_body` uses the tightest tokenizer across every model
-in the run, so each model scores identical body content on each record.
+The body budget uses the tightest tokenizer across every model in the run, so
+each model scores identical body content on each record.
 
 A model that fails to load or to score is recorded in `models_failed` and does
 not stop the other models. Results are written after each model completes.
@@ -186,8 +186,8 @@ def run_mode(
         tokenizers: The loaded tokenizers, by model identifier.
         args: The parsed command-line arguments.
         device: The device to score on.
-        tightest_counts: The tightest-tokenizer counts, for with_body only.
-        drop_stats: The drop and budget statistics, for with_body only.
+        tightest_counts: The tightest-tokenizer counts of the body budget.
+        drop_stats: The drop and budget statistics of the body budget.
     """
     print(f"\n{'=' * 70}")
     print(f"MODE: {mode}   n_records = {len(records)}")
@@ -205,14 +205,14 @@ def run_mode(
             "split": args.split,
             "n_records": len(records),
             "split_source": args.split,
+            "record_ids": [r["id"] for r in records],
+            "drop_stats": drop_stats,
+            "tightest_tokeniser_counts": tightest_counts,
             "models_probed": list(all_results),
             "models_failed": failures,
             "formats": list(FORMATS),
             "results": all_results,
         }
-        if mode == "with_body":
-            payload["drop_stats"] = drop_stats
-            payload["tightest_tokeniser_counts"] = tightest_counts
         out_path.write_text(json.dumps(payload))
 
     for model_name in models:
@@ -411,32 +411,27 @@ def main() -> None:
 
     modes = ["metadata_only", "with_body"] if args.mode == "both" else [args.mode]
 
+    print("\nPreparing records (body budget across the whole roster)...")
+    eligible, stats = prepare_records_with_body(records, budget_tokenizers)
+    tightest_counts = stats["tightest_counts"]
+    drop_stats = {"dropped": stats["dropped"], **budget_summary(eligible)}
+    print(
+        f"  {len(eligible):,} / {len(records):,} kept  "
+        f"({drop_stats['dropped']} dropped, budget < {MIN_BODY_TOKENS})"
+    )
+    print(
+        f"  body budget tokens: min={drop_stats['budget_min']} "
+        f"median={drop_stats['budget_median']} max={drop_stats['budget_max']}"
+    )
+    print("  tightest tokenizer distribution:")
+    for name, count in sorted(tightest_counts.items(), key=lambda x: -x[1]):
+        print(f"    {count:>5}  {name}")
+
+    if not eligible:
+        print("  No eligible records; stopping.")
+        return
+
     for mode in modes:
-        if mode == "with_body":
-            print("\nPreparing with_body records (budget across the whole roster)...")
-            eligible, stats = prepare_records_with_body(records, budget_tokenizers)
-            tightest_counts = stats["tightest_counts"]
-            drop_stats = {"dropped": stats["dropped"], **budget_summary(eligible)}
-            print(
-                f"  {len(eligible):,} / {len(records):,} kept  "
-                f"({drop_stats['dropped']} dropped, budget < {MIN_BODY_TOKENS})"
-            )
-            print(
-                f"  body budget tokens: min={drop_stats['budget_min']} "
-                f"median={drop_stats['budget_median']} max={drop_stats['budget_max']}"
-            )
-            print("  tightest tokenizer distribution:")
-            for t, c in sorted(tightest_counts.items(), key=lambda x: -x[1]):
-                print(f"    {c:>5}  {t}")
-        else:
-            eligible = records
-            drop_stats = None
-            tightest_counts = None
-
-        if not eligible:
-            print(f"  No eligible records for mode {mode}; skipping.")
-            continue
-
         run_mode(
             mode,
             eligible,
