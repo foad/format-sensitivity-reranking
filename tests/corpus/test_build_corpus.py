@@ -84,6 +84,30 @@ class TestPlan:
             assert (mod.SCRIPT_DIR / stage.script).exists()
 
 
+class TestProseStage:
+    def test_is_off_by_default(self):
+        assert "prose" not in names(mod.plan(DATA_ROOT))
+
+    def test_runs_before_validation(self):
+        stages = names(mod.plan(DATA_ROOT, prose=True))
+        assert stages.index("prose") == stages.index("validate") - 1
+
+    def test_takes_the_data_root(self):
+        assert "--data-root" in args_of(mod.plan(DATA_ROOT, prose=True), "prose")
+
+    def test_takes_the_limit(self):
+        args = args_of(mod.plan(DATA_ROOT, limit=50, prose=True), "prose")
+        assert args[args.index("--limit") + 1] == "50"
+
+    def test_takes_force(self):
+        args = args_of(mod.plan(DATA_ROOT, force=True, prose=True), "prose")
+        assert "--force" in args
+
+    def test_names_its_script(self):
+        stage = next(s for s in mod.plan(DATA_ROOT, prose=True) if s.name == "prose")
+        assert stage.script == "prose.py"
+
+
 class TestRequireClean:
     def test_passes_a_clean_tree(self):
         assert mod.require_clean({"revision": "abc", "dirty": False}) is None

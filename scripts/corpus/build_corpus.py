@@ -37,6 +37,7 @@ def plan(
     force: bool = False,
     fetch: bool = False,
     cache_k: int = DEFAULT.cache_k,
+    prose: bool = False,
 ) -> list[Stage]:
     """Return the stages to run, in build order.
 
@@ -46,6 +47,7 @@ def plan(
         force: Whether each derived stage rebuilds outputs that are already present.
         fetch: Whether to write the raw cache first and parse from it.
         cache_k: How many negatives to mine for each query.
+        prose: Whether to collect the prose-answered subset as well.
 
     Returns:
         The stages, starting with the raw cache when it is asked for.
@@ -66,6 +68,8 @@ def plan(
     stages.append(
         Stage("negatives", "negatives.py", [*root, "--cache-k", str(cache_k), *rebuild])
     )
+    if prose:
+        stages.append(Stage("prose", "prose.py", [*limited, *rebuild]))
     stages.append(Stage("validate", "validate.py", root))
     return stages
 
@@ -125,6 +129,11 @@ def main() -> None:
         action="store_true",
         help="Write the raw cache first, and parse from it instead of streaming",
     )
+    ap.add_argument(
+        "--prose",
+        action="store_true",
+        help="Collect the prose-answered subset, which the capability check reads",
+    )
     ap.add_argument("--cache-k", type=int, default=DEFAULT.cache_k)
     ap.add_argument(
         "--require-clean",
@@ -133,7 +142,9 @@ def main() -> None:
     )
     args = ap.parse_args()
 
-    stages = plan(args.data_root, args.limit, args.force, args.fetch, args.cache_k)
+    stages = plan(
+        args.data_root, args.limit, args.force, args.fetch, args.cache_k, args.prose
+    )
     record = RunRecord.begin(sys.argv, SCRIPT_DIR)
     if args.require_clean:
         require_clean(record.git)
