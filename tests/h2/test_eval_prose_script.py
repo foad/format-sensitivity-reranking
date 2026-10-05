@@ -230,6 +230,18 @@ class TestRun:
         assert by_slug(SLUG).eval_batch == 32
 
 
+class TestAttentionKernel:
+    def test_uses_the_fused_kernel_by_default(self, monkeypatch, data_root, fake_model):
+        run(monkeypatch, data_root, "--baseline")
+        assert fake_model["eager_attn"] is False
+
+    def test_requests_the_eager_kernel_on_request(
+        self, monkeypatch, data_root, fake_model
+    ):
+        run(monkeypatch, data_root, "--baseline", "--eager-attn")
+        assert fake_model["eager_attn"] is True
+
+
 class TestArmSelection:
     @pytest.mark.usefixtures("fake_model")
     def test_refuses_neither(self, monkeypatch, data_root):

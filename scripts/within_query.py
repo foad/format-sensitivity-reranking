@@ -40,6 +40,7 @@ from fsr.candidates import (
     measure_overflow,
 )
 from fsr.cli import add_common_args, take
+from fsr.corpus.files import write_atomic
 from fsr.corpus.layout import split_dir
 from fsr.corpus.splitting import SPLIT_CHOICES, load_records, strict_gated
 from fsr.formats import FORMAT_NAMES, FORMATS
@@ -344,7 +345,9 @@ def prepare_queries(
         )
         print(f"  {stats['n_kept']} queries kept")
         report_elapsed("built candidate lists", started)
-        cache_path.write_text(json.dumps({"prepared": prepared, "prep_stats": stats}))
+        write_atomic(
+            cache_path, json.dumps({"prepared": prepared, "prep_stats": stats})
+        )
         print(f"  cached -> {cache_path}")
 
     for key in (
@@ -385,6 +388,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--tanh-head",
         action="store_true",
         help="Replace the classifier head with dense->tanh->out_proj.",
+    )
+    ap.add_argument(
+        "--eager-attn",
+        action="store_true",
+        help="Request the eager attention kernel in place of the fused one",
     )
     ap.add_argument("--negatives", type=int, default=DEFAULT_NEGATIVES)
     ap.add_argument("--batch-size", type=int, default=32)
@@ -521,6 +529,7 @@ def main() -> None:
                 model_name,
                 device,
                 lora_adapter_path=args.lora_adapter,
+                eager_attn=args.eager_attn,
                 tanh_head=args.tanh_head,
             )
             if args.tanh_head:

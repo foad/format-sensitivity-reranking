@@ -125,6 +125,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="File to keep the live progress of this job in",
     )
+    ap.add_argument(
+        "--eager-attn",
+        action="store_true",
+        help="Request the eager attention kernel in place of the fused one",
+    )
     ap.add_argument("--limit", type=int, default=0, help="Cap records for a check")
     ap.add_argument(
         "--force", action="store_true", help="Rank again over a finished run"
@@ -178,6 +183,7 @@ def main() -> None:
         entry.model_id,
         device,
         lora_adapter_path=str(adapter) if adapter else None,
+        eager_attn=args.eager_attn,
         tanh_head=tanh_head,
     )
 

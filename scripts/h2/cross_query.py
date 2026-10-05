@@ -274,6 +274,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Replace the classifier head. The default is the registry entry",
     )
+    ap.add_argument(
+        "--eager-attn",
+        action="store_true",
+        help="Request the eager attention kernel in place of the fused one",
+    )
     ap.add_argument("--no-mrr", action="store_true", help="Skip the ranking guardrail")
     ap.add_argument(
         "--n-boot",
@@ -330,6 +335,7 @@ def main() -> None:
         entry.model_id,
         device,
         lora_adapter_path=str(adapter) if adapter else None,
+        eager_attn=args.eager_attn,
         tanh_head=tanh_head,
     )
 

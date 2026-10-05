@@ -141,6 +141,18 @@ class TestRendering:
         assert mod.render_negative(negative, "yaml", 40, HashingPairTokenizer(4))
 
 
+class TestAttentionKernel:
+    def test_uses_the_fused_kernel_by_default(self, monkeypatch, data_root, fake_model):
+        run(monkeypatch, data_root, "--baseline")
+        assert fake_model["eager_attn"] is False
+
+    def test_requests_the_eager_kernel_on_request(
+        self, monkeypatch, data_root, fake_model
+    ):
+        run(monkeypatch, data_root, "--baseline", "--eager-attn")
+        assert fake_model["eager_attn"] is True
+
+
 class TestDefaults:
     def test_takes_the_batch_size_from_the_registry(self):
         args = mod.build_parser().parse_args(["--model", SLUG])

@@ -122,6 +122,8 @@ arm_of() {
 }
 
 baseline_eval() {
+    candidates_for dev
+    candidates_for test
     job_name() { set -- $1; echo "${2}_${1}_${MODEL}_base"; }
     job_command() {
         set -- $1
@@ -154,18 +156,20 @@ train_phase1() {
     fsr_dispatch "${LAMBDA_LIST[@]}"
 }
 
-dev_candidates() {
-    local CACHE="$DATA_ROOT/h1/dev_candidates${LIMIT:+_limit$LIMIT}.json"
+candidates_for() {
+    local SPLIT="$1"
+    local CACHE="$DATA_ROOT/h1/${SPLIT}_candidates${LIMIT:+_limit$LIMIT}.json"
     [ -f "$CACHE" ] && [ "${FORCE:-0}" != "1" ] && return 0
-    echo "building the dev candidate lists"
-    local PREP=(--data-root "$DATA_ROOT" --split dev --mode with_body --prepare-only)
+    echo "building the $SPLIT candidate lists"
+    local PREP=(--data-root "$DATA_ROOT" --split "$SPLIT" --mode with_body
+                --prepare-only)
     [ "${FORCE:-0}" = "1" ] && PREP+=(--force)
-    GPU="$(fsr_gpus | head -1)" fsr_run "$(log_for "dev_candidates")" \
+    GPU="$(fsr_gpus | head -1)" fsr_run "$(log_for "${SPLIT}_candidates")" \
         scripts/within_query.py "${PREP[@]}" "${LIMIT_ARGS[@]}"
 }
 
 eval_phase1() {
-    dev_candidates
+    candidates_for dev
     job_name() { set -- $1; echo "dev_${1}_${MODEL}_$(arm_of none "$2")"; }
     job_command() {
         set -- $1
@@ -252,6 +256,7 @@ eval_folds() {
 }
 
 within_folds() {
+    candidates_for test
     job_name() { set -- $1; echo "test_within_${MODEL}_$(arm_of "$1" "$2")"; }
     job_command() {
         set -- $1

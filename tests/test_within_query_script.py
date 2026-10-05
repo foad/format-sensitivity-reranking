@@ -8,12 +8,12 @@ import re
 import numpy as np
 import pytest
 from scripts import within_query as mod
-from tests.fakes import LogitModel, PairTokenizer, WordTokenizer
 
 from fsr.corpus.layout import split_dir
 from fsr.formats import FORMAT_NAMES
 from fsr.models.registry import BASE_MODEL_IDS, BASE_MODELS
 from fsr.reporting import parse_progress
+from tests.fakes import LogitModel, PairTokenizer, WordTokenizer
 
 SENTENCE = "The bridge opened in 1946 and carries the road across the river. "
 TOKENIZERS = {"word": WordTokenizer()}
@@ -292,11 +292,20 @@ class DualTokenizer(WordTokenizer):
         return super().__call__(text, text_pair, **kwargs)
 
 
+load_kwargs: dict = {}
+
+
 def run_main(monkeypatch, tmp_path, *extra, model=None):
     """Run main over a small corpus with the model and tokenizers faked."""
     root = corpus_tree(tmp_path)
     monkeypatch.setattr(mod, "load_tokenizer", lambda _name: DualTokenizer())
-    monkeypatch.setattr(mod, "load_model", lambda *_a, **_k: model or LogitModel())
+    load_kwargs.clear()
+
+    def fake_load_model(*_args, **kwargs):
+        load_kwargs.update(kwargs)
+        return model or LogitModel()
+
+    monkeypatch.setattr(mod, "load_model", fake_load_model)
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -663,3 +672,13 @@ class TestOutPath:
             monkeypatch, tmp_path, "--mode", "with_body", "--out-path", str(target)
         )
         assert (tmp_path / mod.OUT_SUBDIR / "test_candidates.json").exists()
+
+
+class TestAttentionKernel:
+    def test_uses_the_fused_kernel_by_default(self, monkeypatch, tmp_path):
+        run_main(monkeypatch, tmp_path)
+        assert load_kwargs["eager_attn"] is False
+
+    def test_requests_the_eager_kernel_on_request(self, monkeypatch, tmp_path):
+        run_main(monkeypatch, tmp_path, "--eager-attn")
+        assert load_kwargs["eager_attn"] is True
