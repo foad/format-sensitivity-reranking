@@ -3,7 +3,6 @@ from __future__ import annotations
 import numpy as np
 import pytest
 import torch
-from tests.fakes import HashingPairTokenizer, ScoringModel
 
 from fsr.reporting import PROGRESS_SUFFIX, ProgressCounter, parse_progress
 from fsr.training.batch import TrainRecord
@@ -17,6 +16,7 @@ from fsr.training.loop import (
     dev_sensitivity,
     train,
 )
+from tests.fakes import HashingPairTokenizer, ScoringModel
 
 FORMATS_USED = ("yaml", "json", "toml")
 

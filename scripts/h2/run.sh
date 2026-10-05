@@ -16,6 +16,7 @@
 #   FSR_RUNNER   runner to source (default scripts/runners/local.sh)
 #   DATA_ROOT    corpus directory (default data/nq)
 #   MAX_STEPS    optimiser steps per arm (default the published budget)
+#   CHECKPOINT   steps between resume checkpoints (default 100).
 #   LIMIT        cap on records, for a smoke pass
 #   FORCE        1 to redo every stage
 #
@@ -84,7 +85,7 @@ if [ -n "${PHYSICAL_BATCH:-}" ] || [ -n "${GRAD_ACCUM:-}" ]; then
 fi
 
 COMMON=(--data-root "$DATA_ROOT" --model "$MODEL")
-TRAIN_ARGS=()
+TRAIN_ARGS=(--checkpoint-every "${CHECKPOINT:-100}" --resume)
 [ -n "${MAX_STEPS:-}" ] && TRAIN_ARGS+=(--max-steps "$MAX_STEPS")
 LIMIT_ARGS=()
 TRAIN_LIMIT_ARGS=()
@@ -123,7 +124,7 @@ arm_of() {
 baseline_eval() {
     job_name() { echo "${1}_cross_${MODEL}_base"; }
     job_command() {
-        JOB_CMD=(scripts/h2/eval.py "${COMMON[@]}" --baseline --split "$1"
+        JOB_CMD=(scripts/h2/cross_query.py "${COMMON[@]}" --baseline --split "$1"
                  "${EVAL_ARGS[@]}" "${LIMIT_ARGS[@]}"
                  --progress-file "$(job_progress "$1")")
     }
@@ -143,15 +144,42 @@ train_phase1() {
     fsr_dispatch "${LAMBDA_LIST[@]}"
 }
 
+dev_candidates() {
+    local CACHE="$DATA_ROOT/h1/dev_candidates${LIMIT:+_limit$LIMIT}.json"
+    [ -f "$CACHE" ] && [ "${FORCE:-0}" != "1" ] && return 0
+    echo "building the dev candidate lists"
+    local PREP=(--data-root "$DATA_ROOT" --split dev --mode with_body --prepare-only)
+    [ "${FORCE:-0}" = "1" ] && PREP+=(--force)
+    GPU="$(fsr_gpus | head -1)" fsr_run "$(log_for "dev_candidates")" \
+        scripts/within_query.py "${PREP[@]}" "${LIMIT_ARGS[@]}"
+}
+
 eval_phase1() {
-    job_name() { echo "dev_cross_${MODEL}_$(arm_of none "$1")"; }
+    dev_candidates
+    job_name() { set -- $1; echo "dev_${1}_${MODEL}_$(arm_of none "$2")"; }
     job_command() {
-        JOB_CMD=(scripts/h2/eval.py "${COMMON[@]}" --split dev --lambda-inv "$1"
-                 "${EVAL_ARGS[@]}" "${LIMIT_ARGS[@]}"
-                 --progress-file "$(job_progress "$1")")
+        set -- $1
+        local AXIS="$1" ARM
+        ARM="$(arm_of none "$2")"
+        if [ "$AXIS" = cross ]; then
+            JOB_CMD=(scripts/h2/cross_query.py "${COMMON[@]}" --split dev --lambda-inv "$2"
+                     "${EVAL_ARGS[@]}" "${LIMIT_ARGS[@]}"
+                     --progress-file "$(progress_for "dev_cross_${MODEL}_${ARM}")")
+        else
+            JOB_CMD=(scripts/within_query.py --data-root "$DATA_ROOT" --split dev
+                     --mode with_body --models "$MODEL"
+                     --lora-adapter "$TRAIN_DIR/${MODEL}_${ARM}/adapter"
+                     --out-path "$OUT_DIR/dev_within_${MODEL}_${ARM}.json"
+                     "${WQ_ARGS[@]}" "${LIMIT_ARGS[@]}"
+                     --progress-file "$(progress_for "dev_within_${MODEL}_${ARM}")")
+        fi
     }
-    job_output() { echo "$OUT_DIR/dev_cross_${MODEL}_$(arm_of none "$1").json"; }
-    fsr_dispatch "${LAMBDA_LIST[@]}"
+    job_output() { set -- $1; echo "$OUT_DIR/dev_${1}_${MODEL}_$(arm_of none "$2").json"; }
+    local KEYS=() AXIS WEIGHT
+    for WEIGHT in "${LAMBDA_LIST[@]}"; do
+        for AXIS in cross within; do KEYS+=("$AXIS $WEIGHT"); done
+    done
+    fsr_dispatch "${KEYS[@]}"
 }
 
 select_weight() {
@@ -203,7 +231,7 @@ eval_folds() {
     job_name() { set -- $1; echo "test_cross_${MODEL}_$(arm_of "$1" "$2")"; }
     job_command() {
         set -- $1
-        JOB_CMD=(scripts/h2/eval.py "${COMMON[@]}" --split test
+        JOB_CMD=(scripts/h2/cross_query.py "${COMMON[@]}" --split test
                  --held-out-format "$1" --lambda-inv "$2"
                  "${EVAL_ARGS[@]}" "${LIMIT_ARGS[@]}"
                  --progress-file "$(progress_for "test_cross_${MODEL}_$(arm_of "$1" "$2")")")
@@ -289,6 +317,7 @@ echo "H2 pass for $MODEL"
 echo "  weights: ${LAMBDA_LIST[*]}"
 echo "  folds:   ${FOLD_LIST[*]}"
 echo "  stages:  $STAGES"
+echo "  resume:  every ${CHECKPOINT:-100} steps"
 echo "  batches: train ${PHYSICAL_BATCH:-$(registry_value PHYSICAL_BATCH)}" \
      "x ${GRAD_ACCUM:-$(registry_value GRAD_ACCUM)}," \
      "eval ${EVAL_BATCH:-$(registry_value EVAL_BATCH)}," \

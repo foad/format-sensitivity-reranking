@@ -7,11 +7,11 @@ import json
 import pytest
 import torch
 from scripts.h1 import cross_query as mod
-from tests.fakes import LogitModel, PairTokenizer
 
 from fsr.corpus.layout import split_dir
 from fsr.models.registry import BASE_MODEL_IDS, BASE_MODELS
 from fsr.reporting import ProgressCounter, parse_progress, shorten
+from tests.fakes import LogitModel, PairTokenizer
 
 FORMAT_COUNT = 5
 

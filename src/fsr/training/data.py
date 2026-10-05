@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
 from fsr.corpus.layout import NEGATIVES_NAME, split_dir
 from fsr.corpus.splitting import load_records
-from fsr.passages import Tokenizer, compute_body_budget, truncate_body_semantic
+from fsr.passages import Tokenizer, prepare_records_with_body, truncate_body_semantic
 from fsr.training.batch import TrainRecord
 
 DEFAULT_TRAIN_NEGATIVES = 7
@@ -68,45 +69,44 @@ def prepare_train_records(
     records: list[dict[str, Any]],
     negatives: dict[str, list[str]],
     corpus: dict[str, dict[str, Any]],
-    tokenizer: Tokenizer,
+    budget_tokenizers: Mapping[str, Tokenizer],
     neg_k: int = DEFAULT_TRAIN_NEGATIVES,
 ) -> tuple[list[TrainRecord], int]:
     """Attach a budgeted body and hard negatives to each training record.
+
+    The budget is the tightest across the given tokenizers, so every model
+    trains on identical text and the arms stay comparable.
 
     Args:
         records: The split records, each with question, pairs and body.
         negatives: The mined negative identifiers, by query identifier.
         corpus: The records a negative identifier names, by identifier.
-        tokenizer: The tokenizer of the model under training.
+        budget_tokenizers: The tokenizers the budget is measured across.
         neg_k: The negatives each record keeps.
 
     Returns:
         The prepared records, and the dropped count.
     """
+    budgeted, stats = prepare_records_with_body(records, budget_tokenizers)
     prepared: list[TrainRecord] = []
-    dropped = 0
-    for r in records:
-        budget, _ = compute_body_budget(r["question"], r["pairs"], {"m": tokenizer})
-        body = truncate_body_semantic(r["body"], budget, tokenizer)
-        if body is None:
-            dropped += 1
-            continue
-
+    dropped = stats["dropped"]
+    for r in budgeted:
         neg_ids = negatives.get(r["id"], [])[:neg_k]
         if len(neg_ids) < neg_k:
             dropped += 1
             continue
-
+        budget = r["body_budget_tokens"]
+        tightest = budget_tokenizers[r["tightest_tokeniser"]]
         prepared.append(
             TrainRecord(
                 id=r["id"],
                 question=r["question"],
                 pairs=r["pairs"],
-                truncated_body=body,
+                truncated_body=r["truncated_body"],
                 body_budget_tokens=budget,
                 neg_pairs_list=[corpus[nid]["pairs"] for nid in neg_ids],
                 neg_bodies_truncated=[
-                    truncate_to_budget(corpus[nid]["body"], budget, tokenizer)
+                    truncate_to_budget(corpus[nid]["body"], budget, tightest)
                     for nid in neg_ids
                 ],
             )
@@ -116,32 +116,27 @@ def prepare_train_records(
 
 def prepare_dev_records(
     records: list[dict[str, Any]],
-    tokenizer: Tokenizer,
+    budget_tokenizers: Mapping[str, Tokenizer],
 ) -> list[TrainRecord]:
     """Attach a budgeted body to each development record.
 
     Args:
         records: The split records, each with question, pairs and body.
-        tokenizer: The tokenizer of the model under training.
+        budget_tokenizers: The tokenizers the budget is measured across.
 
     Returns:
         The prepared records.
     """
-    prepared: list[TrainRecord] = []
-    for r in records:
-        budget, _ = compute_body_budget(r["question"], r["pairs"], {"m": tokenizer})
-        body = truncate_body_semantic(r["body"], budget, tokenizer)
-        if body is None:
-            continue
-        prepared.append(
-            TrainRecord(
-                id=r["id"],
-                question=r["question"],
-                pairs=r["pairs"],
-                truncated_body=body,
-                body_budget_tokens=budget,
-                neg_pairs_list=[],
-                neg_bodies_truncated=[],
-            )
+    budgeted, _ = prepare_records_with_body(records, budget_tokenizers)
+    return [
+        TrainRecord(
+            id=r["id"],
+            question=r["question"],
+            pairs=r["pairs"],
+            truncated_body=r["truncated_body"],
+            body_budget_tokens=r["body_budget_tokens"],
+            neg_pairs_list=[],
+            neg_bodies_truncated=[],
         )
-    return prepared
+        for r in budgeted
+    ]

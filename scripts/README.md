@@ -39,7 +39,7 @@ uv run python scripts/watch.py --pattern 'all_cross_*.log'
 
 ## `h2/`
  - `train.py`: train one adapter under the ranking and invariance objective.
- - `eval.py`: the score axis and the ranking guardrail for one arm.
+ - `cross_query.py`: the score axis for one arm, with the ranking guardrail. The answer axis for the same arm comes from `../within_query.py`.
  - `select.py`: choose the invariance weight, or the adapter rank.
  - `compare.py`: one trained fold against the untrained baseline.
  - `eval_prose.py`, `compare_prose.py`: the capability check on ordinary prose.

@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 
 import pytest
-from tests.fakes import WordTokenizer
 
 from fsr.corpus.layout import NEGATIVES_NAME, split_dir
 from fsr.training.data import (
@@ -14,6 +13,9 @@ from fsr.training.data import (
     prepare_train_records,
     truncate_to_budget,
 )
+from tests.fakes import CharTokenizer, WordTokenizer
+
+TOKENIZERS = {"word": WordTokenizer()}
 
 
 def record(rid, *, question="who wrote it", body=None, pairs=None):
@@ -95,7 +97,7 @@ class TestPrepareTrainRecords:
             [record("a")],
             {"a": ["b", "c", "d"]},
             {i: record(i) for i in "bcd"},
-            WordTokenizer(),
+            TOKENIZERS,
             neg_k=3,
         )
         assert dropped == 0
@@ -106,7 +108,7 @@ class TestPrepareTrainRecords:
             [record("a")],
             {"a": ["b", "c", "d"]},
             {i: record(i) for i in "bcd"},
-            WordTokenizer(),
+            TOKENIZERS,
             neg_k=2,
         )
         assert len(prepared[0].neg_pairs_list) == 2
@@ -117,7 +119,7 @@ class TestPrepareTrainRecords:
             [record("a")],
             {"a": ["d", "b"]},
             {i: record(i) for i in "bd"},
-            WordTokenizer(),
+            TOKENIZERS,
             neg_k=2,
         )
         assert [p[0][1] for p in prepared[0].neg_pairs_list] == ["d", "b"]
@@ -127,14 +129,14 @@ class TestPrepareTrainRecords:
             [record("a")],
             {"a": ["b"]},
             {"b": record("b")},
-            WordTokenizer(),
+            TOKENIZERS,
             neg_k=3,
         )
         assert (prepared, dropped) == ([], 1)
 
     def test_drops_a_record_with_no_negatives(self):
         prepared, dropped = prepare_train_records(
-            [record("a")], {}, {}, WordTokenizer(), neg_k=1
+            [record("a")], {}, {}, TOKENIZERS, neg_k=1
         )
         assert (prepared, dropped) == ([], 1)
 
@@ -144,7 +146,7 @@ class TestPrepareTrainRecords:
             [record("a", question=long_question)],
             {"a": ["b"]},
             {"b": record("b")},
-            WordTokenizer(),
+            TOKENIZERS,
             neg_k=1,
         )
         assert (prepared, dropped) == ([], 1)
@@ -154,7 +156,7 @@ class TestPrepareTrainRecords:
             [record("a")],
             {"a": ["b"]},
             {"b": record("b", body="Long. " * 400)},
-            WordTokenizer(),
+            TOKENIZERS,
             neg_k=1,
         )
         budget = prepared[0].body_budget_tokens
@@ -165,7 +167,7 @@ class TestPrepareTrainRecords:
             [record("a")],
             {"a": ["b"]},
             {"b": record("b", body="")},
-            WordTokenizer(),
+            TOKENIZERS,
             neg_k=1,
         )
         assert prepared[0].neg_bodies_truncated == [""]
@@ -176,28 +178,118 @@ class TestPrepareTrainRecords:
             [record("a")],
             {"a": ids},
             {i: record(i) for i in ids},
-            WordTokenizer(),
+            TOKENIZERS,
         )
         assert len(prepared[0].neg_pairs_list) == DEFAULT_TRAIN_NEGATIVES == 7
 
 
 class TestPrepareDevRecords:
     def test_prepares_a_record(self):
-        prepared = prepare_dev_records([record("c")], WordTokenizer())
+        prepared = prepare_dev_records([record("c")], TOKENIZERS)
         assert [r.id for r in prepared] == ["c"]
 
     def test_carries_no_negatives(self):
-        prepared = prepare_dev_records([record("c")], WordTokenizer())
+        prepared = prepare_dev_records([record("c")], TOKENIZERS)
         assert prepared[0].neg_pairs_list == []
         assert prepared[0].neg_bodies_truncated == []
 
     def test_records_the_budget(self):
-        prepared = prepare_dev_records([record("c")], WordTokenizer())
+        prepared = prepare_dev_records([record("c")], TOKENIZERS)
         assert prepared[0].body_budget_tokens > 0
 
     def test_drops_a_record_whose_body_does_not_fit(self):
         long_question = " ".join(["word"] * 600)
         assert (
-            prepare_dev_records([record("c", question=long_question)], WordTokenizer())
-            == []
+            prepare_dev_records([record("c", question=long_question)], TOKENIZERS) == []
         )
+
+
+LONG_BODY = "One two three four five six seven eight nine ten. " * 80
+
+
+class TestRosterBudget:
+    """The budget is the tightest across the roster, not the model's own."""
+
+    def roster(self):
+        return {"word": WordTokenizer(), "char": CharTokenizer()}
+
+    def test_takes_the_tightest_tokenizer(self):
+        body = LONG_BODY
+        wide, _ = prepare_train_records(
+            [record("a", body=body)],
+            {"a": ["b"]},
+            {"b": record("b")},
+            {"word": WordTokenizer()},
+            neg_k=1,
+        )
+        tight, _ = prepare_train_records(
+            [record("a", body=body)],
+            {"a": ["b"]},
+            {"b": record("b")},
+            self.roster(),
+            neg_k=1,
+        )
+        assert tight[0].body_budget_tokens < wide[0].body_budget_tokens
+
+    def test_the_body_is_cut_to_the_tightest_budget(self):
+        body = LONG_BODY
+        wide, _ = prepare_train_records(
+            [record("a", body=body)],
+            {"a": ["b"]},
+            {"b": record("b")},
+            {"word": WordTokenizer()},
+            neg_k=1,
+        )
+        tight, _ = prepare_train_records(
+            [record("a", body=body)],
+            {"a": ["b"]},
+            {"b": record("b")},
+            self.roster(),
+            neg_k=1,
+        )
+        assert len(tight[0].truncated_body) < len(wide[0].truncated_body)
+
+    def test_every_model_in_the_roster_gives_the_same_text(self):
+        body = LONG_BODY
+        first, _ = prepare_train_records(
+            [record("a", body=body)],
+            {"a": ["b"]},
+            {"b": record("b")},
+            self.roster(),
+            neg_k=1,
+        )
+        reordered = {"char": CharTokenizer(), "word": WordTokenizer()}
+        second, _ = prepare_train_records(
+            [record("a", body=body)],
+            {"a": ["b"]},
+            {"b": record("b")},
+            reordered,
+            neg_k=1,
+        )
+        assert first[0].truncated_body == second[0].truncated_body
+        assert first[0].body_budget_tokens == second[0].body_budget_tokens
+
+    def test_the_development_records_share_the_budget(self):
+        body = LONG_BODY
+        dev = prepare_dev_records([record("c", body=body)], self.roster())
+        train, _ = prepare_train_records(
+            [record("c", body=body)],
+            {"c": ["b"]},
+            {"b": record("b")},
+            self.roster(),
+            neg_k=1,
+        )
+        assert dev[0].body_budget_tokens == train[0].body_budget_tokens
+        assert dev[0].truncated_body == train[0].truncated_body
+
+    def test_the_negatives_are_cut_with_the_tightest_tokenizer(self):
+        body = LONG_BODY
+        prepared, _ = prepare_train_records(
+            [record("a", body=body)],
+            {"a": ["b"]},
+            {"b": record("b", body=body)},
+            self.roster(),
+            neg_k=1,
+        )
+        budget = prepared[0].body_budget_tokens
+        assert len(prepared[0].neg_bodies_truncated[0]) <= budget

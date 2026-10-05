@@ -6,13 +6,13 @@ import json
 
 import pytest
 from scripts.h2 import eval_prose as mod
-from tests.fakes import HashingPairTokenizer, ScoringModel
 
 from fsr.corpus.layout import prose_eval_path
 from fsr.corpus.prose import PROSE_NEGATIVES
 from fsr.h2_layout import adapter_dir, result_path
 from fsr.models.registry import by_slug
 from fsr.reporting import parse_progress
+from tests.fakes import HashingPairTokenizer, ScoringModel
 
 SLUG = "minilm_l6"
 ARM = "5fmt_lam0.1"

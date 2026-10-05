@@ -9,6 +9,7 @@ import argparse
 import os
 import time
 from pathlib import Path
+from typing import Any
 
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 os.environ.setdefault("RAYON_NUM_THREADS", "1")
@@ -23,6 +24,7 @@ from fsr.formats import FORMAT_NAMES
 from fsr.h2_layout import ADAPTER_NAME, adapter_config_path, arm, train_dir
 from fsr.models.adapters import build_adapted_model
 from fsr.models.loading import load_tokenizer
+from fsr.models.registry import BASE_MODEL_IDS
 from fsr.reporting import ProgressCounter, heading, report_elapsed
 from fsr.training.checkpoint import CHECKPOINT_NAME, load_checkpoint
 from fsr.training.data import (
@@ -41,6 +43,32 @@ DEFAULT_MAX_STEPS = 500
 DEFAULT_WARMUP_STEPS = 30
 DEFAULT_EVAL_EVERY = 50
 HELD_OUT_NONE = "none"
+
+
+def load_budget_tokenizers(names: list[str]) -> dict[str, Any]:
+    """Load the tokenizers the body budget is measured across.
+
+    Args:
+        names: Registry slugs or Hugging Face identifiers.
+
+    Returns:
+        The tokenizers, by identifier.
+
+    Raises:
+        SystemExit: If any tokenizer fails to load.
+    """
+    loaded: dict[str, Any] = {}
+    for name in names:
+        model_id = resolve_model(name).model_id
+        if model_id in loaded:
+            continue
+        try:
+            loaded[model_id] = load_tokenizer(model_id)
+        except Exception as error:
+            raise SystemExit(
+                f"the budget tokenizer {model_id} did not load ({error})."
+            ) from error
+    return loaded
 
 
 def training_formats(held_out: str | None) -> list[str]:
@@ -88,6 +116,12 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--physical-batch", type=int, default=None)
     ap.add_argument("--grad-accum", type=int, default=None)
     ap.add_argument("--neg-k", type=int, default=DEFAULT_TRAIN_NEGATIVES)
+    ap.add_argument(
+        "--budget-models",
+        nargs="+",
+        default=list(BASE_MODEL_IDS),
+        help="Tokenizers the body budget comes from. The default is the roster",
+    )
     ap.add_argument("--max-steps", type=int, default=DEFAULT_MAX_STEPS)
     ap.add_argument("--warmup-steps", type=int, default=DEFAULT_WARMUP_STEPS)
     ap.add_argument("--eval-every", type=int, default=DEFAULT_EVAL_EVERY)
@@ -210,11 +244,12 @@ def main() -> None:
     negatives = load_negatives(args.data_root)
     corpus = load_corpus_index(args.data_root, verbose=False)
 
+    budget_tokenizers = load_budget_tokenizers(args.budget_models)
     records, dropped = prepare_train_records(
-        train_split, negatives, corpus, tokenizer, args.neg_k
+        train_split, negatives, corpus, budget_tokenizers, args.neg_k
     )
     print(f"  train: {len(records):,} kept, {dropped:,} dropped")
-    dev_records = prepare_dev_records(dev_split, tokenizer)
+    dev_records = prepare_dev_records(dev_split, budget_tokenizers)
     print(f"  dev:   {len(dev_records):,} kept")
     report_elapsed("corpus loading", started)
     if not records or not dev_records:

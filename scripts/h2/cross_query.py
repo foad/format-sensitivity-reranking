@@ -1,4 +1,4 @@
-"""Evaluate one arm of a model on the score axis, with a ranking guardrail.
+"""The score axis: cross-query format sensitivity of one arm, with a guardrail.
 
 Scores every record of a split in each of the five metadata formats, under a
 shared body budget. It reports the format sensitivity of those scores. It then
@@ -34,6 +34,7 @@ from fsr.metrics import (
     reciprocal_ranks,
 )
 from fsr.models.loading import load_model, load_tokenizer
+from fsr.models.registry import BASE_MODEL_IDS
 from fsr.passages import prepare_records_with_body
 from fsr.reporting import ProgressCounter, heading, report_elapsed, report_saved
 from fsr.scoring import score_batch
@@ -200,6 +201,38 @@ def arm_of(args: argparse.Namespace) -> str:
     return arm(held_out, args.lambda_inv, args.rank_tag)
 
 
+def load_budget_tokenizers(names: list[str]) -> dict[str, Any]:
+    """Load the tokenizers the body budget is measured across.
+
+    The budget is the tightest across the whole roster, so every model reads
+    identical text and the arms stay comparable. A missing tokenizer would
+    loosen the budget silently, so the load must be complete.
+
+    Args:
+        names: Registry slugs or Hugging Face identifiers.
+
+    Returns:
+        The tokenizers, by identifier.
+
+    Raises:
+        SystemExit: If any tokenizer fails to load.
+    """
+    loaded = {}
+    for name in names:
+        model_id = resolve_model(name).model_id
+        if model_id in loaded:
+            continue
+        try:
+            loaded[model_id] = load_tokenizer(model_id)
+        except Exception as error:
+            raise SystemExit(
+                f"the budget tokenizer {model_id} did not load ({error}). The "
+                "body budget comes from the whole roster, so fix the load and "
+                "run again."
+            ) from error
+    return loaded
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Return the command-line parser."""
     ap = argparse.ArgumentParser(description=__doc__)
@@ -224,6 +257,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ap.add_argument("--split", default="test", choices=list(EVAL_SPLITS))
     ap.add_argument("--batch-size", type=int, default=None)
+    ap.add_argument(
+        "--budget-models",
+        nargs="+",
+        default=list(BASE_MODEL_IDS),
+        help="Tokenizers the body budget comes from. The default is the roster",
+    )
     ap.add_argument(
         "--tanh-head",
         action="store_true",
@@ -293,9 +332,8 @@ def main() -> None:
     if args.limit:
         records = records[: args.limit]
     print(f"\n{len(records):,} records in {args.split}")
-    prepared, budget_stats = prepare_records_with_body(
-        records, {entry.model_id: tokenizer}
-    )
+    budget_tokenizers = load_budget_tokenizers(args.budget_models)
+    prepared, budget_stats = prepare_records_with_body(records, budget_tokenizers)
     print(f"  {len(prepared):,} kept, {budget_stats['dropped']:,} dropped")
     if not prepared:
         raise SystemExit("no records survived the body budget; nothing to score.")

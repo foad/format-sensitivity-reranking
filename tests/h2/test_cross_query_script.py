@@ -1,4 +1,4 @@
-"""Tests for scripts.h2.eval."""
+"""Tests for scripts.h2.cross_query."""
 
 from __future__ import annotations
 
@@ -6,14 +6,14 @@ import json
 
 import numpy as np
 import pytest
-from scripts.h2 import eval as mod
-from tests.fakes import HashingPairTokenizer, ScoringModel
+from scripts.h2 import cross_query as mod
 
 from fsr.corpus.layout import NEGATIVES_NAME, split_dir
 from fsr.formats import FORMAT_NAMES
 from fsr.h2_layout import BASE_ARM, adapter_dir, result_path
-from fsr.models.registry import by_slug
+from fsr.models.registry import BASE_MODEL_IDS, by_slug
 from fsr.reporting import parse_progress
+from tests.fakes import HashingPairTokenizer, ScoringModel
 
 SLUG = "minilm_l6"
 NEG = mod.MRR_NEG_COUNT
@@ -74,7 +74,7 @@ def run(monkeypatch, data_root, *extra, model=SLUG):
     monkeypatch.setattr(
         "sys.argv",
         [
-            "eval.py",
+            "cross_query.py",
             "--model",
             model,
             "--data-root",
@@ -423,3 +423,52 @@ class TestResampleCount:
     def test_records_the_count_it_used(self, monkeypatch, data_root):
         run(monkeypatch, data_root, "--baseline")
         assert payload(data_root)["n_boot"] == 50
+
+
+PARSE_ARGS = ["--model", SLUG, "--baseline"]
+
+
+class TestBudgetModels:
+    def test_defaults_to_the_whole_roster(self):
+        args = mod.build_parser().parse_args(PARSE_ARGS)
+        assert args.budget_models == list(BASE_MODEL_IDS)
+
+    def test_the_default_is_more_than_the_model_itself(self):
+        args = mod.build_parser().parse_args(PARSE_ARGS)
+        assert len(args.budget_models) > 1
+
+    def test_loads_every_tokenizer(self, monkeypatch):
+        seen = []
+        monkeypatch.setattr(
+            mod, "load_tokenizer", lambda mid: seen.append(mid) or object()
+        )
+        loaded = mod.load_budget_tokenizers(["minilm_l6", "bge_base"])
+        assert len(loaded) == 2
+        assert seen == [
+            "cross-encoder/ms-marco-MiniLM-L6-v2",
+            "BAAI/bge-reranker-base",
+        ]
+
+    def test_loads_a_repeated_model_once(self, monkeypatch):
+        seen = []
+        monkeypatch.setattr(
+            mod, "load_tokenizer", lambda mid: seen.append(mid) or object()
+        )
+        mod.load_budget_tokenizers(["minilm_l6", "minilm_l6"])
+        assert len(seen) == 1
+
+    def test_refuses_when_a_tokenizer_does_not_load(self, monkeypatch):
+        def fail(_mid):
+            raise OSError("no network")
+
+        monkeypatch.setattr(mod, "load_tokenizer", fail)
+        with pytest.raises(SystemExit, match="did not load"):
+            mod.load_budget_tokenizers(["minilm_l6"])
+
+    def test_the_refusal_says_why_it_matters(self, monkeypatch):
+        def fail(_mid):
+            raise OSError("no network")
+
+        monkeypatch.setattr(mod, "load_tokenizer", fail)
+        with pytest.raises(SystemExit, match="whole roster"):
+            mod.load_budget_tokenizers(["minilm_l6"])
