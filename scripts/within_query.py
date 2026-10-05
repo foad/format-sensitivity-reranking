@@ -61,6 +61,7 @@ from fsr.reporting import (
 from fsr.scoring import score_batch
 from fsr.within_query import (
     conditional_inconsistency_from_matrices,
+    gold_leads,
     gold_top1_from_matrices,
     score_scale_diagnostic,
     within_query_mrr,
@@ -192,6 +193,7 @@ def summarise_model(
         "gold_top1": gold_top1_from_matrices(matrices),
         "conditional_inconsistency": conditional_inconsistency_from_matrices(matrices),
         "gold_scores_per_fmt": {f: m[:, 0].tolist() for f, m in matrices.items()},
+        "gold_leads_per_fmt": {f: v.tolist() for f, v in gold_leads(matrices).items()},
         "scale_diagnostic": score_scale_diagnostic(matrices),
     }
     if store_matrices:

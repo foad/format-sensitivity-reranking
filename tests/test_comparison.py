@@ -15,13 +15,22 @@ from fsr.comparison import (
     STRETCH_THRESHOLD,
     SUBSET_NAMES,
     all_pair_deltas,
+    answer_subsets,
+    answerable_pool,
     bands_crossed,
+    bootstrap_delta_inconsistency,
     bootstrap_delta_max_d,
     bootstrap_delta_mrr,
     cohen_band,
     compare,
+    compare_answer_axis,
+    compare_score_axis,
     delta_mrr_ci,
+    held_out_flags,
     held_out_transfer,
+    inconsistency_section,
+    inconsistent_flags,
+    leads_per_format,
     max_abs_d_over_pairs,
     max_d_section,
     mean_mrr_per_query,
@@ -375,11 +384,11 @@ class TestHeldOutTransfer:
         assert part["delta_mrr"] > whole["delta_mrr"]
 
 
-class TestCompare:
+class TestCompareScoreAxis:
     def result(self, **kwargs):
         base = evaluation({FORMAT_NAMES[0]: 3.0}, ranks=[0.5] * 40)
         trained = evaluation({}, seed=1, ranks=[0.5] * 40)
-        return compare(base, trained, FORMAT_NAMES[0], n_boot=100, **kwargs)
+        return compare_score_axis(base, trained, FORMAT_NAMES[0], n_boot=100, **kwargs)
 
     def test_covers_every_subset(self):
         out = self.result()
@@ -389,8 +398,8 @@ class TestCompare:
     def test_reports_one_row_per_pair(self):
         assert len(self.result()["per_pair_delta"]) == len(PAIRS)
 
-    def test_carries_the_held_out_format(self):
-        assert self.result()["held_out_format"] == FORMAT_NAMES[0]
+    def test_names_the_records_it_covered(self):
+        assert self.result()["n_records"] == 40
 
     def test_applies_the_thresholds_to_the_training_pairs(self):
         out = self.result()
@@ -419,13 +428,13 @@ class TestCompare:
         base = evaluation({}, n=40)
         trained = evaluation({}, n=30, seed=1)
         with pytest.raises(ValueError, match="kept 40 records"):
-            compare(base, trained, "yaml", n_boot=10)
+            compare_score_axis(base, trained, "yaml", n_boot=10)
 
     def test_reports_no_guardrail_when_one_is_absent(self):
         base = evaluation({}, ranks=[0.5] * 40)
         trained = evaluation({}, seed=1, ranks=[0.5] * 40)
         trained["mrr_guardrail"] = None
-        out = compare(base, trained, "yaml", n_boot=10)
+        out = compare_score_axis(base, trained, "yaml", n_boot=10)
         assert out["mrr_non_inferiority"]["passed"] is None
         assert out["heldout_transfer"] is None
 
@@ -433,7 +442,7 @@ class TestCompare:
         base = evaluation({}, n=40, ranks=[0.5] * 40)
         trained = evaluation({}, n=40, seed=1, ranks=[0.5] * 30)
         with pytest.raises(ValueError, match="40 and 30 queries"):
-            compare(base, trained, "yaml", n_boot=10)
+            compare_score_axis(base, trained, "yaml", n_boot=10)
 
 
 class TestMetadataOnlySubset:
@@ -445,31 +454,33 @@ class TestMetadataOnlySubset:
     def test_measures_the_named_records(self):
         base, trained = self.pair()
         ids = set(base["record_ids"][:25])
-        out = compare(base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids)[
-            "metadata_only_subset"
-        ]
+        out = compare_score_axis(
+            base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids
+        )["metadata_only_subset"]
         assert out["n_records"] == 25
 
     def test_reports_both_pair_subsets(self):
         base, trained = self.pair()
         ids = set(base["record_ids"][:25])
-        out = compare(base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids)[
-            "metadata_only_subset"
-        ]
+        out = compare_score_axis(
+            base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids
+        )["metadata_only_subset"]
         assert set(out["point_estimates_max_d"]) == {IN_TRAINING, OOD}
 
     def test_skips_a_subset_that_is_too_small(self):
         base, trained = self.pair()
         ids = set(base["record_ids"][: MIN_SUBSET_RECORDS - 1])
-        out = compare(base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids)
+        out = compare_score_axis(
+            base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids
+        )
         assert out["metadata_only_subset"] is None
 
     def test_measures_ranking_on_the_subset(self):
         base, trained = self.pair()
         ids = set(base["record_ids"][:25])
-        out = compare(base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids)[
-            "metadata_only_subset"
-        ]
+        out = compare_score_axis(
+            base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids
+        )["metadata_only_subset"]
         assert out["mrr"]["n_records"] == 25
         assert out["mrr"]["overall_delta_mrr_bootstrap"]["delta_mean"] > 0
 
@@ -478,18 +489,18 @@ class TestMetadataOnlySubset:
         for payload in (base, trained):
             payload["mrr_guardrail"]["record_ids"] = ["x"] * 40
         ids = set(base["record_ids"][:25])
-        out = compare(base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids)[
-            "metadata_only_subset"
-        ]
+        out = compare_score_axis(
+            base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids
+        )["metadata_only_subset"]
         assert out["mrr"] is None
 
     def test_skips_ranking_when_a_guardrail_is_absent(self):
         base, trained = self.pair()
         trained["mrr_guardrail"] = None
         ids = set(base["record_ids"][:25])
-        out = compare(base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids)[
-            "metadata_only_subset"
-        ]
+        out = compare_score_axis(
+            base, trained, FORMAT_NAMES[0], n_boot=50, metadata_only=ids
+        )["metadata_only_subset"]
         assert out["mrr"] is None
 
 
@@ -547,3 +558,225 @@ class TestResampleCount:
         mean, low, high = delta_mrr_ci(base, trained, seed=3, n_boot=80)
         out = bootstrap_delta_mrr(base, trained, seed=3, n_boot=80)
         assert out == {"delta_mean": mean, "delta_ci": [low, high]}
+
+
+FORMATS = list(FORMAT_NAMES)
+HELD = FORMATS[0]
+TRAINED = FORMATS[1:]
+
+
+def leads_from(rows):
+    """Build a gold-lead map from one boolean row per format."""
+    return {name: np.asarray(rows[name], dtype=bool) for name in FORMATS}
+
+
+class TestLeadsPerFormat:
+    def test_reads_every_format(self):
+        entry = {"gold_leads_per_fmt": {f: [True, False] for f in FORMATS}}
+        out = leads_per_format(entry)
+        assert set(out) == set(FORMATS)
+        assert out[HELD].dtype == bool
+
+    def test_refuses_an_entry_without_the_field(self):
+        with pytest.raises(KeyError):
+            leads_per_format({"conditional_inconsistency": {}})
+
+
+class TestInconsistentFlags:
+    def test_marks_a_query_leading_under_some_formats(self):
+        rows = {f: [True] for f in FORMATS}
+        rows[HELD] = [False]
+        assert inconsistent_flags(leads_from(rows), FORMATS).tolist() == [True]
+
+    def test_leaves_a_query_leading_everywhere(self):
+        rows = {f: [True] for f in FORMATS}
+        assert inconsistent_flags(leads_from(rows), FORMATS).tolist() == [False]
+
+    def test_leaves_a_query_leading_nowhere(self):
+        rows = {f: [False] for f in FORMATS}
+        assert inconsistent_flags(leads_from(rows), FORMATS).tolist() == [False]
+
+    def test_ignores_formats_outside_the_subset(self):
+        rows = {f: [True] for f in FORMATS}
+        rows[HELD] = [False]
+        assert inconsistent_flags(leads_from(rows), TRAINED).tolist() == [False]
+
+
+class TestHeldOutFlags:
+    def test_marks_the_held_out_format_breaking_a_consistent_query(self):
+        rows = {f: [True] for f in FORMATS}
+        rows[HELD] = [False]
+        assert held_out_flags(leads_from(rows), HELD).tolist() == [True]
+
+    def test_marks_the_held_out_format_alone_answering(self):
+        rows = {f: [False] for f in FORMATS}
+        rows[HELD] = [True]
+        assert held_out_flags(leads_from(rows), HELD).tolist() == [True]
+
+    def test_leaves_a_query_the_training_formats_already_disagree_on(self):
+        rows = {f: [True] for f in FORMATS}
+        rows[TRAINED[0]] = [False]
+        rows[HELD] = [False]
+        assert held_out_flags(leads_from(rows), HELD).tolist() == [False]
+
+    def test_leaves_a_fully_consistent_query(self):
+        rows = {f: [True] for f in FORMATS}
+        assert held_out_flags(leads_from(rows), HELD).tolist() == [False]
+
+
+class TestAnswerSubsets:
+    def test_covers_the_three_subset_names(self):
+        rows = {f: [True, False] for f in FORMATS}
+        assert set(answer_subsets(leads_from(rows), HELD)) == set(SUBSET_NAMES)
+
+    def test_in_training_excludes_the_held_out_format(self):
+        rows = {f: [True] for f in FORMATS}
+        rows[HELD] = [False]
+        out = answer_subsets(leads_from(rows), HELD)
+        assert out[ALL_FORMATS].tolist() == [True]
+        assert out[IN_TRAINING].tolist() == [False]
+        assert out[OOD].tolist() == [True]
+
+
+class TestAnswerablePool:
+    def test_keeps_a_query_answered_under_one_format(self):
+        rows = {f: [False] for f in FORMATS}
+        rows[HELD] = [True]
+        assert answerable_pool(leads_from(rows)).tolist() == [True]
+
+    def test_drops_a_query_answered_nowhere(self):
+        rows = {f: [False] for f in FORMATS}
+        assert answerable_pool(leads_from(rows)).tolist() == [False]
+
+
+class TestInconsistencySection:
+    def test_counts_both_arms_over_the_pool(self):
+        base = {name: np.array([True, True, False]) for name in SUBSET_NAMES}
+        trained = {name: np.array([True, False, False]) for name in SUBSET_NAMES}
+        pool = np.array([True, True, False])
+        out = inconsistency_section(base, trained, pool)
+        assert out[ALL_FORMATS]["baseline"] == 2
+        assert out[ALL_FORMATS]["trained"] == 1
+        assert out[ALL_FORMATS]["delta"] == -1
+
+    def test_ignores_queries_outside_the_pool(self):
+        base = {name: np.array([True, True]) for name in SUBSET_NAMES}
+        trained = {name: np.array([True, True]) for name in SUBSET_NAMES}
+        out = inconsistency_section(base, trained, np.array([True, False]))
+        assert out[OOD]["baseline"] == 1
+
+    def test_reports_shares_of_the_pool(self):
+        base = {name: np.array([True, False]) for name in SUBSET_NAMES}
+        trained = {name: np.array([False, False]) for name in SUBSET_NAMES}
+        out = inconsistency_section(base, trained, np.array([True, True]))
+        assert out[IN_TRAINING]["baseline_pct"] == 50.0
+        assert out[IN_TRAINING]["trained_pct"] == 0.0
+
+    def test_reports_nan_for_an_empty_pool(self):
+        empty = {name: np.array([False]) for name in SUBSET_NAMES}
+        out = inconsistency_section(empty, empty, np.array([False]))
+        assert np.isnan(out[ALL_FORMATS]["baseline_pct"])
+
+
+class TestBootstrapDeltaInconsistency:
+    def test_gives_an_interval_per_subset(self):
+        rng = np.random.default_rng(0)
+        base = {n: rng.random(60) < 0.5 for n in SUBSET_NAMES}
+        trained = {n: rng.random(60) < 0.2 for n in SUBSET_NAMES}
+        out = bootstrap_delta_inconsistency(
+            base, trained, np.ones(60, dtype=bool), n_boot=200, seed=1
+        )
+        assert set(out) == set(SUBSET_NAMES)
+        low, high = out[ALL_FORMATS]["delta_pct_ci"]
+        assert low <= out[ALL_FORMATS]["delta_pct_mean"] <= high
+
+    def test_separates_a_real_reduction_from_zero(self):
+        base = {n: np.ones(80, dtype=bool) for n in SUBSET_NAMES}
+        trained = {n: np.zeros(80, dtype=bool) for n in SUBSET_NAMES}
+        out = bootstrap_delta_inconsistency(
+            base, trained, np.ones(80, dtype=bool), n_boot=200, seed=2
+        )
+        assert out[OOD]["delta_pct_ci"][1] < 0
+
+    def test_is_reproducible_for_a_seed(self):
+        base = {n: np.array([True, False] * 20) for n in SUBSET_NAMES}
+        trained = {n: np.array([False, False] * 20) for n in SUBSET_NAMES}
+        pool = np.ones(40, dtype=bool)
+        first = bootstrap_delta_inconsistency(base, trained, pool, n_boot=50, seed=7)
+        second = bootstrap_delta_inconsistency(base, trained, pool, n_boot=50, seed=7)
+        assert first == second
+
+
+class TestCompareAnswerAxis:
+    @staticmethod
+    def entry(seed, rate):
+        rng = np.random.default_rng(seed)
+        return {
+            "gold_leads_per_fmt": {f: (rng.random(50) < rate).tolist() for f in FORMATS}
+        }
+
+    def test_reports_the_pool_and_every_subset(self):
+        out = compare_answer_axis(
+            self.entry(0, 0.7), self.entry(1, 0.9), HELD, n_boot=100
+        )
+        assert out["n_queries"] == 50
+        assert 0 < out["n_pool"] <= 50
+        assert set(out["inconsistency"]) == set(SUBSET_NAMES)
+        assert set(out["bootstrap_delta_inconsistency"]) == set(SUBSET_NAMES)
+
+    def test_counts_against_the_baseline_pool(self):
+        base = {"gold_leads_per_fmt": {f: [True, False] for f in FORMATS}}
+        trained = {"gold_leads_per_fmt": {f: [True, True] for f in FORMATS}}
+        out = compare_answer_axis(base, trained, HELD, n_boot=10)
+        assert out["n_pool"] == 1
+
+    def test_refuses_evaluations_of_different_sizes(self):
+        base = {"gold_leads_per_fmt": {f: [True, False] for f in FORMATS}}
+        trained = {"gold_leads_per_fmt": {f: [True] for f in FORMATS}}
+        with pytest.raises(ValueError, match="2 queries"):
+            compare_answer_axis(base, trained, HELD)
+
+
+class TestCompareBothAxes:
+    @staticmethod
+    def payloads():
+        base = evaluation({FORMAT_NAMES[0]: 3.0}, ranks=[0.5] * 40)
+        trained = evaluation({}, seed=1, ranks=[0.5] * 40)
+        rng = np.random.default_rng(5)
+        within = {
+            "gold_leads_per_fmt": {f: (rng.random(40) < 0.7).tolist() for f in FORMATS}
+        }
+        trained_within = {
+            "gold_leads_per_fmt": {f: (rng.random(40) < 0.9).tolist() for f in FORMATS}
+        }
+        return base, trained, within, trained_within
+
+    def result(self):
+        base, trained, within, trained_within = self.payloads()
+        return compare(base, trained, within, trained_within, HELD, n_boot=50)
+
+    def test_names_the_held_out_format_once_at_the_top(self):
+        out = self.result()
+        assert out["held_out_format"] == HELD
+        assert "held_out_format" not in out["score_axis"]
+        assert "held_out_format" not in out["answer_axis"]
+
+    def test_carries_one_section_per_axis(self):
+        out = self.result()
+        assert set(out) == {"held_out_format", "score_axis", "answer_axis"}
+
+    def test_the_score_axis_section_comes_from_its_axis_function(self):
+        base, trained, within, trained_within = self.payloads()
+        both = compare(base, trained, within, trained_within, HELD, n_boot=50)
+        alone = compare_score_axis(base, trained, HELD, n_boot=50)
+        assert set(both["score_axis"]) == set(alone)
+        assert (
+            both["score_axis"]["point_estimates_max_d"]
+            == alone["point_estimates_max_d"]
+        )
+
+    def test_the_answer_axis_section_comes_from_its_axis_function(self):
+        base, trained, within, trained_within = self.payloads()
+        both = compare(base, trained, within, trained_within, HELD, n_boot=50)
+        alone = compare_answer_axis(within, trained_within, HELD, n_boot=50)
+        assert both["answer_axis"] == alone

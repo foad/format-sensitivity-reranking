@@ -1,8 +1,8 @@
-"""Comparison of a trained arm against the untrained baseline."""
+"""Compare a trained arm against the untrained baseline, on both axes."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from itertools import combinations
 from typing import Any
 
@@ -242,6 +242,197 @@ def pair_subsets(held_out: str) -> dict[str, list[tuple[str, str]]]:
     }
 
 
+def leads_per_format(entry: Mapping[str, Any]) -> dict[str, np.ndarray]:
+    """Return the gold-lead flag of each format, from one answer-axis entry.
+
+    Args:
+        entry: The per-model section of an answer-axis evaluation.
+
+    Returns:
+        A boolean array per format, True where the gold ranks first.
+
+    Raises:
+        KeyError: If the entry predates the gold_leads_per_fmt field.
+    """
+    stored = entry["gold_leads_per_fmt"]
+    return {name: np.asarray(stored[name], dtype=bool) for name in FORMAT_NAMES}
+
+
+def inconsistent_flags(
+    leads: Mapping[str, np.ndarray], formats: Sequence[str]
+) -> np.ndarray:
+    """Mark the queries whose gold leads under some but not all formats.
+
+    Args:
+        leads: The gold-lead flag of each format.
+        formats: The formats of the subset.
+
+    Returns:
+        One boolean per query.
+    """
+    stack = np.stack([leads[name] for name in formats])
+    count = stack.sum(axis=0)
+    return (count > 0) & (count < len(formats))
+
+
+def held_out_flags(leads: Mapping[str, np.ndarray], held_out: str) -> np.ndarray:
+    """Mark the queries the held-out format alone disagrees on.
+
+    Args:
+        leads: The gold-lead flag of each format.
+        held_out: The format withheld from training.
+
+    Returns:
+        True where the gold leads in-training but not on the held-out format.
+    """
+    trained = [name for name in FORMAT_NAMES if name != held_out]
+    stack = np.stack([leads[name] for name in trained])
+    unseen = leads[held_out]
+    return (stack.all(axis=0) & ~unseen) | (unseen & ~stack.any(axis=0))
+
+
+def answer_subsets(
+    leads: Mapping[str, np.ndarray], held_out: str
+) -> dict[str, np.ndarray]:
+    """Mark the inconsistent queries of each subset.
+
+    Args:
+        leads: The gold-lead flag of each format.
+        held_out: The format withheld from training.
+
+    Returns:
+        One boolean array per subset name.
+    """
+    trained = [name for name in FORMAT_NAMES if name != held_out]
+    return {
+        ALL_FORMATS: inconsistent_flags(leads, FORMAT_NAMES),
+        IN_TRAINING: inconsistent_flags(leads, trained),
+        OOD: held_out_flags(leads, held_out),
+    }
+
+
+def answerable_pool(leads: Mapping[str, np.ndarray]) -> np.ndarray:
+    """Mark the queries the untrained model answers under at least one format.
+
+    Args:
+        leads: The gold-lead flag of each format.
+
+    Returns:
+        One boolean per query.
+    """
+    return np.stack([leads[name] for name in FORMAT_NAMES]).any(axis=0)
+
+
+def inconsistency_section(
+    base_flags: Mapping[str, np.ndarray],
+    trained_flags: Mapping[str, np.ndarray],
+    pool: np.ndarray,
+) -> dict[str, Any]:
+    """Count the inconsistent queries of one subset, before and after training.
+
+    Args:
+        base_flags: The inconsistent queries of the untrained model.
+        trained_flags: The inconsistent queries of the trained arm.
+        pool: The queries to count over.
+
+    Returns:
+        The counts and shares of the subset, and the change.
+    """
+    size = int(pool.sum())
+    out = {}
+    for name in SUBSET_NAMES:
+        base = int(base_flags[name][pool].sum())
+        trained = int(trained_flags[name][pool].sum())
+        out[name] = {
+            "baseline": base,
+            "trained": trained,
+            "delta": trained - base,
+            "baseline_pct": 100.0 * base / size if size else float("nan"),
+            "trained_pct": 100.0 * trained / size if size else float("nan"),
+        }
+    return out
+
+
+def bootstrap_delta_inconsistency(
+    base_flags: Mapping[str, np.ndarray],
+    trained_flags: Mapping[str, np.ndarray],
+    pool: np.ndarray,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    ci: float = DEFAULT_CI,
+) -> dict[str, Any]:
+    """Interval the change in inconsistent queries, by subset.
+
+    Args:
+        base_flags: The inconsistent queries of the untrained model.
+        trained_flags: The inconsistent queries of the trained arm.
+        pool: The queries to count over.
+        n_boot: The number of replicates.
+        seed: The seed for the resample.
+        ci: The interval width.
+
+    Returns:
+        The delta in inconsistency.
+    """
+    index = np.flatnonzero(pool)
+    rng = np.random.default_rng(seed)
+    draws = rng.integers(0, len(index), size=(n_boot, len(index)))
+    out = {}
+    for name in SUBSET_NAMES:
+        base = base_flags[name][index]
+        trained = trained_flags[name][index]
+        deltas = (trained[draws].mean(axis=1) - base[draws].mean(axis=1)) * 100.0
+        out[name] = {
+            "delta_pct_mean": float(deltas.mean()),
+            "delta_pct_ci": list(_percentile_ci(deltas, ci)),
+        }
+    return out
+
+
+def compare_answer_axis(
+    base: Mapping[str, Any],
+    trained: Mapping[str, Any],
+    held_out: str,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+) -> dict[str, Any]:
+    """Compare one arm against the untrained baseline on the answer axis.
+
+    Args:
+        base: The per-model section of the baseline answer-axis evaluation.
+        trained: The per-model section of the trained answer-axis evaluation.
+        held_out: The format withheld from training.
+        n_boot: The number of replicates.
+        seed: The seed for the resample.
+
+    Returns:
+        The pool size, the counts of each subset, and the intervals.
+
+    Raises:
+        ValueError: If the two evaluations cover different query counts.
+    """
+    base_leads = leads_per_format(base)
+    trained_leads = leads_per_format(trained)
+    n_base = len(next(iter(base_leads.values())))
+    n_trained = len(next(iter(trained_leads.values())))
+    if n_base != n_trained:
+        raise ValueError(
+            f"baseline covers {n_base} queries, trained covers {n_trained}"
+        )
+    pool = answerable_pool(base_leads)
+    base_flags = answer_subsets(base_leads, held_out)
+    trained_flags = answer_subsets(trained_leads, held_out)
+    return {
+        "n_queries": n_base,
+        "n_pool": int(pool.sum()),
+        "pool": "answerable under the untrained model",
+        "inconsistency": inconsistency_section(base_flags, trained_flags, pool),
+        "bootstrap_delta_inconsistency": bootstrap_delta_inconsistency(
+            base_flags, trained_flags, pool, n_boot=n_boot, seed=seed
+        ),
+    }
+
+
 def bands_crossed(baseline: float, trained: float) -> int:
     """Count the size bands training moved an effect across.
 
@@ -433,7 +624,7 @@ def _subset_mrr(
     }
 
 
-def compare(
+def compare_score_axis(
     base: dict[str, Any],
     trained: dict[str, Any],
     held_out: str,
@@ -441,7 +632,7 @@ def compare(
     seed: int = DEFAULT_SEED,
     metadata_only: set[str] | None = None,
 ) -> dict[str, Any]:
-    """Compare a trained arm against the untrained baseline on one split.
+    """Compare one arm against the untrained baseline on the score axis.
 
     Args:
         base: The baseline evaluation.
@@ -481,7 +672,6 @@ def compare(
     ood = points[OOD]
 
     return {
-        "held_out_format": held_out,
         "n_records": base["n_records_kept"],
         "per_pair_delta": all_pair_deltas(
             base_scores, trained_scores, pairs[ALL_FORMATS]
@@ -593,3 +783,47 @@ def paired_reciprocal_ranks(
         np.array([base_by_id[rid] for rid in shared]),
         np.array([trained_by_id[rid] for rid in shared]),
     )
+
+
+def compare(
+    base: dict[str, Any],
+    trained: dict[str, Any],
+    base_within: Mapping[str, Any],
+    trained_within: Mapping[str, Any],
+    held_out: str,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    metadata_only: set[str] | None = None,
+) -> dict[str, Any]:
+    """Compare a trained arm against the untrained baseline on both axes.
+
+    Args:
+        base: The baseline score-axis evaluation.
+        trained: The trained score-axis evaluation.
+        base_within: The per-model section of the baseline answer-axis
+            evaluation.
+        trained_within: The per-model section of the trained answer-axis
+            evaluation.
+        held_out: The format withheld from training.
+        n_boot: The number of replicates.
+        seed: The seed for the resample.
+        metadata_only: The identifiers of the records whose answer appears
+            only in the metadata. None skips that subset.
+
+    Returns:
+        The format withheld, and one section per axis.
+    """
+    return {
+        "held_out_format": held_out,
+        "score_axis": compare_score_axis(
+            base,
+            trained,
+            held_out,
+            n_boot=n_boot,
+            seed=seed,
+            metadata_only=metadata_only,
+        ),
+        "answer_axis": compare_answer_axis(
+            base_within, trained_within, held_out, n_boot=n_boot, seed=seed
+        ),
+    }

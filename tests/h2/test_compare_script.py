@@ -49,6 +49,23 @@ def write_eval(root, arm_name, offset, seed, rr=0.5, ids=None):
     return path
 
 
+def leads(seed, lead_rate=0.7):
+    """Gold-lead flags per format, varied so some queries are inconsistent."""
+    rng = np.random.default_rng(seed)
+    return {name: (rng.random(N) < lead_rate).tolist() for name in FORMAT_NAMES}
+
+
+def write_within(root, arm_name, seed, lead_rate=0.7):
+    path = result_path(root, "test", "within", SLUG, arm_name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {"results": {"some/model": {"gold_leads_per_fmt": leads(seed, lead_rate)}}}
+        )
+    )
+    return path
+
+
 def record(rid, answer, in_metadata, in_body):
     return {
         "id": rid,
@@ -72,6 +89,8 @@ def data_root(tmp_path):
     (splits / "test.json").write_text(json.dumps({"records": records}))
     write_eval(root, BASE_ARM, 3.0, 0)
     write_eval(root, ARM, 0.0, 1, rr=0.7)
+    write_within(root, BASE_ARM, 2, lead_rate=0.7)
+    write_within(root, ARM, 3, lead_rate=0.9)
     return root
 
 
@@ -121,15 +140,22 @@ class TestRun:
         assert out["arm"] == ARM
         assert out["split"] == "test"
 
-    def test_records_both_sources(self, monkeypatch, data_root):
+    def test_records_both_score_axis_sources(self, monkeypatch, data_root):
         run(monkeypatch, data_root)
-        out = result(data_root)
-        assert out["baseline_source"].endswith(f"{SLUG}_{BASE_ARM}.json")
-        assert out["trained_source"].endswith(f"{SLUG}_{ARM}.json")
+        out = result(data_root)["score_axis"]
+        assert out["baseline_source"].endswith(f"test_cross_{SLUG}_{BASE_ARM}.json")
+        assert out["trained_source"].endswith(f"test_cross_{SLUG}_{ARM}.json")
 
     def test_covers_every_subset(self, monkeypatch, data_root):
         run(monkeypatch, data_root)
-        assert set(result(data_root)["point_estimates_max_d"]) == set(SUBSET_NAMES)
+        section = result(data_root)["score_axis"]
+        assert set(section["point_estimates_max_d"]) == set(SUBSET_NAMES)
+
+    def test_carries_one_section_per_axis(self, monkeypatch, data_root):
+        run(monkeypatch, data_root)
+        out = result(data_root)
+        assert "score_axis" in out
+        assert "answer_axis" in out
 
     def test_carries_the_held_out_format(self, monkeypatch, data_root):
         run(monkeypatch, data_root)
@@ -137,14 +163,16 @@ class TestRun:
 
     def test_measures_the_metadata_only_subset(self, monkeypatch, data_root):
         run(monkeypatch, data_root)
-        assert result(data_root)["metadata_only_subset"]["n_records"] == 25
+        section = result(data_root)["score_axis"]
+        assert section["metadata_only_subset"]["n_records"] == 25
 
     def test_skips_the_subset_on_request(self, monkeypatch, data_root):
         run(monkeypatch, data_root, "--no-metadata-subset")
-        assert result(data_root)["metadata_only_subset"] is None
+        assert result(data_root)["score_axis"]["metadata_only_subset"] is None
 
     def test_covers_a_rank_arm(self, monkeypatch, data_root):
         write_eval(data_root, f"{HELD_OUT}_lam0.1_r8", 0.0, 2)
+        write_within(data_root, f"{HELD_OUT}_lam0.1_r8", 4)
         run(monkeypatch, data_root, "--rank-tag", "8")
         assert comparison_path(data_root, SLUG, f"{HELD_OUT}_lam0.1_r8").exists()
 
@@ -197,6 +225,8 @@ class TestPrinting:
         (splits / "test.json").write_text(json.dumps({"records": records}))
         write_eval(root, BASE_ARM, 3.0, 0)
         write_eval(root, ARM, 0.0, 1)
+        write_within(root, BASE_ARM, 2)
+        write_within(root, ARM, 3)
         run(monkeypatch, root)
         assert "Too few metadata-only records" in capsys.readouterr().out
 
@@ -242,3 +272,46 @@ class TestMark:
 
     def test_names_a_failure(self):
         assert mod._mark(False) == "fail"
+
+
+class TestAnswerAxis:
+    def test_writes_the_answer_axis_section(self, monkeypatch, data_root):
+        run(monkeypatch, data_root)
+        written = json.loads(comparison_path(data_root, SLUG, ARM).read_text())
+        section = written["answer_axis"]
+        assert written["held_out_format"] == HELD_OUT
+        assert set(section["inconsistency"]) == set(SUBSET_NAMES)
+        assert section["pool"] == "answerable under the untrained model"
+
+    def test_records_both_answer_axis_sources(self, monkeypatch, data_root):
+        run(monkeypatch, data_root)
+        written = json.loads(comparison_path(data_root, SLUG, ARM).read_text())
+        section = written["answer_axis"]
+        assert section["baseline_source"].endswith(f"test_within_{SLUG}_base.json")
+        assert section["trained_source"].endswith(f"test_within_{SLUG}_{ARM}.json")
+
+    def test_prints_a_row_per_subset(self, monkeypatch, data_root, capsys):
+        run(monkeypatch, data_root)
+        printed = capsys.readouterr().out
+        assert "answerable under the untrained model" in printed
+        for name in SUBSET_NAMES:
+            assert name in printed
+
+    def test_refuses_a_missing_answer_axis_evaluation(self, monkeypatch, data_root):
+        result_path(data_root, "test", "within", SLUG, BASE_ARM).unlink()
+        with pytest.raises(SystemExit, match="no answer-axis evaluation"):
+            run(monkeypatch, data_root)
+
+
+class TestWithinEntry:
+    def test_returns_the_only_model(self):
+        assert mod.within_entry({"results": {"a/b": {"x": 1}}}) == {"x": 1}
+
+    def test_refuses_an_evaluation_of_several_models(self):
+        payload = {"results": {"a/b": {}, "c/d": {}}}
+        with pytest.raises(SystemExit, match="covers 2 models"):
+            mod.within_entry(payload)
+
+    def test_refuses_an_evaluation_of_no_model(self):
+        with pytest.raises(SystemExit, match="covers 0 models"):
+            mod.within_entry({"results": {}})

@@ -1,4 +1,4 @@
-"""Compare a trained fold against the untrained baseline on one split.
+"""Compare a trained fold against the untrained baseline, on both axes.
 
 Writes `h2/comparison/{model}_{arm}.json`.
 """
@@ -44,13 +44,68 @@ def metadata_only_ids(data_root: Path, split: str) -> set[str]:
     return {rid for rid, label in labels.items() if label == METADATA_ONLY}
 
 
-def report(result: dict) -> None:
-    """Print the comparison.
+def within_entry(payload: dict) -> dict:
+    """Return the only model section of an answer-axis evaluation.
 
     Args:
-        result: The result of the comparison.
+        payload: The contents of an answer-axis evaluation.
+
+    Returns:
+        The section of the one model it covers.
+
+    Raises:
+        SystemExit: If the evaluation covers no model or several.
     """
-    held_out = result["held_out_format"]
+    results = payload["results"]
+    if len(results) != 1:
+        raise SystemExit(
+            f"the answer-axis evaluation covers {len(results)} models, expected one."
+        )
+    return next(iter(results.values()))
+
+
+def report_answer_axis(held_out: str, section: dict) -> None:
+    """Print the answer-axis comparison.
+
+    Args:
+        held_out: The format withheld from training.
+        section: The answer-axis section of the comparison.
+    """
+    print(
+        f"\nAnswer axis, held out {held_out}, {section['n_pool']} of "
+        f"{section['n_queries']} queries answerable under the untrained model"
+    )
+    table(
+        (
+            ("subset", 14),
+            ("baseline", 16),
+            ("trained", 16),
+            ("change", 9),
+            ("interval", 20),
+        ),
+        [
+            [
+                name,
+                f"{point['baseline']} ({point['baseline_pct']:.1f}%)",
+                f"{point['trained']} ({point['trained_pct']:.1f}%)",
+                f"{point['delta']:+d}",
+                f"[{interval['delta_pct_ci'][0]:+.2f}, "
+                f"{interval['delta_pct_ci'][1]:+.2f}]",
+            ]
+            for name in SUBSET_NAMES
+            for point in [section["inconsistency"][name]]
+            for interval in [section["bootstrap_delta_inconsistency"][name]]
+        ],
+    )
+
+
+def report_score_axis(held_out: str, result: dict) -> None:
+    """Print the score-axis comparison.
+
+    Args:
+        held_out: The format withheld from training.
+        result: The score-axis section of the comparison.
+    """
     print(f"records: {result['n_records']}   held out: {held_out}\n")
 
     table(
@@ -158,6 +213,17 @@ def _mark(passed: bool) -> str:
     return "pass" if passed else "fail"
 
 
+def report(result: dict) -> None:
+    """Print both axes of the comparison.
+
+    Args:
+        result: The result of the comparison.
+    """
+    held_out = result["held_out_format"]
+    report_score_axis(held_out, result["score_axis"])
+    report_answer_axis(held_out, result["answer_axis"])
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Return the command-line parser."""
     ap = argparse.ArgumentParser(description=__doc__)
@@ -205,9 +271,16 @@ def main() -> None:
         name: result_path(args.data_root, args.split, "cross", entry.slug, name)
         for name in (BASE_ARM, arm_name)
     }
+    within_paths = {
+        name: result_path(args.data_root, args.split, "within", entry.slug, name)
+        for name in (BASE_ARM, arm_name)
+    }
     for name, path in paths.items():
         if not path.exists():
             raise SystemExit(f"no evaluation of {name} at {path}.")
+    for name, path in within_paths.items():
+        if not path.exists():
+            raise SystemExit(f"no answer-axis evaluation of {name} at {path}.")
 
     heading(f"COMPARE  {entry.label}  {arm_name}  split={args.split}", width=70)
     base = json.loads(paths[BASE_ARM].read_text())
@@ -221,6 +294,8 @@ def main() -> None:
     result = compare(
         base,
         trained,
+        within_entry(json.loads(within_paths[BASE_ARM].read_text())),
+        within_entry(json.loads(within_paths[arm_name].read_text())),
         args.held_out_format,
         n_boot=args.n_boot,
         seed=args.seed,
@@ -229,8 +304,10 @@ def main() -> None:
     result["model"] = entry.slug
     result["arm"] = arm_name
     result["split"] = args.split
-    result["baseline_source"] = str(paths[BASE_ARM])
-    result["trained_source"] = str(paths[arm_name])
+    result["score_axis"]["baseline_source"] = str(paths[BASE_ARM])
+    result["score_axis"]["trained_source"] = str(paths[arm_name])
+    result["answer_axis"]["baseline_source"] = str(within_paths[BASE_ARM])
+    result["answer_axis"]["trained_source"] = str(within_paths[arm_name])
     report(result)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
