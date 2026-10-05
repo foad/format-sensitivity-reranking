@@ -27,16 +27,16 @@ Preparing records (body budget across the whole roster)...
         6  mixedbread-ai/mxbai-rerank-base-v1
 
 ======================================================================
-MODE: metadata_only   n_records = 159   2026-10-04 17:34:45
+MODE: metadata_only   n_records = 159   2026-10-05 20:50:15
 ======================================================================
 
 ----------------------------------------------------------------------
-mixedbread-ai/mxbai-rerank-base-v1   2026-10-04 17:34:45
+mixedbread-ai/mxbai-rerank-base-v1   2026-10-05 20:50:15
 ----------------------------------------------------------------------
-Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 12588.02it/s]
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  63%|██████▎   | 128/202 [00:00<00:00, 1277.51it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1338.56it/s]
   scored yaml  (mean=-1.920)
   scored json  (mean=-2.452)
-  scored toml  (mean=-2.242)
+  scored toml  (mean=-2.241)
   scored inline_kv  (mean=-2.096)
   scored markdown  (mean=-2.162)
 
@@ -44,10 +44,10 @@ mixedbread-ai/mxbai-rerank-base-v1   2026-10-04 17:34:45
   min rho:     0.968  (yaml vs json)
   max flip %:  6.7%  (yaml vs json)
   ranking:     yaml > inline_kv > markdown > toml > json
-  scored in 0:00:04
+  scored in 0:00:17
 
 ====================================================================================================
-CROSS-MODEL SUMMARY - metadata_only  (n=159)   2026-10-04 17:34:49
+CROSS-MODEL SUMMARY - metadata_only  (n=159)   2026-10-05 20:50:32
 ====================================================================================================
 model                                               max |d|  min rho  max flip% ranking
 ----------------------------------------------------------------------------------------------------
@@ -56,16 +56,16 @@ mixedbread-ai/mxbai-rerank-base-v1                    0.780    0.968       6.7% 
 Saved metadata_only results -> data/nq/h1/nq_val_cross_metadata_only_mxbai_v1.json  (0.0 MB)
 
 ======================================================================
-MODE: with_body   n_records = 159   2026-10-04 17:34:49
+MODE: with_body   n_records = 159   2026-10-05 20:50:34
 ======================================================================
 
 ----------------------------------------------------------------------
-mixedbread-ai/mxbai-rerank-base-v1   2026-10-04 17:34:49
+mixedbread-ai/mxbai-rerank-base-v1   2026-10-05 20:50:34
 ----------------------------------------------------------------------
-Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 6235.78it/s]
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:   2%|▏         | 5/202 [00:00<00:04, 46.86it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1282.54it/s]
   scored yaml  (mean=+2.319)
   scored json  (mean=+2.086)
-  scored toml  (mean=+2.171)
+  scored toml  (mean=+2.172)
   scored inline_kv  (mean=+2.280)
   scored markdown  (mean=+2.239)
 
@@ -73,10 +73,10 @@ mixedbread-ai/mxbai-rerank-base-v1   2026-10-04 17:34:49
   min rho:     0.979  (yaml vs json)
   max flip %:  5.8%  (yaml vs json)
   ranking:     yaml > inline_kv > markdown > toml > json
-  scored in 0:00:05
+  scored in 0:00:20
 
 ====================================================================================================
-CROSS-MODEL SUMMARY - with_body  (n=159)   2026-10-04 17:34:54
+CROSS-MODEL SUMMARY - with_body  (n=159)   2026-10-05 20:50:55
 ====================================================================================================
 model                                               max |d|  min rho  max flip% ranking
 ----------------------------------------------------------------------------------------------------
@@ -84,4 +84,4 @@ mixedbread-ai/mxbai-rerank-base-v1                    0.638    0.979       5.8% 
 
 Saved with_body results -> data/nq/h1/nq_val_cross_with_body_mxbai_v1.json  (0.0 MB)
 
-Pass complete in 0:00:09
+Pass complete in 0:00:42
