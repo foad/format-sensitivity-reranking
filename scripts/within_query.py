@@ -491,6 +491,8 @@ def main() -> None:
 
     models = resolve_models(args.models)
     tanh_heads = resolve_tanh_heads(args.models, args.tanh_head)
+    if len(set(tanh_heads)) > 1:
+        raise SystemExit("one run cannot mix tanh and plain classifier heads")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Device: {device}")
 
@@ -522,7 +524,7 @@ def main() -> None:
                     "split": args.split,
                     "mode": mode,
                     "lora_adapter": args.lora_adapter,
-                    "tanh_head": dict(zip(args.models, tanh_heads, strict=True)),
+                    "tanh_head": tanh_heads[0],
                     "budget_models": resolve_models(args.budget_models),
                     "neg_count_per_query": args.negatives,
                     "n_queries": len(prepared),

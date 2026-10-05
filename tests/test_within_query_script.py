@@ -711,4 +711,16 @@ class TestTanhHead:
 
     def test_the_run_records_what_it_resolved(self, monkeypatch, tmp_path):
         out = json.loads(run_main(monkeypatch, tmp_path).read_text())
-        assert out["tanh_head"] == {"model/a": False}
+        assert out["tanh_head"] is False
+
+    def test_refuses_a_run_that_mixes_head_shapes(self, monkeypatch, tmp_path):
+        with pytest.raises(SystemExit, match="cannot mix tanh and plain"):
+            run_main(monkeypatch, tmp_path, "--models", "mxbai_v1", "mxbai_v1_tanh")
+
+    def test_allows_a_roster_that_agrees(self, monkeypatch, tmp_path):
+        out = json.loads(
+            run_main(
+                monkeypatch, tmp_path, "--models", "minilm_l6", "mxbai_v1"
+            ).read_text()
+        )
+        assert out["tanh_head"] is False
