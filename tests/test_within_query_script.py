@@ -682,3 +682,33 @@ class TestAttentionKernel:
     def test_requests_the_eager_kernel_on_request(self, monkeypatch, tmp_path):
         run_main(monkeypatch, tmp_path, "--eager-attn")
         assert load_kwargs["eager_attn"] is True
+
+
+class TestTanhHead:
+    def test_defers_to_the_registry_for_the_tanh_variant(self):
+        assert mod.resolve_tanh_heads(["mxbai_v1_tanh"], None) == [True]
+
+    def test_defers_to_the_registry_for_a_plain_model(self):
+        assert mod.resolve_tanh_heads(["mxbai_v1"], None) == [False]
+
+    def test_tells_the_two_mxbai_entries_apart(self):
+        assert mod.resolve_models(["mxbai_v1"]) == mod.resolve_models(["mxbai_v1_tanh"])
+        assert mod.resolve_tanh_heads(["mxbai_v1", "mxbai_v1_tanh"], None) == [
+            False,
+            True,
+        ]
+
+    def test_treats_a_bare_identifier_as_plain(self):
+        assert mod.resolve_tanh_heads(["some/model"], None) == [False]
+
+    def test_an_explicit_flag_overrides_the_registry(self):
+        assert mod.resolve_tanh_heads(["mxbai_v1"], True) == [True]
+        assert mod.resolve_tanh_heads(["mxbai_v1_tanh"], False) == [False]
+
+    def test_the_flag_defaults_to_none(self):
+        args = mod.build_parser().parse_args(["--split", "test"])
+        assert args.tanh_head is None
+
+    def test_the_run_records_what_it_resolved(self, monkeypatch, tmp_path):
+        out = json.loads(run_main(monkeypatch, tmp_path).read_text())
+        assert out["tanh_head"] == {"model/a": False}
