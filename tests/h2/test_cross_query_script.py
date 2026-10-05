@@ -275,7 +275,8 @@ class TestScoringWithoutACounter:
         )
         assert set(scores) == set(FORMAT_NAMES)
 
-    def test_scores_the_guardrail(self):
+    @staticmethod
+    def guardrail_inputs():
         prepared = [
             {
                 "id": "a",
@@ -283,23 +284,54 @@ class TestScoringWithoutACounter:
                 "pairs": [("Born", "1946")],
                 "truncated_body": "Body.",
                 "body_budget_tokens": 40,
+                "tightest_tokeniser": "tight",
             }
         ]
         corpus = {
             f"n{i}": {"id": f"n{i}", "pairs": [("Born", "1801")], "body": "Other."}
             for i in range(NEG)
         }
+        return prepared, corpus
+
+    def test_scores_the_guardrail(self):
+        prepared, corpus = self.guardrail_inputs()
         mrr, rr = mod.score_guardrail(
             ScoringModel(4),
             HashingPairTokenizer(4),
             prepared,
             {"a": list(corpus)},
             corpus,
+            {"tight": HashingPairTokenizer(4)},
             4,
             "cpu",
         )
         assert set(mrr) == set(FORMAT_NAMES)
         assert all(len(v) == 1 for v in rr.values())
+
+    def test_cuts_negatives_with_the_budget_tokenizer(self, monkeypatch):
+        prepared, corpus = self.guardrail_inputs()
+        budget = HashingPairTokenizer(4)
+        scoring = HashingPairTokenizer(8)
+        seen = []
+        original = mod.render_negative
+
+        def spy(record, format_name, token_budget, budget_tokenizer):
+            seen.append(budget_tokenizer)
+            return original(record, format_name, token_budget, budget_tokenizer)
+
+        monkeypatch.setattr(mod, "render_negative", spy)
+        mod.score_guardrail(
+            ScoringModel(8),
+            scoring,
+            prepared,
+            {"a": list(corpus)},
+            corpus,
+            {"tight": budget},
+            4,
+            "cpu",
+        )
+        assert seen
+        assert all(t is budget for t in seen)
 
 
 class TestRecordsWithoutNegatives:

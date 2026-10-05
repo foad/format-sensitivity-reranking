@@ -541,10 +541,10 @@ class TestBudgetModels:
         with pytest.raises(SystemExit, match="did not load"):
             mod.load_budget_tokenizers(["minilm_l6"])
 
-    def test_the_refusal_says_why_it_matters(self, monkeypatch):
+    def test_the_refusal_names_the_tokenizer_and_the_cause(self, monkeypatch):
         def fail(_mid):
             raise OSError("no network")
 
         monkeypatch.setattr(mod, "load_tokenizer", fail)
-        with pytest.raises(SystemExit, match="whole roster"):
+        with pytest.raises(SystemExit, match=r"ms-marco-MiniLM-L6-v2.*no network"):
             mod.load_budget_tokenizers(["minilm_l6"])

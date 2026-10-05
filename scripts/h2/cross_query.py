@@ -50,7 +50,7 @@ def render_positive(record: dict[str, Any], format_name: str) -> str:
 
 
 def render_negative(
-    record: dict[str, Any], format_name: str, budget: int, tokenizer: Any
+    record: dict[str, Any], format_name: str, budget: int, budget_tokenizer: Any
 ) -> str:
     """Render a negative passage, cut to the budget of the query it answers.
 
@@ -58,13 +58,13 @@ def render_negative(
         record: The negative record.
         format_name: The format to render in.
         budget: The token budget of the query.
-        tokenizer: The tokenizer that measures the body.
+        budget_tokenizer: The tightest tokenizer of the roster.
 
     Returns:
         The rendered passage.
     """
     return FORMATS[format_name](
-        record["pairs"], truncate_to_budget(record["body"], budget, tokenizer)
+        record["pairs"], truncate_to_budget(record["body"], budget, budget_tokenizer)
     )
 
 
@@ -106,6 +106,7 @@ def score_guardrail(
     records: list[dict[str, Any]],
     negatives: dict[str, list[str]],
     corpus: dict[str, dict[str, Any]],
+    budget_tokenizers: dict[str, Any],
     batch_size: int,
     device: str,
     counter: ProgressCounter | None = None,
@@ -118,6 +119,7 @@ def score_guardrail(
         records: The prepared records.
         negatives: The mined negative identifiers, by query identifier.
         corpus: The records a negative identifier names, by identifier.
+        budget_tokenizers: The tokenizers of the roster, by name.
         batch_size: The pairs scored at one time.
         device: The device to score on.
         counter: The progress counter of the job, if one is running.
@@ -137,7 +139,10 @@ def score_guardrail(
                     (
                         r["question"],
                         render_negative(
-                            corpus[neg_id], name, r["body_budget_tokens"], tokenizer
+                            corpus[neg_id],
+                            name,
+                            r["body_budget_tokens"],
+                            budget_tokenizers[r["tightest_tokeniser"]],
                         ),
                     )
                 )
@@ -368,7 +373,15 @@ def main() -> None:
         if len(covered) < len(prepared):
             print(f"  {len(prepared) - len(covered)} records have no negatives")
         per_format_mrr, per_format_rr = score_guardrail(
-            model, tokenizer, covered, negatives, corpus, batch_size, device, counter
+            model,
+            tokenizer,
+            covered,
+            negatives,
+            corpus,
+            budget_tokenizers,
+            batch_size,
+            device,
+            counter,
         )
         guardrail = guardrail_payload(
             per_format_mrr,
