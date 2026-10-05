@@ -122,14 +122,24 @@ arm_of() {
 }
 
 baseline_eval() {
-    job_name() { echo "${1}_cross_${MODEL}_base"; }
+    job_name() { set -- $1; echo "${2}_${1}_${MODEL}_base"; }
     job_command() {
-        JOB_CMD=(scripts/h2/cross_query.py "${COMMON[@]}" --baseline --split "$1"
-                 "${EVAL_ARGS[@]}" "${LIMIT_ARGS[@]}"
-                 --progress-file "$(job_progress "$1")")
+        set -- $1
+        local AXIS="$1" SPLIT="$2"
+        if [ "$AXIS" = cross ]; then
+            JOB_CMD=(scripts/h2/cross_query.py "${COMMON[@]}" --baseline --split "$SPLIT"
+                     "${EVAL_ARGS[@]}" "${LIMIT_ARGS[@]}"
+                     --progress-file "$(progress_for "${SPLIT}_cross_${MODEL}_base")")
+        else
+            JOB_CMD=(scripts/within_query.py --data-root "$DATA_ROOT" --split "$SPLIT"
+                     --mode with_body --models "$MODEL"
+                     --out-path "$OUT_DIR/${SPLIT}_within_${MODEL}_base.json"
+                     "${WQ_ARGS[@]}" "${LIMIT_ARGS[@]}"
+                     --progress-file "$(progress_for "${SPLIT}_within_${MODEL}_base")")
+        fi
     }
-    job_output() { echo "$OUT_DIR/${1}_cross_${MODEL}_base.json"; }
-    fsr_dispatch dev test
+    job_output() { set -- $1; echo "$OUT_DIR/${2}_${1}_${MODEL}_base.json"; }
+    fsr_dispatch "cross dev" "cross test" "within dev" "within test"
 }
 
 train_phase1() {
