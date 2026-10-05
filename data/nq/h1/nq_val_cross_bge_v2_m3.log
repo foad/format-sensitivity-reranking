@@ -4,45 +4,16 @@ Loading data/nq/splits/nq_val.json...
   171 records
 
 Loading tokenizers for 6 models...
-Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
   ok BAAI/bge-reranker-v2-m3
   ok cross-encoder/ms-marco-MiniLM-L6-v2
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
   ok cross-encoder/ms-marco-MiniLM-L12-v2
   ok BAAI/bge-reranker-base
   ok mixedbread-ai/mxbai-rerank-base-v1
 [transformers] `torch_dtype` is deprecated! Use `dtype` instead!
   ok jinaai/jina-reranker-v2-base-multilingual
 
-======================================================================
-MODE: metadata_only   n_records = 171
-======================================================================
-
-----------------------------------------------------------------------
-BAAI/bge-reranker-v2-m3
-----------------------------------------------------------------------
-Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 5541.14it/s]
-  scored yaml  (mean=-0.472)
-  scored json  (mean=-0.399)
-  scored toml  (mean=-0.349)
-  scored inline_kv  (mean=-0.183)
-  scored markdown  (mean=-0.576)
-
-  max |d|:     0.705  (inline_kv - markdown)
-  min rho:     0.952  (json vs inline_kv)
-  max flip %:  9.0%  (json vs inline_kv)
-  ranking:     inline_kv > toml > json > yaml > markdown
-
-
-====================================================================================================
-CROSS-MODEL SUMMARY - metadata_only  (n=171)
-====================================================================================================
-model                                               max |d|  min rho  max flip%  ranking
-----------------------------------------------------------------------------------------------------------------------------------
-BAAI/bge-reranker-v2-m3                               0.705    0.952       9.0%  inline_kv > toml > json > yaml > markdown
-
-Saved metadata_only results -> data/nq/h1_measurement/nq_val_metadata_only_bge_v2_m3.json  (0.0 MB)
-
-Preparing with_body records (budget across the whole roster)...
+Preparing records (body budget across the whole roster)...
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (690 > 512). Running this sequence through the model will result in indexing errors
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (715 > 512). Running this sequence through the model will result in indexing errors
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (969 > 512). Running this sequence through the model will result in indexing errors
@@ -56,13 +27,42 @@ Preparing with_body records (budget across the whole roster)...
         6  mixedbread-ai/mxbai-rerank-base-v1
 
 ======================================================================
-MODE: with_body   n_records = 159
+MODE: metadata_only   n_records = 159   2026-10-04 17:34:45
 ======================================================================
 
 ----------------------------------------------------------------------
-BAAI/bge-reranker-v2-m3
+BAAI/bge-reranker-v2-m3   2026-10-04 17:34:45
 ----------------------------------------------------------------------
-Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 10504.87it/s]
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 6533.88it/s]
+  scored yaml  (mean=-0.601)
+  scored json  (mean=-0.495)
+  scored toml  (mean=-0.423)
+  scored inline_kv  (mean=-0.277)
+  scored markdown  (mean=-0.662)
+
+  max |d|:     0.733  (inline_kv - markdown)
+  min rho:     0.953  (json vs inline_kv)
+  max flip %:  8.9%  (json vs inline_kv)
+  ranking:     inline_kv > toml > json > yaml > markdown
+  scored in 0:00:15
+
+====================================================================================================
+CROSS-MODEL SUMMARY - metadata_only  (n=159)   2026-10-04 17:35:01
+====================================================================================================
+model                                               max |d|  min rho  max flip% ranking
+----------------------------------------------------------------------------------------------------
+BAAI/bge-reranker-v2-m3                               0.733    0.953       8.9% inline_kv > toml > json > yaml > markdown
+
+Saved metadata_only results -> data/nq/h1/nq_val_cross_metadata_only_bge_v2_m3.json  (0.0 MB)
+
+======================================================================
+MODE: with_body   n_records = 159   2026-10-04 17:35:01
+======================================================================
+
+----------------------------------------------------------------------
+BAAI/bge-reranker-v2-m3   2026-10-04 17:35:01
+----------------------------------------------------------------------
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 5167.80it/s]
   scored yaml  (mean=+4.544)
   scored json  (mean=+4.895)
   scored toml  (mean=+4.863)
@@ -73,13 +73,15 @@ BAAI/bge-reranker-v2-m3
   min rho:     0.949  (yaml vs json)
   max flip %:  8.9%  (yaml vs json)
   ranking:     json > toml > inline_kv > markdown > yaml
-
+  scored in 0:00:22
 
 ====================================================================================================
-CROSS-MODEL SUMMARY - with_body  (n=159)
+CROSS-MODEL SUMMARY - with_body  (n=159)   2026-10-04 17:35:24
 ====================================================================================================
-model                                               max |d|  min rho  max flip%  ranking
-----------------------------------------------------------------------------------------------------------------------------------
-BAAI/bge-reranker-v2-m3                               0.574    0.949       8.9%  json > toml > inline_kv > markdown > yaml
+model                                               max |d|  min rho  max flip% ranking
+----------------------------------------------------------------------------------------------------
+BAAI/bge-reranker-v2-m3                               0.574    0.949       8.9% json > toml > inline_kv > markdown > yaml
 
-Saved with_body results -> data/nq/h1_measurement/nq_val_with_body_bge_v2_m3.json  (0.0 MB)
+Saved with_body results -> data/nq/h1/nq_val_cross_with_body_bge_v2_m3.json  (0.0 MB)
+
+Pass complete in 0:00:38

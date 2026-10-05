@@ -13,36 +13,7 @@ Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF
 [transformers] `torch_dtype` is deprecated! Use `dtype` instead!
   ok jinaai/jina-reranker-v2-base-multilingual
 
-======================================================================
-MODE: metadata_only   n_records = 171
-======================================================================
-
-----------------------------------------------------------------------
-BAAI/bge-reranker-base
-----------------------------------------------------------------------
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 6451.94it/s]
-  scored yaml  (mean=-0.505)
-  scored json  (mean=+0.589)
-  scored toml  (mean=+1.782)
-  scored inline_kv  (mean=+0.263)
-  scored markdown  (mean=+0.688)
-
-  max |d|:     0.726  (yaml - toml)
-  min rho:     0.645  (yaml vs toml)
-  max flip %:  25.7%  (yaml vs toml)
-  ranking:     toml > markdown > json > inline_kv > yaml
-
-
-====================================================================================================
-CROSS-MODEL SUMMARY - metadata_only  (n=171)
-====================================================================================================
-model                                               max |d|  min rho  max flip%  ranking
-----------------------------------------------------------------------------------------------------------------------------------
-BAAI/bge-reranker-base                                0.726    0.645      25.7%  toml > markdown > json > inline_kv > yaml
-
-Saved metadata_only results -> data/nq/h1_measurement/nq_val_metadata_only_bge_base.json  (0.0 MB)
-
-Preparing with_body records (budget across the whole roster)...
+Preparing records (body budget across the whole roster)...
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (690 > 512). Running this sequence through the model will result in indexing errors
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (715 > 512). Running this sequence through the model will result in indexing errors
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (969 > 512). Running this sequence through the model will result in indexing errors
@@ -56,13 +27,42 @@ Preparing with_body records (budget across the whole roster)...
         6  mixedbread-ai/mxbai-rerank-base-v1
 
 ======================================================================
-MODE: with_body   n_records = 159
+MODE: metadata_only   n_records = 159   2026-10-04 17:34:44
 ======================================================================
 
 ----------------------------------------------------------------------
-BAAI/bge-reranker-base
+BAAI/bge-reranker-base   2026-10-04 17:34:44
 ----------------------------------------------------------------------
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 6029.92it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 6166.52it/s]
+  scored yaml  (mean=-0.650)
+  scored json  (mean=+0.549)
+  scored toml  (mean=+1.776)
+  scored inline_kv  (mean=+0.155)
+  scored markdown  (mean=+0.625)
+
+  max |d|:     0.760  (yaml - toml)
+  min rho:     0.651  (yaml vs toml)
+  max flip %:  25.8%  (yaml vs toml)
+  ranking:     toml > markdown > json > inline_kv > yaml
+  scored in 0:00:05
+
+====================================================================================================
+CROSS-MODEL SUMMARY - metadata_only  (n=159)   2026-10-04 17:34:50
+====================================================================================================
+model                                               max |d|  min rho  max flip% ranking
+----------------------------------------------------------------------------------------------------
+BAAI/bge-reranker-base                                0.760    0.651      25.8% toml > markdown > json > inline_kv > yaml
+
+Saved metadata_only results -> data/nq/h1/nq_val_cross_metadata_only_bge_base.json  (0.0 MB)
+
+======================================================================
+MODE: with_body   n_records = 159   2026-10-04 17:34:50
+======================================================================
+
+----------------------------------------------------------------------
+BAAI/bge-reranker-base   2026-10-04 17:34:50
+----------------------------------------------------------------------
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 13570.30it/s]
   scored yaml  (mean=+5.167)
   scored json  (mean=+4.801)
   scored toml  (mean=+4.973)
@@ -73,13 +73,15 @@ BAAI/bge-reranker-base
   min rho:     0.873  (yaml vs json)
   max flip %:  14.5%  (yaml vs json)
   ranking:     inline_kv > markdown > yaml > toml > json
-
+  scored in 0:00:07
 
 ====================================================================================================
-CROSS-MODEL SUMMARY - with_body  (n=159)
+CROSS-MODEL SUMMARY - with_body  (n=159)   2026-10-04 17:34:58
 ====================================================================================================
-model                                               max |d|  min rho  max flip%  ranking
-----------------------------------------------------------------------------------------------------------------------------------
-BAAI/bge-reranker-base                                0.491    0.873      14.5%  inline_kv > markdown > yaml > toml > json
+model                                               max |d|  min rho  max flip% ranking
+----------------------------------------------------------------------------------------------------
+BAAI/bge-reranker-base                                0.491    0.873      14.5% inline_kv > markdown > yaml > toml > json
 
-Saved with_body results -> data/nq/h1_measurement/nq_val_with_body_bge_base.json  (0.0 MB)
+Saved with_body results -> data/nq/h1/nq_val_cross_with_body_bge_base.json  (0.0 MB)
+
+Pass complete in 0:00:13

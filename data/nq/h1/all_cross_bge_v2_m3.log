@@ -15,36 +15,7 @@ Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF
 [transformers] `torch_dtype` is deprecated! Use `dtype` instead!
   ok jinaai/jina-reranker-v2-base-multilingual
 
-======================================================================
-MODE: metadata_only   n_records = 8188
-======================================================================
-
-----------------------------------------------------------------------
-BAAI/bge-reranker-v2-m3
-----------------------------------------------------------------------
-Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 6918.74it/s]
-  scored yaml  (mean=-0.231)
-  scored json  (mean=-0.197)
-  scored toml  (mean=-0.220)
-  scored inline_kv  (mean=+0.002)
-  scored markdown  (mean=-0.352)
-
-  max |d|:     0.566  (inline_kv - markdown)
-  min rho:     0.954  (json vs inline_kv)
-  max flip %:  9.1%  (json vs inline_kv)
-  ranking:     inline_kv > json > toml > yaml > markdown
-
-
-====================================================================================================
-CROSS-MODEL SUMMARY - metadata_only  (n=8188)
-====================================================================================================
-model                                               max |d|  min rho  max flip%  ranking
-----------------------------------------------------------------------------------------------------------------------------------
-BAAI/bge-reranker-v2-m3                               0.566    0.954       9.1%  inline_kv > json > toml > yaml > markdown
-
-Saved metadata_only results -> data/nq/h1_measurement/all_metadata_only_bge_v2_m3.json  (0.8 MB)
-
-Preparing with_body records (budget across the whole roster)...
+Preparing records (body budget across the whole roster)...
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (963 > 512). Running this sequence through the model will result in indexing errors
@@ -58,13 +29,42 @@ Preparing with_body records (budget across the whole roster)...
       158  mixedbread-ai/mxbai-rerank-base-v1
 
 ======================================================================
-MODE: with_body   n_records = 7659
+MODE: metadata_only   n_records = 7659   2026-10-04 17:50:12
 ======================================================================
 
 ----------------------------------------------------------------------
-BAAI/bge-reranker-v2-m3
+BAAI/bge-reranker-v2-m3   2026-10-04 17:50:12
 ----------------------------------------------------------------------
-Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 5087.43it/s]
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 7881.77it/s]
+  scored yaml  (mean=-0.344)
+  scored json  (mean=-0.275)
+  scored toml  (mean=-0.309)
+  scored inline_kv  (mean=-0.094)
+  scored markdown  (mean=-0.450)
+
+  max |d|:     0.579  (inline_kv - markdown)
+  min rho:     0.958  (json vs inline_kv)
+  max flip %:  8.4%  (json vs inline_kv)
+  ranking:     inline_kv > json > toml > yaml > markdown
+  scored in 0:11:11
+
+====================================================================================================
+CROSS-MODEL SUMMARY - metadata_only  (n=7659)   2026-10-04 18:01:24
+====================================================================================================
+model                                               max |d|  min rho  max flip% ranking
+----------------------------------------------------------------------------------------------------
+BAAI/bge-reranker-v2-m3                               0.579    0.958       8.4% inline_kv > json > toml > yaml > markdown
+
+Saved metadata_only results -> data/nq/h1/all_cross_metadata_only_bge_v2_m3.json  (1.0 MB)
+
+======================================================================
+MODE: with_body   n_records = 7659   2026-10-04 18:01:24
+======================================================================
+
+----------------------------------------------------------------------
+BAAI/bge-reranker-v2-m3   2026-10-04 18:01:24
+----------------------------------------------------------------------
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 5718.39it/s]
   scored yaml  (mean=+4.427)
   scored json  (mean=+4.714)
   scored toml  (mean=+4.698)
@@ -75,13 +75,15 @@ BAAI/bge-reranker-v2-m3
   min rho:     0.951  (yaml vs json)
   max flip %:  9.2%  (yaml vs json)
   ranking:     json > toml > inline_kv > markdown > yaml
-
+  scored in 0:17:50
 
 ====================================================================================================
-CROSS-MODEL SUMMARY - with_body  (n=7659)
+CROSS-MODEL SUMMARY - with_body  (n=7659)   2026-10-04 18:19:15
 ====================================================================================================
-model                                               max |d|  min rho  max flip%  ranking
-----------------------------------------------------------------------------------------------------------------------------------
-BAAI/bge-reranker-v2-m3                               0.483    0.951       9.2%  json > toml > inline_kv > markdown > yaml
+model                                               max |d|  min rho  max flip% ranking
+----------------------------------------------------------------------------------------------------
+BAAI/bge-reranker-v2-m3                               0.483    0.951       9.2% json > toml > inline_kv > markdown > yaml
 
-Saved with_body results -> data/nq/h1_measurement/all_with_body_bge_v2_m3.json  (0.7 MB)
+Saved with_body results -> data/nq/h1/all_cross_with_body_bge_v2_m3.json  (0.9 MB)
+
+Pass complete in 0:29:02

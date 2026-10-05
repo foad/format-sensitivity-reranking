@@ -13,23 +13,34 @@ Loading data/nq/splits/nq_val.json...
 
 Split 'nq_val': 171 queries
 
-Reusing candidate lists from data/nq/h1/nq_val_candidates.json
-  158 queries
+Building candidate lists, one body budget per candidate...
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (690 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (628 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (587 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (562 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1051 > 1024). Running this sequence through the model will result in indexing errors
+    25/171 queries  (9.0/s, eta 0.3 min)
+    50/171 queries  (8.5/s, eta 0.2 min)
+    75/171 queries  (8.0/s, eta 0.2 min)
+    100/171 queries  (7.9/s, eta 0.1 min)
+    125/171 queries  (8.0/s, eta 0.1 min)
+    150/171 queries  (7.9/s, eta 0.0 min)
+    171/171 queries  (8.0/s, eta 0.0 min)
+  158 queries kept
+  built candidate lists in 0:00:21
+  cached -> data/nq/h1/nq_val_candidates.json
   dropped_gold_budget: 12
   dropped_no_bm25_negs: 0
   dropped_too_few_eligible_negs: 1
   negatives_skipped_for_budget: 86
-[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (549 > 512). Running this sequence through the model will result in indexing errors
     overflow check 25/100
     overflow check 50/100
-[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (515 > 512). Running this sequence through the model will result in indexing errors
-[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (515 > 512). Running this sequence through the model will result in indexing errors
     overflow check 75/100
     overflow check 100/100
   >512-token renderings: worst model 1.10% (sampled 100 queries)
 
 ----------------------------------------------------------------------
-jinaai/jina-reranker-v2-base-multilingual
+jinaai/jina-reranker-v2-base-multilingual   2026-10-04 17:38:45
 ----------------------------------------------------------------------
 flash_attn is not installed. Using PyTorch native attention implementation.
 flash_attn is not installed. Using PyTorch native attention implementation.
@@ -44,7 +55,7 @@ flash_attn is not installed. Using PyTorch native attention implementation.
 flash_attn is not installed. Using PyTorch native attention implementation.
 flash_attn is not installed. Using PyTorch native attention implementation.
 flash_attn is not installed. Using PyTorch native attention implementation.
-Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights:   6%|▌         | 9/153 [00:00<00:02, 65.04it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 873.21it/s]
+Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 1948.61it/s]
   metadata_only
 [transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
   scored       yaml  gold mean=-1.105  neg mean=-2.626
@@ -72,26 +83,28 @@ flash_attn is not installed. Using PyTorch native attention implementation.
   delta/S_within:          0.063
   gold top-1 all formats:  85.4%  |  format-dependent: 8.9%  |  never: 5.7%
   MRR per format:          yaml=0.946  json=0.930  toml=0.947  inline_kv=0.943  markdown=0.933
-  (199.3s)
+  scored in 0:03:23
 
 ====================================================================================================
-WITHIN-QUERY SUMMARY - split=nq_val/metadata_only  n_queries=158  candidates=16
+WITHIN-QUERY SUMMARY - split=nq_val/metadata_only  n_queries=158  candidates=16   2026-10-04 17:42:09
 ====================================================================================================
 model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
-------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 jinaai/jina-reranker-v2-base-multilingual              8.7%     0.827      20.9%     15.8%     0.138
 
   fmt-dep% = queries whose gold ranks first under some formats but not others.
 
-Saved -> data/nq/h1/nq_val_within_metadata_only_jina_v2.json  (0.1 MB)
+Saved metadata_only results -> data/nq/h1/nq_val_within_metadata_only_jina_v2.json  (0.1 MB)
 
 ====================================================================================================
-WITHIN-QUERY SUMMARY - split=nq_val/with_body  n_queries=158  candidates=16
+WITHIN-QUERY SUMMARY - split=nq_val/with_body  n_queries=158  candidates=16   2026-10-04 17:42:10
 ====================================================================================================
 model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
-------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 jinaai/jina-reranker-v2-base-multilingual              5.0%     0.900       6.3%      8.9%     0.063
 
   fmt-dep% = queries whose gold ranks first under some formats but not others.
 
-Saved -> data/nq/h1/nq_val_within_with_body_jina_v2.json  (0.1 MB)
+Saved with_body results -> data/nq/h1/nq_val_within_with_body_jina_v2.json  (0.1 MB)
+
+Pass complete in 0:03:26

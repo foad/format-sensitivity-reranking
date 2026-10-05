@@ -13,50 +13,7 @@ Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF
   ok BAAI/bge-reranker-v2-m3
   ok mixedbread-ai/mxbai-rerank-base-v1
 
-======================================================================
-MODE: metadata_only   n_records = 821
-======================================================================
-
-----------------------------------------------------------------------
-jinaai/jina-reranker-v2-base-multilingual
-----------------------------------------------------------------------
-flash_attn is not installed. Using PyTorch native attention implementation.
-flash_attn is not installed. Using PyTorch native attention implementation.
-flash_attn is not installed. Using PyTorch native attention implementation.
-flash_attn is not installed. Using PyTorch native attention implementation.
-flash_attn is not installed. Using PyTorch native attention implementation.
-flash_attn is not installed. Using PyTorch native attention implementation.
-flash_attn is not installed. Using PyTorch native attention implementation.
-flash_attn is not installed. Using PyTorch native attention implementation.
-flash_attn is not installed. Using PyTorch native attention implementation.
-flash_attn is not installed. Using PyTorch native attention implementation.
-flash_attn is not installed. Using PyTorch native attention implementation.
-flash_attn is not installed. Using PyTorch native attention implementation.
-flash_attn is not installed. Using PyTorch native attention implementation.
-Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 8569.41it/s]
-[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
-  scored yaml  (mean=-0.972)
-  scored json  (mean=-1.034)
-  scored toml  (mean=-1.039)
-  scored inline_kv  (mean=-1.055)
-  scored markdown  (mean=-0.928)
-
-  max |d|:     0.518  (inline_kv - markdown)
-  min rho:     0.975  (yaml vs json)
-  max flip %:  6.8%  (yaml vs json)
-  ranking:     markdown > yaml > json > toml > inline_kv
-
-
-====================================================================================================
-CROSS-MODEL SUMMARY - metadata_only  (n=821)
-====================================================================================================
-model                                               max |d|  min rho  max flip%  ranking
-----------------------------------------------------------------------------------------------------------------------------------
-jinaai/jina-reranker-v2-base-multilingual             0.518    0.975       6.8%  markdown > yaml > json > toml > inline_kv
-
-Saved metadata_only results -> data/nq/h1_measurement/test_metadata_only_jina_v2.json  (0.1 MB)
-
-Preparing with_body records (budget across the whole roster)...
+Preparing records (body budget across the whole roster)...
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (578 > 512). Running this sequence through the model will result in indexing errors
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (698 > 512). Running this sequence through the model will result in indexing errors
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (528 > 512). Running this sequence through the model will result in indexing errors
@@ -70,11 +27,11 @@ Preparing with_body records (budget across the whole roster)...
        39  mixedbread-ai/mxbai-rerank-base-v1
 
 ======================================================================
-MODE: with_body   n_records = 770
+MODE: metadata_only   n_records = 770   2026-10-04 16:39:08
 ======================================================================
 
 ----------------------------------------------------------------------
-jinaai/jina-reranker-v2-base-multilingual
+jinaai/jina-reranker-v2-base-multilingual   2026-10-04 16:39:08
 ----------------------------------------------------------------------
 flash_attn is not installed. Using PyTorch native attention implementation.
 flash_attn is not installed. Using PyTorch native attention implementation.
@@ -89,7 +46,50 @@ flash_attn is not installed. Using PyTorch native attention implementation.
 flash_attn is not installed. Using PyTorch native attention implementation.
 flash_attn is not installed. Using PyTorch native attention implementation.
 flash_attn is not installed. Using PyTorch native attention implementation.
-Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 6939.93it/s]
+Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 9740.72it/s]
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored yaml  (mean=-1.028)
+  scored json  (mean=-1.097)
+  scored toml  (mean=-1.106)
+  scored inline_kv  (mean=-1.116)
+  scored markdown  (mean=-0.990)
+
+  max |d|:     0.518  (inline_kv - markdown)
+  min rho:     0.976  (json vs markdown)
+  max flip %:  6.4%  (yaml vs json)
+  ranking:     markdown > yaml > json > toml > inline_kv
+  scored in 0:00:08
+
+====================================================================================================
+CROSS-MODEL SUMMARY - metadata_only  (n=770)   2026-10-04 16:39:16
+====================================================================================================
+model                                               max |d|  min rho  max flip% ranking
+----------------------------------------------------------------------------------------------------
+jinaai/jina-reranker-v2-base-multilingual             0.518    0.976       6.4% markdown > yaml > json > toml > inline_kv
+
+Saved metadata_only results -> data/nq/h1/test_cross_metadata_only_jina_v2.json  (0.1 MB)
+
+======================================================================
+MODE: with_body   n_records = 770   2026-10-04 16:39:16
+======================================================================
+
+----------------------------------------------------------------------
+jinaai/jina-reranker-v2-base-multilingual   2026-10-04 16:39:16
+----------------------------------------------------------------------
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 10298.80it/s]
   scored yaml  (mean=+1.322)
   scored json  (mean=+1.468)
   scored toml  (mean=+1.452)
@@ -100,13 +100,15 @@ flash_attn is not installed. Using PyTorch native attention implementation.
   min rho:     0.963  (json vs markdown)
   max flip %:  7.8%  (json vs markdown)
   ranking:     json > toml > inline_kv > yaml > markdown
-
+  scored in 0:00:13
 
 ====================================================================================================
-CROSS-MODEL SUMMARY - with_body  (n=770)
+CROSS-MODEL SUMMARY - with_body  (n=770)   2026-10-04 16:39:30
 ====================================================================================================
-model                                               max |d|  min rho  max flip%  ranking
-----------------------------------------------------------------------------------------------------------------------------------
-jinaai/jina-reranker-v2-base-multilingual             0.899    0.963       7.8%  json > toml > inline_kv > yaml > markdown
+model                                               max |d|  min rho  max flip% ranking
+----------------------------------------------------------------------------------------------------
+jinaai/jina-reranker-v2-base-multilingual             0.899    0.963       7.8% json > toml > inline_kv > yaml > markdown
 
-Saved with_body results -> data/nq/h1_measurement/test_with_body_jina_v2.json  (0.0 MB)
+Saved with_body results -> data/nq/h1/test_cross_with_body_jina_v2.json  (0.1 MB)
+
+Pass complete in 0:00:22

@@ -20,13 +20,14 @@ Building candidate lists, one body budget per candidate...
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (562 > 512). Running this sequence through the model will result in indexing errors
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1051 > 1024). Running this sequence through the model will result in indexing errors
     25/171 queries  (8.9/s, eta 0.3 min)
-    50/171 queries  (8.5/s, eta 0.2 min)
+    50/171 queries  (8.4/s, eta 0.2 min)
     75/171 queries  (8.0/s, eta 0.2 min)
-    100/171 queries  (7.9/s, eta 0.2 min)
+    100/171 queries  (7.8/s, eta 0.2 min)
     125/171 queries  (8.0/s, eta 0.1 min)
     150/171 queries  (7.8/s, eta 0.0 min)
     171/171 queries  (8.0/s, eta 0.0 min)
-  158 queries kept  (22.3s)
+  158 queries kept
+  built candidate lists in 0:00:22
   cached -> data/nq/h1/nq_val_candidates.json
   dropped_gold_budget: 12
   dropped_no_bm25_negs: 0

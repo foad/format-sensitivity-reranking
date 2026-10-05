@@ -4,8 +4,8 @@ Loading data/nq/splits/test.json...
   821 records
 
 Loading tokenizers for 6 models...
-  ok cross-encoder/ms-marco-MiniLM-L6-v2
 Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  ok cross-encoder/ms-marco-MiniLM-L6-v2
   ok cross-encoder/ms-marco-MiniLM-L12-v2
   ok BAAI/bge-reranker-base
   ok BAAI/bge-reranker-v2-m3
@@ -13,36 +13,7 @@ Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF
 [transformers] `torch_dtype` is deprecated! Use `dtype` instead!
   ok jinaai/jina-reranker-v2-base-multilingual
 
-======================================================================
-MODE: metadata_only   n_records = 821
-======================================================================
-
-----------------------------------------------------------------------
-cross-encoder/ms-marco-MiniLM-L6-v2
-----------------------------------------------------------------------
-Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 14345.34it/s]
-  scored yaml  (mean=-2.800)
-  scored json  (mean=-3.849)
-  scored toml  (mean=-3.867)
-  scored inline_kv  (mean=-3.504)
-  scored markdown  (mean=-2.958)
-
-  max |d|:     1.049  (yaml - inline_kv)
-  min rho:     0.966  (json vs inline_kv)
-  max flip %:  7.3%  (json vs inline_kv)
-  ranking:     yaml > markdown > inline_kv > json > toml
-
-
-====================================================================================================
-CROSS-MODEL SUMMARY - metadata_only  (n=821)
-====================================================================================================
-model                                               max |d|  min rho  max flip%  ranking
-----------------------------------------------------------------------------------------------------------------------------------
-cross-encoder/ms-marco-MiniLM-L6-v2                   1.049    0.966       7.3%  yaml > markdown > inline_kv > json > toml
-
-Saved metadata_only results -> data/nq/h1_measurement/test_metadata_only_minilm_l6.json  (0.1 MB)
-
-Preparing with_body records (budget across the whole roster)...
+Preparing records (body budget across the whole roster)...
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (578 > 512). Running this sequence through the model will result in indexing errors
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (698 > 512). Running this sequence through the model will result in indexing errors
 [transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (528 > 512). Running this sequence through the model will result in indexing errors
@@ -56,13 +27,42 @@ Preparing with_body records (budget across the whole roster)...
        39  mixedbread-ai/mxbai-rerank-base-v1
 
 ======================================================================
-MODE: with_body   n_records = 770
+MODE: metadata_only   n_records = 770   2026-10-04 16:39:08
 ======================================================================
 
 ----------------------------------------------------------------------
-cross-encoder/ms-marco-MiniLM-L6-v2
+cross-encoder/ms-marco-MiniLM-L6-v2   2026-10-04 16:39:08
 ----------------------------------------------------------------------
-Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 8694.66it/s]
+Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 6918.25it/s]
+  scored yaml  (mean=-2.945)
+  scored json  (mean=-3.965)
+  scored toml  (mean=-4.032)
+  scored inline_kv  (mean=-3.663)
+  scored markdown  (mean=-3.097)
+
+  max |d|:     1.108  (yaml - toml)
+  min rho:     0.971  (json vs inline_kv)
+  max flip %:  6.9%  (json vs inline_kv)
+  ranking:     yaml > markdown > inline_kv > json > toml
+  scored in 0:00:06
+
+====================================================================================================
+CROSS-MODEL SUMMARY - metadata_only  (n=770)   2026-10-04 16:39:14
+====================================================================================================
+model                                               max |d|  min rho  max flip% ranking
+----------------------------------------------------------------------------------------------------
+cross-encoder/ms-marco-MiniLM-L6-v2                   1.108    0.971       6.9% yaml > markdown > inline_kv > json > toml
+
+Saved metadata_only results -> data/nq/h1/test_cross_metadata_only_minilm_l6.json  (0.1 MB)
+
+======================================================================
+MODE: with_body   n_records = 770   2026-10-04 16:39:14
+======================================================================
+
+----------------------------------------------------------------------
+cross-encoder/ms-marco-MiniLM-L6-v2   2026-10-04 16:39:14
+----------------------------------------------------------------------
+Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 6832.07it/s]
   scored yaml  (mean=+4.755)
   scored json  (mean=+3.657)
   scored toml  (mean=+3.791)
@@ -73,13 +73,15 @@ cross-encoder/ms-marco-MiniLM-L6-v2
   min rho:     0.910  (json vs inline_kv)
   max flip %:  12.3%  (json vs inline_kv)
   ranking:     yaml > inline_kv > markdown > toml > json
-
+  scored in 0:00:08
 
 ====================================================================================================
-CROSS-MODEL SUMMARY - with_body  (n=770)
+CROSS-MODEL SUMMARY - with_body  (n=770)   2026-10-04 16:39:23
 ====================================================================================================
-model                                               max |d|  min rho  max flip%  ranking
-----------------------------------------------------------------------------------------------------------------------------------
-cross-encoder/ms-marco-MiniLM-L6-v2                   0.903    0.910      12.3%  yaml > inline_kv > markdown > toml > json
+model                                               max |d|  min rho  max flip% ranking
+----------------------------------------------------------------------------------------------------
+cross-encoder/ms-marco-MiniLM-L6-v2                   0.903    0.910      12.3% yaml > inline_kv > markdown > toml > json
 
-Saved with_body results -> data/nq/h1_measurement/test_with_body_minilm_l6.json  (0.1 MB)
+Saved with_body results -> data/nq/h1/test_cross_with_body_minilm_l6.json  (0.1 MB)
+
+Pass complete in 0:00:15

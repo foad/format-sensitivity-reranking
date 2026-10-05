@@ -13,25 +13,36 @@ Loading data/nq/splits/nq_val.json...
 
 Split 'nq_val': 171 queries
 
-Reusing candidate lists from data/nq/h1/nq_val_candidates.json
-  158 queries
+Building candidate lists, one body budget per candidate...
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (690 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (628 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (587 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (562 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1051 > 1024). Running this sequence through the model will result in indexing errors
+    25/171 queries  (8.9/s, eta 0.3 min)
+    50/171 queries  (8.5/s, eta 0.2 min)
+    75/171 queries  (8.0/s, eta 0.2 min)
+    100/171 queries  (7.9/s, eta 0.1 min)
+    125/171 queries  (8.0/s, eta 0.1 min)
+    150/171 queries  (7.9/s, eta 0.0 min)
+    171/171 queries  (8.0/s, eta 0.0 min)
+  158 queries kept
+  built candidate lists in 0:00:21
+  cached -> data/nq/h1/nq_val_candidates.json
   dropped_gold_budget: 12
   dropped_no_bm25_negs: 0
   dropped_too_few_eligible_negs: 1
   negatives_skipped_for_budget: 86
-[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (549 > 512). Running this sequence through the model will result in indexing errors
     overflow check 25/100
     overflow check 50/100
-[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (515 > 512). Running this sequence through the model will result in indexing errors
-[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (515 > 512). Running this sequence through the model will result in indexing errors
     overflow check 75/100
     overflow check 100/100
   >512-token renderings: worst model 1.10% (sampled 100 queries)
 
 ----------------------------------------------------------------------
-cross-encoder/ms-marco-MiniLM-L12-v2
+cross-encoder/ms-marco-MiniLM-L12-v2   2026-10-04 17:38:45
 ----------------------------------------------------------------------
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 9187.81it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 6954.52it/s]
   metadata_only
   scored       yaml  gold mean=-2.592  neg mean=-7.957
   scored       json  gold mean=-3.389  neg mean=-8.228
@@ -58,26 +69,28 @@ cross-encoder/ms-marco-MiniLM-L12-v2
   delta/S_within:          0.120
   gold top-1 all formats:  77.8%  |  format-dependent: 8.9%  |  never: 13.3%
   MRR per format:          yaml=0.896  json=0.889  toml=0.891  inline_kv=0.895  markdown=0.889
-  (71.7s)
+  scored in 0:01:12
 
 ====================================================================================================
-WITHIN-QUERY SUMMARY - split=nq_val/metadata_only  n_queries=158  candidates=16
+WITHIN-QUERY SUMMARY - split=nq_val/metadata_only  n_queries=158  candidates=16   2026-10-04 17:39:58
 ====================================================================================================
 model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
-------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 cross-encoder/ms-marco-MiniLM-L12-v2                   7.8%     0.845      17.1%     13.9%     0.149
 
   fmt-dep% = queries whose gold ranks first under some formats but not others.
 
-Saved -> data/nq/h1/nq_val_within_metadata_only_minilm_l12.json  (0.1 MB)
+Saved metadata_only results -> data/nq/h1/nq_val_within_metadata_only_minilm_l12.json  (0.1 MB)
 
 ====================================================================================================
-WITHIN-QUERY SUMMARY - split=nq_val/with_body  n_queries=158  candidates=16
+WITHIN-QUERY SUMMARY - split=nq_val/with_body  n_queries=158  candidates=16   2026-10-04 17:39:58
 ====================================================================================================
 model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
-------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 cross-encoder/ms-marco-MiniLM-L12-v2                  10.6%     0.788       9.5%      8.9%     0.120
 
   fmt-dep% = queries whose gold ranks first under some formats but not others.
 
-Saved -> data/nq/h1/nq_val_within_with_body_minilm_l12.json  (0.1 MB)
+Saved with_body results -> data/nq/h1/nq_val_within_with_body_minilm_l12.json  (0.1 MB)
+
+Pass complete in 0:01:13
