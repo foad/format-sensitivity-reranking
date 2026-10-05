@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  jina-v2  markdown_lam0.1  split=test   2026-10-05 21:23:21
+======================================================================
+records: 770   held out: markdown
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.634        0.020    -0.614 in_training
+yaml - toml                   0.876        0.025    -0.850 in_training
+yaml - inline_kv              0.896        0.005    -0.892 in_training
+yaml - markdown               0.076        0.052    -0.023       ood
+json - toml                   0.079        0.041    -0.037 in_training
+json - inline_kv              0.101        0.021    -0.080 in_training
+json - markdown               0.648        0.067    -0.582       ood
+toml - inline_kv              0.058        0.024    -0.034 in_training
+toml - markdown               0.763        0.036    -0.726       ood
+inline_kv - markdown          0.662        0.051    -0.610       ood
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.896 (large)      0.067 (trivial)    -0.830     [-0.918, -0.729]
+in_training           0.896 (large)      0.041 (trivial)    -0.855     [-0.943, -0.750]
+ood                  0.763 (medium)      0.067 (trivial)    -0.696     [-0.786, -0.574]
+
+In-training thresholds, trained max |d| = 0.041
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -2
+  relative change: -91.3%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9458
+  trained MRR:  0.9747
+  change: +0.0289  [+0.0192, +0.0386]  pass
+
+Transfer to markdown
+  MRR: 0.9532 -> 0.9734
+  change: +0.0202  [+0.0102, +0.0303]
+  training formats changed by +0.0311 on average, a ratio of 0.65
+
+Metadata-only records: 228
+  in_training  max |d|: 0.781 (medium) -> 0.178 (trivial)
+  ood          max |d|: 0.604 (medium) -> 0.139 (trivial)
+
+Answer axis, held out markdown, 715 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           35 (4.9%)        16 (2.2%)       -19       [-4.34, -1.12]
+in_training           32 (4.5%)        15 (2.1%)       -17       [-3.92, -0.84]
+ood                    3 (0.4%)         1 (0.1%)        -2       [-0.84, +0.28]
+
+Saved markdown_lam0.1 results -> data/nq/h2/comparison/jina_v2_markdown_lam0.1.json  (0.0 MB)

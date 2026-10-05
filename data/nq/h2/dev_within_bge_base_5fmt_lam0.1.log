@@ -1,0 +1,63 @@
+Device: cuda
+
+Loading tokenizers for 6 budget models...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  ok  cross-encoder/ms-marco-MiniLM-L6-v2
+  ok  cross-encoder/ms-marco-MiniLM-L12-v2
+  ok  BAAI/bge-reranker-base
+  ok  BAAI/bge-reranker-v2-m3
+  ok  mixedbread-ai/mxbai-rerank-base-v1
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+  ok  jinaai/jina-reranker-v2-base-multilingual
+Loading data/nq/splits/dev.json...
+
+Split 'dev': 787 queries
+
+Reusing candidate lists from data/nq/h1/dev_candidates.json
+  756 queries
+  dropped_gold_budget: 29
+  dropped_no_bm25_negs: 0
+  dropped_too_few_eligible_negs: 2
+  negatives_skipped_for_budget: 433
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (522 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 25/100
+    overflow check 50/100
+    overflow check 75/100
+    overflow check 100/100
+  >512-token renderings: worst model 1.32% (sampled 100 queries)
+
+----------------------------------------------------------------------
+BAAI/bge-reranker-base   2026-10-05 18:27:17
+----------------------------------------------------------------------
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3436.69it/s]
+  adapter: data/nq/h2/train/bge_base_5fmt_lam0.1/adapter
+  with_body
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  gold mean=+5.134  neg mean=-3.087
+  scored       json  gold mean=+5.183  neg mean=-2.882
+  scored       toml  gold mean=+5.169  neg mean=-2.787
+  scored  inline_kv  gold mean=+5.183  neg mean=-2.838
+  scored   markdown  gold mean=+5.156  neg mean=-2.858
+
+  max within-query flip %: 8.7%  (yaml vs json)
+  min Kendall tau:         0.826  (yaml vs json)
+  max top-1 change %:      4.5%  (json vs inline_kv)
+  delta/S_within:          0.097
+  gold top-1 all formats:  86.6%  |  format-dependent: 5.4%  |  never: 7.9%
+  MRR per format:          yaml=0.943  json=0.935  toml=0.936  inline_kv=0.938  markdown=0.936
+  scored in 0:15:51
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=dev/with_body  n_queries=756  candidates=16   2026-10-05 18:43:09
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+----------------------------------------------------------------------------------------------------
+BAAI/bge-reranker-base                                 8.7%     0.826       4.5%      5.4%     0.097
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved with_body results -> data/nq/h2/dev_within_bge_base_5fmt_lam0.1.json  (0.4 MB)
+
+Pass complete in 0:15:53

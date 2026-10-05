@@ -1,0 +1,33 @@
+
+======================================================================
+SELECT lambda  jina-v2   2026-10-05 18:25:12
+======================================================================
+  baseline:   dev_cross_jina_v2_base.json
+  candidates: 5
+    dev_cross_jina_v2_5fmt_lam0.json
+    dev_cross_jina_v2_5fmt_lam0.01.json
+    dev_cross_jina_v2_5fmt_lam0.1.json
+    dev_cross_jina_v2_5fmt_lam1.json
+    dev_cross_jina_v2_5fmt_lam10.json
+
+baseline mean MRR: 0.9494
+baseline max |d|:  0.8092
+
+lambda      dev max|d|    dev MRR   delta MRR         delta interval  keeps MRR
+----------------------------------------------------------------------------------------------------
+0               0.2612     0.9631     +0.0136     [+0.0065, +0.0212]        yes
+0.01            0.2248     0.9650     +0.0155     [+0.0084, +0.0232]        yes
+0.1             0.0989     0.9664     +0.0170     [+0.0097, +0.0247]        yes
+1               0.1646     0.9626     +0.0132     [+0.0055, +0.0210]        yes
+10              0.1302     0.9611     +0.0117     [+0.0045, +0.0192]        yes
+
+4 candidates tie: both intervals meet the leader's.
+  tied: 0.01, 0.1, 1, 10
+  the sweep takes 0.1
+
+Winner: lambda = 0.1
+  dev max |d|:  0.0989
+  dev mean MRR: 0.9664
+  delta MRR:    +0.0170  [+0.0097, +0.0247]
+
+Saved lambda results -> data/nq/h2/selection/jina_v2_lambda.json  (0.0 MB)

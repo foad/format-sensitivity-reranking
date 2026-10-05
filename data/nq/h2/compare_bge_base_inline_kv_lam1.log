@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  bge-base  inline_kv_lam1  split=test   2026-10-05 20:59:44
+======================================================================
+records: 770   held out: inline_kv
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.275        0.075    -0.200 in_training
+yaml - toml                   0.088        0.152    +0.064 in_training
+yaml - inline_kv              0.102        0.212    +0.109       ood
+yaml - markdown               0.024        0.042    +0.017 in_training
+json - toml                   0.250        0.048    -0.202 in_training
+json - inline_kv              0.383        0.073    -0.310       ood
+json - markdown               0.360        0.035    -0.325 in_training
+toml - inline_kv              0.218        0.040    -0.178       ood
+toml - markdown               0.135        0.110    -0.026 in_training
+inline_kv - markdown          0.069        0.129    +0.060       ood
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.383 (small)        0.212 (small)    -0.171     [-0.266, -0.058]
+in_training           0.360 (small)      0.152 (trivial)    -0.207     [-0.289, -0.114]
+ood                   0.383 (small)        0.212 (small)    -0.171     [-0.265, -0.055]
+
+In-training thresholds, trained max |d| = 0.152
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: 0
+  relative change: -44.7%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.8941
+  trained MRR:  0.9622
+  change: +0.0681  [+0.0560, +0.0809]  pass
+
+Transfer to inline_kv
+  MRR: 0.9052 -> 0.9639
+  change: +0.0587  [+0.0447, +0.0733]
+  training formats changed by +0.0705 on average, a ratio of 0.83
+
+Metadata-only records: 228
+  in_training  max |d|: 0.506 (medium) -> 0.132 (trivial)
+  ood          max |d|: 0.489 (small) -> 0.209 (small)
+
+Answer axis, held out inline_kv, 696 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats         123 (17.7%)        22 (3.2%)      -101     [-17.24, -11.64]
+in_training         117 (16.8%)        21 (3.0%)       -96     [-16.52, -11.06]
+ood                    6 (0.9%)         1 (0.1%)        -5       [-1.58, +0.00]
+
+Saved inline_kv_lam1 results -> data/nq/h2/comparison/bge_base_inline_kv_lam1.json  (0.0 MB)

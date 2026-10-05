@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  bge-base  markdown_lam0  split=test   2026-10-05 20:59:59
+======================================================================
+records: 770   held out: markdown
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.275        0.205    -0.070 in_training
+yaml - toml                   0.088        0.329    +0.241 in_training
+yaml - inline_kv              0.102        0.484    +0.382 in_training
+yaml - markdown               0.024        0.290    +0.265       ood
+json - toml                   0.250        0.081    -0.170 in_training
+json - inline_kv              0.383        0.100    -0.283 in_training
+json - markdown               0.360        0.057    -0.303       ood
+toml - inline_kv              0.218        0.034    -0.184 in_training
+toml - markdown               0.135        0.031    -0.105       ood
+inline_kv - markdown          0.069        0.058    -0.011       ood
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.383 (small)        0.484 (small)    +0.101     [-0.005, +0.211]
+in_training           0.383 (small)        0.484 (small)    +0.101     [-0.003, +0.213]
+ood                   0.360 (small)        0.290 (small)    -0.070     [-0.168, +0.040]
+
+In-training thresholds, trained max |d| = 0.484
+  below 0.5:  pass
+  below 0.2:  fail
+  interval upper below zero: fail
+
+Held-out pairs, reported without a threshold
+  bands moved: 0
+  relative change: -19.4%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.8941
+  trained MRR:  0.9575
+  change: +0.0634  [+0.0520, +0.0755]  pass
+
+Transfer to markdown
+  MRR: 0.8977 -> 0.9573
+  change: +0.0596  [+0.0463, +0.0735]
+  training formats changed by +0.0644 on average, a ratio of 0.93
+
+Metadata-only records: 228
+  in_training  max |d|: 0.489 (small) -> 0.438 (small)
+  ood          max |d|: 0.506 (medium) -> 0.230 (small)
+
+Answer axis, held out markdown, 696 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats         123 (17.7%)        36 (5.2%)       -87      [-15.23, -9.77]
+in_training         116 (16.7%)        35 (5.0%)       -81      [-14.37, -8.91]
+ood                    7 (1.0%)         1 (0.1%)        -6       [-1.72, -0.14]
+
+Saved markdown_lam0 results -> data/nq/h2/comparison/bge_base_markdown_lam0.json  (0.0 MB)

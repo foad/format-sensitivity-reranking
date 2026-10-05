@@ -1,0 +1,43 @@
+
+======================================================================
+TRAIN  MiniLM-L12  arm=toml_lam0.1   2026-10-05 18:47:46
+======================================================================
+  identifier:  cross-encoder/ms-marco-MiniLM-L12-v2
+  formats:     4 of 5  ['yaml', 'json', 'inline_kv', 'markdown']
+  held out:    toml
+  lambda_inv:  0.1
+  batch:       4 x 4
+  steps:       500, warmup 30
+  output:      data/nq/h2/train/minilm_l12_toml_lam0.1
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3465.00it/s]
+  trainable:   442,753 / 33,803,138 (1.31%)
+
+Loading the corpus...
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (963 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (928 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1154 > 1024). Running this sequence through the model will result in indexing errors
+  train: 6,131 kept, 449 dropped
+  dev:   758 kept
+  corpus loading in 0:10:54
+
+Resuming at step 400; dropped 0 log records past it.
+
+Training minilm_l12 toml_lam0.1
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+[transformers] `use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`.
+step   401/500  loss=0.0440  rank=0.0347  inv=0.0928  lr=2.11e-05  0.06s/step  eta 0:00:05
+step   420/500  loss=0.0230  rank=0.0107  inv=0.1225  lr=1.40e-05  1.11s/step  eta 0:01:28
+step   440/500  loss=0.0452  rank=0.0312  inv=0.1407  lr=7.94e-06  2.11s/step  eta 0:02:06
+  dev max|d|=0.1795  (pair=json - inline_kv)
+step   460/500  loss=0.0495  rank=0.0300  inv=0.1946  lr=3.55e-06  3.06s/step  eta 0:02:02
+step   480/500  loss=0.0511  rank=0.0281  inv=0.2305  lr=8.92e-07  3.88s/step  eta 0:01:17
+step   500/500  loss=0.1727  rank=0.1537  inv=0.1903  lr=0.00e+00  4.59s/step  eta 0:00:00
+  dev max|d|=0.1906  (pair=json - inline_kv)
+
+Finished at step 500 in 2318s, dev max|d|=0.1906
+Saved adapter -> data/nq/h2/train/minilm_l12_toml_lam0.1/adapter

@@ -1,0 +1,63 @@
+Device: cuda
+
+Loading tokenizers for 6 budget models...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  ok  cross-encoder/ms-marco-MiniLM-L6-v2
+  ok  cross-encoder/ms-marco-MiniLM-L12-v2
+  ok  BAAI/bge-reranker-base
+  ok  BAAI/bge-reranker-v2-m3
+  ok  mixedbread-ai/mxbai-rerank-base-v1
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+  ok  jinaai/jina-reranker-v2-base-multilingual
+Loading data/nq/splits/test.json...
+
+Split 'test': 821 queries
+
+Reusing candidate lists from data/nq/h1/test_candidates.json
+  767 queries
+  dropped_gold_budget: 51
+  dropped_no_bm25_negs: 0
+  dropped_too_few_eligible_negs: 3
+  negatives_skipped_for_budget: 498
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (514 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 25/100
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (516 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (516 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 50/100
+    overflow check 75/100
+    overflow check 100/100
+  >512-token renderings: worst model 1.26% (sampled 100 queries)
+
+----------------------------------------------------------------------
+cross-encoder/ms-marco-MiniLM-L12-v2   2026-10-05 20:25:47
+----------------------------------------------------------------------
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3103.54it/s]
+  adapter: data/nq/h2/train/minilm_l12_toml_lam0/adapter
+  with_body
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  gold mean=+6.968  neg mean=-3.792
+  scored       json  gold mean=+6.797  neg mean=-3.594
+  scored       toml  gold mean=+6.862  neg mean=-3.705
+  scored  inline_kv  gold mean=+6.846  neg mean=-3.793
+  scored   markdown  gold mean=+6.821  neg mean=-3.575
+
+  max within-query flip %: 9.7%  (json vs inline_kv)
+  min Kendall tau:         0.805  (json vs inline_kv)
+  max top-1 change %:      6.8%  (json vs inline_kv)
+  delta/S_within:          0.091
+  gold top-1 all formats:  86.4%  |  format-dependent: 7.8%  |  never: 5.7%
+  MRR per format:          yaml=0.952  json=0.938  toml=0.956  inline_kv=0.950  markdown=0.946
+  scored in 0:11:23
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=test/with_body  n_queries=767  candidates=16   2026-10-05 20:37:14
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+----------------------------------------------------------------------------------------------------
+cross-encoder/ms-marco-MiniLM-L12-v2                   9.7%     0.805       6.8%      7.8%     0.091
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved with_body results -> data/nq/h2/test_within_minilm_l12_toml_lam0.json  (0.4 MB)
+
+Pass complete in 0:11:26

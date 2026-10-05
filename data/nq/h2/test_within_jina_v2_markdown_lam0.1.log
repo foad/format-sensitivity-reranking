@@ -1,0 +1,76 @@
+Device: cuda
+
+Loading tokenizers for 6 budget models...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  ok  cross-encoder/ms-marco-MiniLM-L6-v2
+  ok  cross-encoder/ms-marco-MiniLM-L12-v2
+  ok  BAAI/bge-reranker-base
+  ok  BAAI/bge-reranker-v2-m3
+  ok  mixedbread-ai/mxbai-rerank-base-v1
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+  ok  jinaai/jina-reranker-v2-base-multilingual
+Loading data/nq/splits/test.json...
+
+Split 'test': 821 queries
+
+Reusing candidate lists from data/nq/h1/test_candidates.json
+  767 queries
+  dropped_gold_budget: 51
+  dropped_no_bm25_negs: 0
+  dropped_too_few_eligible_negs: 3
+  negatives_skipped_for_budget: 498
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (514 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 25/100
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (516 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (516 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 50/100
+    overflow check 75/100
+    overflow check 100/100
+  >512-token renderings: worst model 1.26% (sampled 100 queries)
+
+----------------------------------------------------------------------
+jinaai/jina-reranker-v2-base-multilingual   2026-10-05 21:11:11
+----------------------------------------------------------------------
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights:   6%|▌         | 9/153 [00:00<00:02, 63.94it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 1063.80it/s]
+  adapter: data/nq/h2/train/jina_v2_markdown_lam0.1/adapter
+  with_body
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  gold mean=+5.025  neg mean=-4.545
+  scored       json  gold mean=+5.017  neg mean=-4.538
+  scored       toml  gold mean=+5.030  neg mean=-4.516
+  scored  inline_kv  gold mean=+5.026  neg mean=-4.519
+  scored   markdown  gold mean=+5.038  neg mean=-4.503
+
+  max within-query flip %: 5.5%  (json vs inline_kv)
+  min Kendall tau:         0.890  (json vs inline_kv)
+  max top-1 change %:      2.6%  (yaml vs json)
+  delta/S_within:          0.043
+  gold top-1 all formats:  92.3%  |  format-dependent: 3.5%  |  never: 4.2%
+  MRR per format:          yaml=0.968  json=0.969  toml=0.968  inline_kv=0.967  markdown=0.966
+  scored in 0:10:25
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=test/with_body  n_queries=767  candidates=16   2026-10-05 21:21:37
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+----------------------------------------------------------------------------------------------------
+jinaai/jina-reranker-v2-base-multilingual              5.5%     0.890       2.6%      3.5%     0.043
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved with_body results -> data/nq/h2/test_within_jina_v2_markdown_lam0.1.json  (0.4 MB)
+
+Pass complete in 0:10:26

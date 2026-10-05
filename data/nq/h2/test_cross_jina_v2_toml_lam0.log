@@ -1,0 +1,61 @@
+
+======================================================================
+EVAL  jina-v2  split=test  arm=toml_lam0   2026-10-05 20:29:14
+======================================================================
+  identifier:  jinaai/jina-reranker-v2-base-multilingual
+  adapter:     data/nq/h2/train/jina_v2_toml_lam0/adapter
+  batch:       16
+  output:      data/nq/h2/test_cross_jina_v2_toml_lam0.json
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights:  35%|███▍      | 53/153 [00:00<00:00, 513.81it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 1251.71it/s]
+
+821 records in test
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (578 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (698 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (528 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (558 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1277 > 1024). Running this sequence through the model will result in indexing errors
+  770 kept, 51 dropped
+
+Scoring the formats...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  mean=+6.583  n=770
+  scored       json  mean=+6.686  n=770
+  scored       toml  mean=+6.735  n=770
+  scored  inline_kv  mean=+6.628  n=770
+  scored   markdown  mean=+6.789  n=770
+
+  max |d|:    0.284
+  mean |d|:   0.153
+  min rho:    0.898
+  max flip:   12.2%
+  max |d| 95% interval: [0.212, 0.387]
+  format scoring in 0:00:40
+
+Scoring the ranking guardrail...
+  MRR       yaml: 0.9727
+  MRR       json: 0.9712
+  MRR       toml: 0.9763
+  MRR  inline_kv: 0.9753
+  MRR   markdown: 0.9745
+
+  mean MRR:   0.9740
+  worst MRR:  0.9712
+  guardrail scoring in 0:11:57
+
+Saved toml_lam0 results -> data/nq/h2/test_cross_jina_v2_toml_lam0.json  (0.1 MB)

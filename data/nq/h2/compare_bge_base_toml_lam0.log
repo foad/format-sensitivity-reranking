@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  bge-base  toml_lam0  split=test   2026-10-05 20:58:56
+======================================================================
+records: 770   held out: toml
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.275        0.278    +0.003 in_training
+yaml - toml                   0.088        0.344    +0.256       ood
+yaml - inline_kv              0.102        0.493    +0.391 in_training
+yaml - markdown               0.024        0.313    +0.288 in_training
+json - toml                   0.250        0.033    -0.218       ood
+json - inline_kv              0.383        0.046    -0.337 in_training
+json - markdown               0.360        0.009    -0.351 in_training
+toml - inline_kv              0.218        0.020    -0.198       ood
+toml - markdown               0.135        0.033    -0.102       ood
+inline_kv - markdown          0.069        0.047    -0.022 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.383 (small)        0.493 (small)    +0.110     [-0.004, +0.230]
+in_training           0.383 (small)        0.493 (small)    +0.110     [-0.004, +0.230]
+ood                   0.250 (small)        0.344 (small)    +0.094     [-0.011, +0.181]
+
+In-training thresholds, trained max |d| = 0.493
+  below 0.5:  pass
+  below 0.2:  fail
+  interval upper below zero: fail
+
+Held-out pairs, reported without a threshold
+  bands moved: 0
+  relative change: +37.6%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.8941
+  trained MRR:  0.9561
+  change: +0.0620  [+0.0503, +0.0742]  pass
+
+Transfer to toml
+  MRR: 0.8668 -> 0.9545
+  change: +0.0877  [+0.0716, +0.1041]
+  training formats changed by +0.0556 on average, a ratio of 1.58
+
+Metadata-only records: 228
+  in_training  max |d|: 0.506 (medium) -> 0.456 (small)
+  ood          max |d|: 0.400 (small) -> 0.318 (small)
+
+Answer axis, held out toml, 696 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats         123 (17.7%)        40 (5.7%)       -83      [-14.66, -9.05]
+in_training          96 (13.8%)        37 (5.3%)       -59      [-11.06, -5.89]
+ood                   27 (3.9%)         3 (0.4%)       -24       [-4.89, -2.16]
+
+Saved toml_lam0 results -> data/nq/h2/comparison/bge_base_toml_lam0.json  (0.0 MB)

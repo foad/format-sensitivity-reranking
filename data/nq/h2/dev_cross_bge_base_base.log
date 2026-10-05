@@ -1,0 +1,46 @@
+
+======================================================================
+EVAL  bge-base  split=dev  arm=base   2026-10-05 17:47:07
+======================================================================
+  identifier:  BAAI/bge-reranker-base
+  adapter:     none, untrained baseline
+  batch:       16
+  output:      data/nq/h2/dev_cross_bge_base_base.json
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 2970.24it/s]
+
+787 records in dev
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (711 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (640 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (776 > 512). Running this sequence through the model will result in indexing errors
+  758 kept, 29 dropped
+
+Scoring the formats...
+  scored       yaml  mean=+4.957  n=758
+  scored       json  mean=+4.748  n=758
+  scored       toml  mean=+4.879  n=758
+  scored  inline_kv  mean=+5.005  n=758
+  scored   markdown  mean=+4.976  n=758
+
+  max |d|:    0.295
+  mean |d|:   0.145
+  min rho:    0.904
+  max flip:   12.6%
+  max |d| 95% interval: [0.235, 0.367]
+  format scoring in 0:00:53
+
+Scoring the ranking guardrail...
+  MRR       yaml: 0.9117
+  MRR       json: 0.8613
+  MRR       toml: 0.8479
+  MRR  inline_kv: 0.8854
+  MRR   markdown: 0.8906
+
+  mean MRR:   0.8794
+  worst MRR:  0.8479
+  guardrail scoring in 0:16:20
+
+Saved base results -> data/nq/h2/dev_cross_bge_base_base.json  (0.1 MB)

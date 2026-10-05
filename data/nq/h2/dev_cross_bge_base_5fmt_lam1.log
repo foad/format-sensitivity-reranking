@@ -1,0 +1,47 @@
+
+======================================================================
+EVAL  bge-base  split=dev  arm=5fmt_lam1   2026-10-05 18:26:07
+======================================================================
+  identifier:  BAAI/bge-reranker-base
+  adapter:     data/nq/h2/train/bge_base_5fmt_lam1/adapter
+  batch:       16
+  output:      data/nq/h2/dev_cross_bge_base_5fmt_lam1.json
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3234.92it/s]
+
+787 records in dev
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (711 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (640 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (776 > 512). Running this sequence through the model will result in indexing errors
+  758 kept, 29 dropped
+
+Scoring the formats...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  mean=+2.932  n=758
+  scored       json  mean=+2.947  n=758
+  scored       toml  mean=+2.940  n=758
+  scored  inline_kv  mean=+2.949  n=758
+  scored   markdown  mean=+2.924  n=758
+
+  max |d|:    0.145
+  mean |d|:   0.076
+  min rho:    0.969
+  max flip:   7.3%
+  max |d| 95% interval: [0.098, 0.226]
+  format scoring in 0:01:02
+
+Scoring the ranking guardrail...
+  MRR       yaml: 0.9435
+  MRR       json: 0.9382
+  MRR       toml: 0.9395
+  MRR  inline_kv: 0.9423
+  MRR   markdown: 0.9383
+
+  mean MRR:   0.9403
+  worst MRR:  0.9382
+  guardrail scoring in 0:18:01
+
+Saved 5fmt_lam1 results -> data/nq/h2/dev_cross_bge_base_5fmt_lam1.json  (0.1 MB)
