@@ -1,0 +1,47 @@
+
+======================================================================
+EVAL  MiniLM-L6  split=dev  arm=5fmt_lam10   2026-10-05 17:47:07
+======================================================================
+  identifier:  cross-encoder/ms-marco-MiniLM-L6-v2
+  adapter:     data/nq/h2/train/minilm_l6_5fmt_lam10/adapter
+  batch:       32
+  output:      data/nq/h2/dev_cross_minilm_l6_5fmt_lam10.json
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 2311.24it/s]
+
+787 records in dev
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (711 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (640 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (776 > 512). Running this sequence through the model will result in indexing errors
+  758 kept, 29 dropped
+
+Scoring the formats...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  mean=+2.488  n=758
+  scored       json  mean=+2.495  n=758
+  scored       toml  mean=+2.490  n=758
+  scored  inline_kv  mean=+2.480  n=758
+  scored   markdown  mean=+2.486  n=758
+
+  max |d|:    0.187
+  mean |d|:   0.103
+  min rho:    0.938
+  max flip:   10.5%
+  max |d| 95% interval: [0.148, 0.261]
+  format scoring in 0:00:29
+
+Scoring the ranking guardrail...
+  MRR       yaml: 0.9245
+  MRR       json: 0.9176
+  MRR       toml: 0.9217
+  MRR  inline_kv: 0.9166
+  MRR   markdown: 0.9243
+
+  mean MRR:   0.9209
+  worst MRR:  0.9166
+  guardrail scoring in 0:11:11
+
+Saved 5fmt_lam10 results -> data/nq/h2/dev_cross_minilm_l6_5fmt_lam10.json  (0.1 MB)

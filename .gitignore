@@ -8,14 +8,20 @@ __pycache__/
 # HuggingFace / model caches
 .cache/
 
-# Release assets and derived caches
+# Release assets: corpus data and trained adapters, packaged with the tag
 data/**/matched_*.json
 data/nq/parsed_*.json
 data/nq/splits/
+data/nq/prose.json
+data/nq/prose_eval.json
+data/**/adapter/
+
+# Derived caches and machine state, neither tracked nor released
 data/**/*_candidates*.json
 data/**/*.npz
 data/**/*roster*.log
 data/**/*.progress
+data/**/checkpoint.pt
 
 # Smoke test data
 data/smoke/

@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  MiniLM-L6  toml_lam1  split=test   2026-10-05 19:17:23
+======================================================================
+records: 770   held out: toml
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.718        0.015    -0.703 in_training
+yaml - toml                   0.903        0.090    -0.813       ood
+yaml - inline_kv              0.733        0.032    -0.701 in_training
+yaml - markdown               0.522        0.187    -0.335 in_training
+json - toml                   0.091        0.050    -0.041       ood
+json - inline_kv              0.448        0.001    -0.447 in_training
+json - markdown               0.527        0.205    -0.322 in_training
+toml - inline_kv              0.535        0.066    -0.469       ood
+toml - markdown               0.307        0.133    -0.174       ood
+inline_kv - markdown          0.179        0.169    -0.010 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.903 (large)        0.205 (small)    -0.698     [-0.847, -0.565]
+in_training          0.733 (medium)        0.205 (small)    -0.529     [-0.657, -0.427]
+ood                   0.903 (large)      0.133 (trivial)    -0.770     [-0.915, -0.646]
+
+In-training thresholds, trained max |d| = 0.205
+  below 0.5:  pass
+  below 0.2:  fail
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -3
+  relative change: -85.3%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.8904
+  trained MRR:  0.9428
+  change: +0.0524  [+0.0409, +0.0639]  pass
+
+Transfer to toml
+  MRR: 0.8878 -> 0.9401
+  change: +0.0523  [+0.0383, +0.0666]
+  training formats changed by +0.0524 on average, a ratio of 1.00
+
+Metadata-only records: 228
+  in_training  max |d|: 0.821 (large) -> 0.248 (small)
+  ood          max |d|: 0.899 (large) -> 0.150 (trivial)
+
+Answer axis, held out toml, 674 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          97 (14.4%)        43 (6.4%)       -54      [-10.68, -5.34]
+in_training          89 (13.2%)        42 (6.2%)       -47       [-9.50, -4.45]
+ood                    8 (1.2%)         1 (0.1%)        -7       [-1.93, -0.30]
+
+Saved toml_lam1 results -> data/nq/h2/comparison/minilm_l6_toml_lam1.json  (0.0 MB)
