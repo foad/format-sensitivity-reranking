@@ -25,11 +25,11 @@ from typing import Any
 
 import numpy as np
 import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from fsr.corpus.splitting import SPLIT_CHOICES, load_records
 from fsr.formats import FORMATS
 from fsr.metrics import format_sensitivity_summary
+from fsr.models.loading import load_model, load_tokenizer
 from fsr.models.registry import (
     BASE_MODEL_IDS,
     BASE_MODELS,
@@ -68,9 +68,7 @@ def try_load_tokenizer(model_name: str, trust_remote_code: bool) -> Any | None:
         The tokenizer, or None.
     """
     try:
-        return AutoTokenizer.from_pretrained(
-            model_name, trust_remote_code=trust_remote_code
-        )
+        return load_tokenizer(model_name, trust_remote_code)
     except Exception as e:
         print(f"  x tokenizer load failed for {model_name}: {type(e).__name__}: {e}")
         return None
@@ -84,7 +82,7 @@ def try_load_model(
 ) -> Any | None:
     """Load a model onto a device in evaluation mode, or return None.
 
-    A model that rejects the eager-attention argument is retried without it.
+    Uses float32 precision and retries without eager-attention if model fails with it.
 
     Args:
         model_name: The model identifier.
@@ -95,30 +93,13 @@ def try_load_model(
     Returns:
         The model, or None.
     """
-    load_kwargs: dict[str, Any] = {"trust_remote_code": trust_remote_code}
-    if force_eager_attn:
-        load_kwargs["attn_implementation"] = "eager"
     try:
-        return (
-            AutoModelForSequenceClassification.from_pretrained(
-                model_name, **load_kwargs
-            )
-            .to(device)
-            .eval()
+        return load_model(
+            model_name,
+            device,
+            trust_remote_code=trust_remote_code,
+            eager_attn=force_eager_attn,
         )
-    except TypeError:
-        load_kwargs.pop("attn_implementation", None)
-        try:
-            return (
-                AutoModelForSequenceClassification.from_pretrained(
-                    model_name, **load_kwargs
-                )
-                .to(device)
-                .eval()
-            )
-        except Exception as e:
-            print(f"  x model load failed for {model_name}: {type(e).__name__}: {e}")
-            return None
     except Exception as e:
         print(f"  x model load failed for {model_name}: {type(e).__name__}: {e}")
         return None

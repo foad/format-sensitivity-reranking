@@ -31,98 +31,58 @@ class TestTryLoadTokenizer:
         def fail(*_args, **_kwargs):
             raise OSError("no such model")
 
-        monkeypatch.setattr(mod.AutoTokenizer, "from_pretrained", fail)
+        monkeypatch.setattr(mod, "load_tokenizer", fail)
         assert mod.try_load_tokenizer("missing/model", True) is None
         assert "tokenizer load failed" in capsys.readouterr().out
 
     def test_returns_the_tokenizer_on_success(self, monkeypatch):
-        monkeypatch.setattr(
-            mod.AutoTokenizer, "from_pretrained", lambda *_a, **_k: "TOKENIZER"
-        )
+        monkeypatch.setattr(mod, "load_tokenizer", lambda *_a: "TOKENIZER")
         assert mod.try_load_tokenizer("some/model", True) == "TOKENIZER"
 
     def test_forwards_the_trust_flag(self, monkeypatch):
-        seen = {}
-
-        def capture(_name, **kwargs):
-            seen.update(kwargs)
-            return "TOKENIZER"
-
-        monkeypatch.setattr(mod.AutoTokenizer, "from_pretrained", capture)
+        seen = []
+        monkeypatch.setattr(
+            mod, "load_tokenizer", lambda *args: seen.append(args) or "TOKENIZER"
+        )
         mod.try_load_tokenizer("some/model", False)
-        assert seen["trust_remote_code"] is False
+        assert seen == [("some/model", False)]
 
 
 class TestTryLoadModel:
-    class Loaded:
-        """A model stub that records the device and eval calls."""
+    def test_returns_the_model_from_the_shared_loader(self, monkeypatch):
+        monkeypatch.setattr(mod, "load_model", lambda *_a, **_k: "MODEL")
+        assert mod.try_load_model("some/model", "cpu", True) == "MODEL"
 
-        def to(self, device):
-            self.device = device
-            return self
-
-        def eval(self):
-            self.evaluated = True
-            return self
-
-    def test_moves_the_model_to_the_device_and_evaluates(self, monkeypatch):
-        monkeypatch.setattr(
-            mod.AutoModelForSequenceClassification,
-            "from_pretrained",
-            lambda *_a, **_k: self.Loaded(),
-        )
-        model = mod.try_load_model("some/model", "cpu", True)
-        assert model.device == "cpu"
-        assert model.evaluated is True
-
-    def test_requests_eager_attention_when_asked(self, monkeypatch):
+    def test_goes_through_the_shared_loader(self, monkeypatch):
+        """The shared loader is what forces float32, so H1 must not bypass it."""
         seen = {}
 
-        def capture(_name, **kwargs):
-            seen.update(kwargs)
-            return self.Loaded()
+        def capture(name, device, **kwargs):
+            seen.update({"name": name, "device": device, **kwargs})
+            return "MODEL"
 
+        monkeypatch.setattr(mod, "load_model", capture)
+        mod.try_load_model("some/model", "cuda", False, force_eager_attn=True)
+        assert seen == {
+            "name": "some/model",
+            "device": "cuda",
+            "trust_remote_code": False,
+            "eager_attn": True,
+        }
+
+    def test_does_not_request_eager_attention_by_default(self, monkeypatch):
+        seen = {}
         monkeypatch.setattr(
-            mod.AutoModelForSequenceClassification, "from_pretrained", capture
+            mod, "load_model", lambda *_a, **kwargs: seen.update(kwargs) or "MODEL"
         )
-        mod.try_load_model("some/model", "cpu", True, force_eager_attn=True)
-        assert seen["attn_implementation"] == "eager"
+        mod.try_load_model("some/model", "cpu", True)
+        assert seen["eager_attn"] is False
 
-    def test_retries_without_eager_attention_on_a_type_error(self, monkeypatch):
-        calls = []
-
-        def capture(_name, **kwargs):
-            calls.append(dict(kwargs))
-            if "attn_implementation" in kwargs:
-                raise TypeError("unexpected keyword")
-            return self.Loaded()
-
-        monkeypatch.setattr(
-            mod.AutoModelForSequenceClassification, "from_pretrained", capture
-        )
-        assert mod.try_load_model("m", "cpu", True, force_eager_attn=True) is not None
-        assert len(calls) == 2
-        assert "attn_implementation" not in calls[1]
-
-    def test_returns_none_when_the_retry_also_fails(self, monkeypatch, capsys):
-        def capture(_name, **kwargs):
-            if "attn_implementation" in kwargs:
-                raise TypeError("unexpected keyword")
-            raise OSError("corrupt weights")
-
-        monkeypatch.setattr(
-            mod.AutoModelForSequenceClassification, "from_pretrained", capture
-        )
-        assert mod.try_load_model("m", "cpu", True, force_eager_attn=True) is None
-        assert "model load failed" in capsys.readouterr().out
-
-    def test_returns_none_on_a_non_type_error(self, monkeypatch, capsys):
+    def test_returns_none_and_reports_a_failure(self, monkeypatch, capsys):
         def fail(*_args, **_kwargs):
             raise OSError("no such model")
 
-        monkeypatch.setattr(
-            mod.AutoModelForSequenceClassification, "from_pretrained", fail
-        )
+        monkeypatch.setattr(mod, "load_model", fail)
         assert mod.try_load_model("m", "cpu", True) is None
         assert "model load failed" in capsys.readouterr().out
 

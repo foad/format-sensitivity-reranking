@@ -1,4 +1,4 @@
-"""Model and tokenizer loading for the mitigation phase."""
+"""Model and tokenizer loading, shared by both phases."""
 
 from __future__ import annotations
 
