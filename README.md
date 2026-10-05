@@ -7,10 +7,20 @@ The study runs in two phases:
 - **H1 (characterisation).** Does a pointwise cross-encoder reranker score the same passage differently when its metadata is serialised as YAML, JSON, TOML, inline key-value, or Markdown? Measured across six models on a refined Natural Questions corpus.
 - **H2 (mitigation).** Can a LoRA adapter trained with a composite ranking-plus-invariance objective (`L_total = L_rank + lambda*L_inv`) reduce that sensitivity without harming ranking quality? Evaluated on seven model variants with a five-fold hold-one-out design over the five formats, under a fixed training budget.
 
-## Key results
+## Results
 
-- Format choice shifts scores by up to **Cohen's |d| = ~0.94** on three of six models (MiniLM-L6, mxbai, jina). The two BGE models stay near-invariant (|d| < 0.5). Full results in [`docs/h1-results.md`](docs/h1-results.md).
-- Sensitivity is measured on two axes: **max |d|** on scores, and **conditional inconsistency**, the share of queries whose gold passage ranks first under some formats but not all. A per-model composite-objective LoRA reduces both on the models that respond, and the two axes agree under mitigation. Full results in [`docs/h2-results.md`](docs/h2-results.md).
+Sensitivity is measured on two axes: the shift in a passage's absolute score, as the maximum pairwise Cohen's |d| across format pairs, and the disturbance to ranking (which I call conditional inconsistency), the share of answerable queries whose gold passage ranks first under some formats but not all.
+
+### H1: characterisation
+
+- Format choice shifts a passage's score by up to **Cohen's |d| = 0.94**, above the medium-effect threshold on four of the six models (MiniLM-L6, MiniLM-L12, mxbai-v1, jina-v2). The two BGE models fall below it (|d| < 0.5).
+- Ranking disturbance does not track that ordering. Conditional inconsistency peaks at **17.7%** on `bge-reranker-base` (the model least sensitive by |d|), and the three most inconsistent models separate from the other three on non-overlapping intervals. The two axes are therefore near-independent across the six models and capture distinct failure modes.
+
+**Supporting studies**
+
+- Metadata-only ablation: whether the sensitivity comes from the metadata block or from its interaction with the surrounding prose.
+
+Figures and intervals are in [`notebooks/h1/h1_analysis.ipynb`](notebooks/h1/h1_analysis.ipynb) and [`notebooks/h1/h1_ablation_metadata_only.ipynb`](notebooks/h1/h1_ablation_metadata_only.ipynb).
 
 ## Repository layout
 
@@ -27,7 +37,7 @@ scripts/         # runnable pipeline entry points
 notebooks/       # analysis notebooks
 data/            # refined corpus
 adapters/        # trained LoRA adapter weights
-docs/            # results write-ups, methodology notes
+docs/            # reproduction guide
 ```
 
 ## Prerequisites
