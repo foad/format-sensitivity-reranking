@@ -16,7 +16,10 @@
     "frac_dev": 0.1,
     "negatives_seed": 42,
     "cache_k": 25,
-    "frac_test": 0.09999999999999995
+    "frac_test": 0.09999999999999995,
+    "split": "validation",
+    "prose_negatives": 15,
+    "prose_negatives_seed": 42
   },
   "stages": [
     {
@@ -84,6 +87,28 @@
           "sha256": "8aa75c8ac97b17c921c59f26f418c46b1292dffcbd6e070b5c57dd3222fe78ea",
           "bytes": 5097073,
           "records": 8359
+        }
+      ]
+    },
+    {
+      "name": "prose",
+      "outputs": [
+        {
+          "path": "prose.json",
+          "sha256": "21c5a6f66dfce24cfd3cc26c476aab4fa1efec55d7ec260d4be031627265f710",
+          "bytes": 1911054,
+          "records": 2027
+        }
+      ]
+    },
+    {
+      "name": "prose_eval",
+      "outputs": [
+        {
+          "path": "prose_eval.json",
+          "sha256": "61d7b957d5d7414476e1d66627facb93fc5f80149f3c73579e4bcd247584c8e3",
+          "bytes": 26281828,
+          "records": 2027
         }
       ]
     }

@@ -6,7 +6,7 @@ import hashlib
 
 import pytest
 
-from fsr.corpus.files import digest_file, write_atomic
+from fsr.corpus.files import FILE_MODE, atomic_path, digest_file, write_atomic
 
 
 def written(tmp_path, name="out.json", payload=b'{"records": []}'):
@@ -81,3 +81,25 @@ class TestWriteAtomic:
         with pytest.raises(OSError):
             write_atomic(path, "new")
         assert path.read_text() == "old"
+
+
+class TestFileMode:
+    def test_a_written_file_is_group_and_world_readable(self, tmp_path):
+        """A private mode from mkstemp would survive the rename."""
+        path = tmp_path / "a.json"
+        write_atomic(path, "{}")
+        assert path.stat().st_mode & 0o777 == FILE_MODE
+
+    def test_a_replaced_file_takes_the_same_mode(self, tmp_path):
+        path = tmp_path / "a.json"
+        path.write_text("old")
+        path.chmod(0o600)
+        write_atomic(path, "new")
+        assert path.stat().st_mode & 0o777 == FILE_MODE
+
+    def test_the_temporary_file_carries_the_mode_before_the_rename(self, tmp_path):
+        seen = []
+        with atomic_path(tmp_path / "a.json") as tmp:
+            seen.append(tmp.stat().st_mode & 0o777)
+            tmp.write_text("{}")
+        assert seen == [FILE_MODE]

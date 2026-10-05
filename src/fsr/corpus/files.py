@@ -28,6 +28,9 @@ def digest_file(path: Path) -> str:
     return h.hexdigest()
 
 
+FILE_MODE = 0o644
+
+
 @contextmanager
 def atomic_path(path: Path) -> Generator[Path]:
     """Yield a temporary path, then move it onto the target path.
@@ -45,6 +48,7 @@ def atomic_path(path: Path) -> Generator[Path]:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
     os.close(fd)
+    os.chmod(tmp_name, FILE_MODE)
     tmp = Path(tmp_name)
     try:
         yield tmp
