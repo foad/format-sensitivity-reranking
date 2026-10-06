@@ -1,0 +1,31 @@
+
+======================================================================
+FEATURES  mxbai-v1  split=train   2026-10-06 20:25:20
+======================================================================
+  identifier:  mixedbread-ai/mxbai-rerank-base-v1
+  device:      cuda
+  batch:       64
+  output:      data/nq/h2/head_probe/train_features_mxbai_v1.npy
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (963 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (928 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1154 > 1024). Running this sequence through the model will result in indexing errors
+
+6,131 records kept, 449 dropped
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 4725.16it/s]
+
+Scoring yaml...
+
+Scoring json...
+
+Scoring toml...
+
+Scoring inline_kv...
+
+Scoring markdown...
+  feature capture in 2:01:39
+
+Saved mxbai_v1 train results -> data/nq/h2/head_probe/train_features_mxbai_v1.npy  (1506.8 MB)
