@@ -15,6 +15,8 @@ from fsr.comparison import (
     answer_subsets,
     answerable_pool,
     leads_per_format,
+    max_abs_d_over_pairs,
+    pair_subsets,
 )
 from fsr.formats import FORMAT_NAMES
 from fsr.h2_layout import (
@@ -151,6 +153,37 @@ def selection_table(data_root: Path, slugs: Sequence[str]) -> pd.DataFrame:
     return _frame(rows)
 
 
+def weight_frame(data_root: Path, model: str) -> pd.DataFrame:
+    """Tabulate one model's weight sweep, with intervals and the tied group.
+
+    Args:
+        data_root: The corpus directory.
+        model: The registry slug.
+
+    Returns:
+        One row per weight in ascending order, holding the dev maximum
+        absolute Cohen's d, its interval, whether the weight is in the tied
+        group, and whether the selection chose it. A missing interval is NaN.
+    """
+    selection = load_selection(data_root, model)
+    tied = {float(value) for value in selection.get("tied_lambdas", [])}
+    winner = float(selection["winner_lambda"])
+    rows = []
+    for candidate in sorted(selection["candidates"], key=lambda c: float(c["lambda"])):
+        value = float(candidate["lambda"])
+        rows.append(
+            {
+                "weight": candidate["lambda"],
+                "max_abs_d": candidate["dev_max_abs_d"],
+                "ci_lo": candidate.get("dev_max_abs_d_ci_lo", float("nan")),
+                "ci_hi": candidate.get("dev_max_abs_d_ci_hi", float("nan")),
+                "tied": value in tied,
+                "winner": value == winner,
+            }
+        )
+    return pd.DataFrame(rows).set_index("weight")
+
+
 def selection_counts(data_root: Path, slugs: Sequence[str]) -> dict[str, Any]:
     """Count the candidates that pass the ranking guardrail.
 
@@ -223,8 +256,109 @@ def baseline_max_d(data_root: Path, model: str) -> float:
     return comparison["score_axis"]["point_estimates_max_d"]["all_formats"]["baseline"]
 
 
+def load_scores(data_root: Path, model: str, arm_name: str) -> dict[str, np.ndarray]:
+    """Load the per-record score of each format, from one score-axis evaluation.
+
+    Args:
+        data_root: The corpus directory.
+        model: The registry slug.
+        arm_name: The trained condition, or BASE_ARM for the untrained model.
+
+    Returns:
+        One array per format, one entry per record.
+    """
+    path = result_path(data_root, SPLIT, "cross", model, arm_name)
+    stored = json.loads(path.read_text())["scores_per_fmt"]
+    return {name: np.asarray(stored[name], dtype=float) for name in FORMAT_NAMES}
+
+
+def fold_scores(
+    data_root: Path, model: str, weight: float
+) -> list[tuple[dict[str, np.ndarray], list[tuple[str, str]]]]:
+    """Load the scores and the format pairs of every fold of one arm.
+
+    Args:
+        data_root: The corpus directory.
+        model: The registry slug.
+        weight: The weight of the invariance term.
+
+    Returns:
+        The scores and the pair split of each held-out format.
+    """
+    return [
+        (load_scores(data_root, model, arm(fold, weight)), pair_subsets(fold))
+        for fold in FORMAT_NAMES
+    ]
+
+
+def mean_max_d(
+    folds: Sequence[tuple[dict[str, np.ndarray], dict[str, list[tuple[str, str]]]]],
+    subset: str,
+    index: np.ndarray | None = None,
+) -> float:
+    """Average the largest absolute effect size over the folds of one arm.
+
+    Args:
+        folds: The scores and the pair split of each fold.
+        subset: The format pairs to measure, one of the comparison subsets.
+        index: The resample to apply, or None to take every record once.
+
+    Returns:
+        The mean over the folds.
+    """
+    return float(
+        np.mean(
+            [
+                max_abs_d_over_pairs(scores, pairs[subset], index)[0]
+                for scores, pairs in folds
+            ]
+        )
+    )
+
+
+def bootstrap_delta_max_d(
+    control: Sequence[tuple[dict[str, np.ndarray], dict[str, list[tuple[str, str]]]]],
+    treatment: Sequence[tuple[dict[str, np.ndarray], dict[str, list[tuple[str, str]]]]],
+    subset: str = OOD,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    ci: float = DEFAULT_CI,
+) -> tuple[float, float]:
+    """Bound the change in the score axis by resampling the records.
+
+    One resample is applied to both arms and to every fold, so the interval is
+    paired.
+
+    Args:
+        control: The folds of the control arm.
+        treatment: The folds of the treatment arm.
+        subset: The format pairs to measure, one of the comparison subsets.
+        n_boot: The number of replicates.
+        seed: The seed for the resample.
+        ci: The interval width.
+
+    Returns:
+        The lower bound and the upper bound.
+    """
+    rng = np.random.default_rng(seed)
+    size = len(next(iter(control[0][0].values())))
+    deltas = np.empty(n_boot)
+    for i in range(n_boot):
+        index = rng.integers(0, size, size)
+        deltas[i] = mean_max_d(treatment, subset, index) - mean_max_d(
+            control, subset, index
+        )
+    tail = (1.0 - ci) / 2.0 * 100.0
+    return float(np.percentile(deltas, tail)), float(np.percentile(deltas, 100 - tail))
+
+
 def score_table(
-    data_root: Path, slugs: Sequence[str], subset: str = OOD
+    data_root: Path,
+    slugs: Sequence[str],
+    subset: str = OOD,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    ci: float = DEFAULT_CI,
 ) -> pd.DataFrame:
     """Summarise the score axis of every model.
 
@@ -232,11 +366,15 @@ def score_table(
         data_root: The corpus directory.
         slugs: The registry slugs to report.
         subset: The format pairs to report, one of the comparison subsets.
+        n_boot: The number of replicates.
+        seed: The seed for the resample.
+        ci: The interval width.
 
     Returns:
         The untrained maximum absolute Cohen's d, the fold mean of the control
-        and of the treatment, the change, the change as a share of the
-        control, the folds that improved, and the mean ranking quality.
+        and of the treatment, the change, its interval, whether the interval
+        excludes zero, the change as a share of the control, the folds that
+        improved, and the mean ranking quality.
     """
     rows = {}
     for slug in slugs:
@@ -245,12 +383,23 @@ def score_table(
         treated = fold_max_d(data_root, slug, weight, subset)
         deltas = np.array([treated[f] - control[f] for f in FORMAT_NAMES])
         control_mean = float(np.mean(list(control.values())))
+        low, high = bootstrap_delta_max_d(
+            fold_scores(data_root, slug, CONTROL_WEIGHT),
+            fold_scores(data_root, slug, weight),
+            subset=subset,
+            n_boot=n_boot,
+            seed=seed,
+            ci=ci,
+        )
         rows[slug] = {
             "weight": weight,
             "baseline_max_d": baseline_max_d(data_root, slug),
             "control_max_d": control_mean,
             "trained_max_d": float(np.mean(list(treated.values()))),
             "delta": float(deltas.mean()),
+            "ci_lo": low,
+            "ci_hi": high,
+            "excludes_zero": bool(high < 0 or low > 0),
             "delta_pct": 100.0 * float(deltas.mean()) / control_mean,
             "folds_improved": int((deltas < 0).sum()),
             "mean_mrr": float(

@@ -8,12 +8,14 @@ import numpy as np
 import pytest
 
 from fsr import h2_results as mod
+from fsr.comparison import max_abs_d_over_pairs, pair_subsets
 from fsr.formats import FORMAT_NAMES
 from fsr.h2_layout import arm, comparison_path, result_path, selection_path
 from fsr.models.registry import by_slug
 
 SLUGS = ["minilm_l6", "bge_base"]
 N_QUERIES = 8
+BOOT = 60
 
 
 def selection(winner="1", baseline=0.9, tie_broken=True, passes=5):
@@ -23,10 +25,13 @@ def selection(winner="1", baseline=0.9, tie_broken=True, passes=5):
         "winner_lambda": winner,
         "tie_broken": tie_broken,
         "baseline_max_abs_d": baseline,
+        "tied_lambdas": ["0.1", "1", "10"],
         "candidates": [
             {
                 "lambda": w,
                 "dev_max_abs_d": 0.5 - i / 20,
+                "dev_max_abs_d_ci_lo": 0.5 - i / 20 - 0.05,
+                "dev_max_abs_d_ci_hi": 0.5 - i / 20 + 0.05,
                 "dev_mean_mrr": 0.9,
                 "mrr_ni_pass": i < passes,
             }
@@ -35,15 +40,24 @@ def selection(winner="1", baseline=0.9, tie_broken=True, passes=5):
     }
 
 
-def comparison(held_out, trained_ood=0.2, trained_mrr=0.95, baseline_all=0.8):
+SUBSETS = ("all_formats", "in_training", "ood")
+BASELINE_MAX_D = {"all_formats": 0.8, "in_training": 0.7, "ood": 0.6}
+
+
+def comparison(held_out, spread, trained_mrr=0.95):
+    """Build a comparison whose point estimates come from the same scores."""
+    arrays = {name: np.asarray(v) for name, v in scores(spread).items()}
+    pairs = pair_subsets(held_out)
     return {
         "held_out_format": held_out,
         "split": "test",
         "score_axis": {
             "point_estimates_max_d": {
-                "all_formats": {"baseline": baseline_all, "trained": trained_ood},
-                "in_training": {"baseline": 0.7, "trained": trained_ood / 2},
-                "ood": {"baseline": 0.6, "trained": trained_ood},
+                name: {
+                    "baseline": BASELINE_MAX_D[name],
+                    "trained": max_abs_d_over_pairs(arrays, pairs[name])[0],
+                }
+                for name in SUBSETS
             },
             "mrr_non_inferiority": {
                 "margin": 0.03,
@@ -100,6 +114,24 @@ def write_within(root, slug, arm_name, lead_map):
     path.write_text(json.dumps(payload))
 
 
+N_RECORDS = 60
+
+
+def scores(spread):
+    """Separate the formats by `spread` standard deviations, reproducibly."""
+    rng = np.random.default_rng(11)
+    noise = rng.normal(size=(len(FORMAT_NAMES), N_RECORDS))
+    return {
+        name: (noise[i] + i * spread).tolist() for i, name in enumerate(FORMAT_NAMES)
+    }
+
+
+def write_cross(root, slug, arm_name, spread):
+    path = result_path(root, "test", "cross", slug, arm_name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"scores_per_fmt": scores(spread)}))
+
+
 @pytest.fixture
 def root(tmp_path):
     """Write a complete two-model result set and return the corpus directory."""
@@ -108,16 +140,17 @@ def root(tmp_path):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(selection()))
         write_within(tmp_path, slug, "base", BASE_LEADS)
-        for weight, trained, lead_map in (
-            (0.0, 0.5, CONTROL_LEADS),
-            (1.0, 0.2, TREATED_LEADS),
+        for weight, lead_map, spread in (
+            (0.0, CONTROL_LEADS, 1.0),
+            (1.0, TREATED_LEADS, 0.1),
         ):
             for fold in FORMAT_NAMES:
                 name = arm(fold, weight)
                 out = comparison_path(tmp_path, slug, name)
                 out.parent.mkdir(parents=True, exist_ok=True)
-                out.write_text(json.dumps(comparison(fold, trained_ood=trained)))
+                out.write_text(json.dumps(comparison(fold, spread)))
                 write_within(tmp_path, slug, name, lead_map)
+                write_cross(tmp_path, slug, name, spread)
     return tmp_path
 
 
@@ -191,11 +224,17 @@ class TestFoldReaders:
     def test_fold_max_d_covers_every_format(self, root):
         values = mod.fold_max_d(root, "bge_base", 1.0)
         assert set(values) == set(FORMAT_NAMES)
-        assert set(values.values()) == {0.2}
+        assert all(v > 0 for v in values.values())
 
     def test_fold_max_d_honours_the_subset(self, root):
-        values = mod.fold_max_d(root, "bge_base", 1.0, subset="in_training")
-        assert set(values.values()) == {0.1}
+        held_out = mod.fold_max_d(root, "bge_base", 1.0)
+        trained = mod.fold_max_d(root, "bge_base", 1.0, subset="in_training")
+        assert held_out != trained
+
+    def test_fold_max_d_matches_the_scores_it_was_built_from(self, root):
+        from_file = np.mean(list(mod.fold_max_d(root, "bge_base", 1.0).values()))
+        recomputed = mod.mean_max_d(mod.fold_scores(root, "bge_base", 1.0), "ood")
+        assert from_file == pytest.approx(recomputed)
 
     def test_fold_mean_mrr_reads_the_trained_arm(self, root):
         assert set(mod.fold_mean_mrr(root, "bge_base", 1.0).values()) == {0.95}
@@ -206,19 +245,20 @@ class TestFoldReaders:
 
 class TestScoreTable:
     def test_delta_is_treatment_against_control(self, root):
-        table = mod.score_table(root, SLUGS)
-        assert table["delta"].unique().tolist() == [pytest.approx(-0.3)]
+        table = mod.score_table(root, SLUGS, n_boot=BOOT)
+        assert (table["delta"] < 0).all()
 
     def test_counts_the_folds_that_improved(self, root):
-        table = mod.score_table(root, SLUGS)
+        table = mod.score_table(root, SLUGS, n_boot=BOOT)
         assert table["folds_improved"].unique().tolist() == [len(FORMAT_NAMES)]
 
     def test_relative_change_is_a_share_of_the_control(self, root):
-        table = mod.score_table(root, SLUGS)
-        assert table["delta_pct"].iloc[0] == pytest.approx(-60.0)
+        table = mod.score_table(root, SLUGS, n_boot=BOOT)
+        expected = 100.0 * table["delta"] / table["control_max_d"]
+        assert table["delta_pct"].tolist() == pytest.approx(expected.tolist())
 
     def test_carries_the_untrained_baseline(self, root):
-        table = mod.score_table(root, SLUGS)
+        table = mod.score_table(root, SLUGS, n_boot=BOOT)
         assert table["baseline_max_d"].iloc[0] == 0.8
 
 
@@ -291,7 +331,7 @@ class TestPerFoldMatrix:
     def test_score_axis_has_one_column_per_fold(self, root):
         matrix = mod.per_fold_matrix(root, SLUGS, "score")
         assert list(matrix.columns) == list(FORMAT_NAMES)
-        assert np.allclose(matrix.to_numpy(), -0.3)
+        assert (matrix.to_numpy() < 0).all()
 
     def test_answer_axis_reports_percentage_points(self, root):
         matrix = mod.per_fold_matrix(root, SLUGS, "answer")
@@ -305,7 +345,7 @@ class TestPerFoldMatrix:
 
 class TestBothAxes:
     def test_joins_on_the_model_label(self, root):
-        score = mod.score_table(root, SLUGS)
+        score = mod.score_table(root, SLUGS, n_boot=BOOT)
         answer = mod.answer_table(root, SLUGS, n_boot=50)
         joined = mod.both_axes(score, answer)
         assert list(joined.columns) == ["score_delta", "delta_pp", "ci_lo", "ci_hi"]
@@ -333,9 +373,109 @@ class TestRoster:
         path.write_text(json.dumps(selection()))
         write_within(tmp_path, slug, "base", BASE_LEADS)
         for fold in FORMAT_NAMES:
-            for weight, lead_map in ((0.0, CONTROL_LEADS), (1.0, TREATED_LEADS)):
+            for weight, lead_map, spread in (
+                (0.0, CONTROL_LEADS, 1.0),
+                (1.0, TREATED_LEADS, 0.1),
+            ):
                 name = arm(fold, weight)
                 out = comparison_path(tmp_path, slug, name)
-                out.write_text(json.dumps(comparison(fold)))
+                out.write_text(json.dumps(comparison(fold, spread)))
                 write_within(tmp_path, slug, name, lead_map)
+                write_cross(tmp_path, slug, name, spread)
         assert slug not in mod.available(root)
+
+
+class TestLoadScores:
+    def test_reads_one_array_per_format(self, root):
+        got = mod.load_scores(root, "bge_base", arm("yaml", 1.0))
+        assert set(got) == set(FORMAT_NAMES)
+        assert all(len(v) == N_RECORDS for v in got.values())
+
+    def test_fold_scores_covers_every_fold(self, root):
+        folds = mod.fold_scores(root, "bge_base", 1.0)
+        assert len(folds) == len(FORMAT_NAMES)
+        held_out = [set(pairs["ood"][0]) for _, pairs in folds]
+        assert all(FORMAT_NAMES[i] in h for i, h in enumerate(held_out))
+
+
+class TestMeanMaxD:
+    def test_a_wider_spread_gives_a_larger_effect(self, root):
+        control = mod.fold_scores(root, "bge_base", 0.0)
+        treated = mod.fold_scores(root, "bge_base", 1.0)
+        assert mod.mean_max_d(control, "ood") > mod.mean_max_d(treated, "ood")
+
+    def test_a_resample_changes_the_value(self, root):
+        folds = mod.fold_scores(root, "bge_base", 0.0)
+        index = np.zeros(N_RECORDS, dtype=int)
+        assert mod.mean_max_d(folds, "ood", index) != mod.mean_max_d(folds, "ood")
+
+
+class TestBootstrapDeltaMaxD:
+    def test_brackets_a_real_reduction(self, root):
+        control = mod.fold_scores(root, "bge_base", 0.0)
+        treated = mod.fold_scores(root, "bge_base", 1.0)
+        low, high = mod.bootstrap_delta_max_d(control, treated, n_boot=BOOT)
+        assert low <= high
+        assert high < 0.0
+
+    def test_is_reproducible_for_one_seed(self, root):
+        control = mod.fold_scores(root, "bge_base", 0.0)
+        treated = mod.fold_scores(root, "bge_base", 1.0)
+        first = mod.bootstrap_delta_max_d(control, treated, n_boot=BOOT, seed=5)
+        second = mod.bootstrap_delta_max_d(control, treated, n_boot=BOOT, seed=5)
+        assert first == second
+
+    def test_honours_the_subset(self, root):
+        control = mod.fold_scores(root, "bge_base", 0.0)
+        treated = mod.fold_scores(root, "bge_base", 1.0)
+        held_out = mod.bootstrap_delta_max_d(control, treated, n_boot=BOOT)
+        trained = mod.bootstrap_delta_max_d(
+            control, treated, subset="in_training", n_boot=BOOT
+        )
+        assert held_out != trained
+
+
+class TestScoreTableIntervals:
+    def test_carries_an_interval_around_the_change(self, root):
+        table = mod.score_table(root, SLUGS, n_boot=BOOT)
+        assert (table["ci_lo"] <= table["delta"]).all()
+        assert (table["delta"] <= table["ci_hi"]).all()
+
+    def test_flags_an_interval_that_excludes_zero(self, root):
+        table = mod.score_table(root, SLUGS, n_boot=BOOT)
+        assert table["excludes_zero"].all()
+
+
+class TestWeightFrame:
+    def test_is_ordered_by_weight(self, root):
+        frame = mod.weight_frame(root, "bge_base")
+        assert list(frame.index) == ["0", "0.01", "0.1", "1", "10"]
+
+    def test_marks_the_winner_once(self, root):
+        frame = mod.weight_frame(root, "bge_base")
+        assert frame["winner"].sum() == 1
+        assert frame[frame["winner"]].index[0] == "1"
+
+    def test_marks_the_tied_group(self, root):
+        frame = mod.weight_frame(root, "bge_base")
+        assert frame[frame["tied"]].index.tolist() == ["0.1", "1", "10"]
+
+    def test_carries_the_interval(self, root):
+        frame = mod.weight_frame(root, "bge_base")
+        assert (frame["ci_lo"] <= frame["max_abs_d"]).all()
+        assert (frame["max_abs_d"] <= frame["ci_hi"]).all()
+
+    def test_a_missing_interval_is_nan(self, root):
+        payload = selection()
+        for candidate in payload["candidates"]:
+            del candidate["dev_max_abs_d_ci_lo"]
+            del candidate["dev_max_abs_d_ci_hi"]
+        selection_path(root, "bge_base", "lambda").write_text(json.dumps(payload))
+        frame = mod.weight_frame(root, "bge_base")
+        assert frame["ci_lo"].isna().all()
+
+    def test_no_tied_group_marks_nothing(self, root):
+        payload = selection()
+        del payload["tied_lambdas"]
+        selection_path(root, "bge_base", "lambda").write_text(json.dumps(payload))
+        assert not mod.weight_frame(root, "bge_base")["tied"].any()
