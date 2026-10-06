@@ -16,6 +16,9 @@ from fsr.h2_layout import (
     adapter_dir,
     arm,
     comparison_path,
+    feature_meta_path,
+    feature_path,
+    feature_score_path,
     format_lambda,
     h2_dir,
     result_path,
@@ -193,3 +196,23 @@ class TestAdapterConfigPath:
         assert adapter_config_path(ROOT, "m", "yaml_lam0") != adapter_config_path(
             ROOT, "m", "json_lam0"
         )
+
+
+class TestProbePaths:
+    def test_names_the_feature_cache(self, tmp_path):
+        path = feature_path(tmp_path, "train", "minilm_l6")
+        assert path.name == "train_features_minilm_l6.npy"
+        assert path.parent.name == "probe"
+
+    def test_puts_the_scores_beside_the_features(self, tmp_path):
+        path = feature_score_path(tmp_path, "dev", "minilm_l6")
+        assert path.name == "dev_scores_minilm_l6.npy"
+        assert path.parent == feature_path(tmp_path, "dev", "minilm_l6").parent
+
+    def test_puts_the_description_beside_the_features(self, tmp_path):
+        path = feature_meta_path(tmp_path, "dev", "minilm_l6")
+        assert path.name == "dev_features_minilm_l6.json"
+
+    def test_refuses_a_split_the_probe_does_not_cover(self, tmp_path):
+        with pytest.raises(ValueError, match="unknown probe split"):
+            feature_path(tmp_path, "test", "minilm_l6")

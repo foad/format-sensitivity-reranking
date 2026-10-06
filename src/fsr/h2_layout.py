@@ -8,12 +8,14 @@ H2_SUBDIR = "h2"
 TRAIN_SUBDIR = "train"
 SELECTION_SUBDIR = "selection"
 COMPARISON_SUBDIR = "comparison"
+PROBE_SUBDIR = "probe"
 ADAPTER_NAME = "adapter"
 ADAPTER_CONFIG_NAME = "adapter_config.json"
 
 BASE_ARM = "base"
 PHASE1_FOLD = "5fmt"
 SPLITS = ("dev", "test", "prose")
+PROBE_SPLITS = ("train", "dev")
 AXES = ("cross", "within", "mrr")
 SWEEPS = ("lambda", "rank")
 
@@ -150,3 +152,59 @@ def adapter_config_path(data_root: Path, model: str, arm_name: str) -> Path:
         The configuration file inside the adapter directory.
     """
     return adapter_dir(data_root, model, arm_name) / ADAPTER_CONFIG_NAME
+
+
+def probe_dir(data_root: Path) -> Path:
+    """Return the directory that holds the head-probe artefacts."""
+    return h2_dir(data_root) / PROBE_SUBDIR
+
+
+def feature_path(data_root: Path, split: str, model: str) -> Path:
+    """Return the file holding the cached representations of one model.
+
+    Args:
+        data_root: The corpus directory.
+        split: The split the representations cover.
+        model: The registry slug.
+
+    Returns:
+        The file.
+
+    Raises:
+        ValueError: If the split is not one the probe covers.
+    """
+    if split not in PROBE_SPLITS:
+        raise ValueError(
+            f"unknown probe split {split!r}, expected one of: {PROBE_SPLITS}"
+        )
+    return probe_dir(data_root) / f"{split}_features_{model}.npy"
+
+
+def feature_score_path(data_root: Path, split: str, model: str) -> Path:
+    """Return the file holding the score of every cached representation.
+
+    Args:
+        data_root: The corpus directory.
+        split: The split the scores cover.
+        model: The registry slug.
+
+    Returns:
+        The file.
+    """
+    return feature_path(data_root, split, model).with_name(
+        f"{split}_scores_{model}.npy"
+    )
+
+
+def feature_meta_path(data_root: Path, split: str, model: str) -> Path:
+    """Return the file describing one model's cached representations.
+
+    Args:
+        data_root: The corpus directory.
+        split: The split the representations cover.
+        model: The registry slug.
+
+    Returns:
+        The file.
+    """
+    return feature_path(data_root, split, model).with_suffix(".json")
