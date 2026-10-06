@@ -208,3 +208,16 @@ def feature_meta_path(data_root: Path, split: str, model: str) -> Path:
         The file.
     """
     return feature_path(data_root, split, model).with_suffix(".json")
+
+
+def frontier_path(data_root: Path, model: str) -> Path:
+    """Return the file holding one model's head-probe frontier.
+
+    Args:
+        data_root: The corpus directory.
+        model: The registry slug.
+
+    Returns:
+        The file.
+    """
+    return head_probe_dir(data_root) / f"frontier_{model}.json"
