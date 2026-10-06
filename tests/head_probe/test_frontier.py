@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 import torch
 import torch.nn as nn
 
@@ -134,3 +135,25 @@ class TestFrontierPoint:
         point = frontier_point(SumHead(), flat, FORMATS, 3)
         assert point["max_abs_cohen_d"] == 0.0
         assert len(set(point["mrr_per_format"].values())) == 1
+
+
+class TestCollapseGuard:
+    def test_refuses_a_head_that_gives_every_record_one_score(self):
+        """A collapsed head scores max|d| 0 and MRR 1, the dominating corner."""
+
+        class Constant(nn.Module):
+            def forward(self, features):
+                return torch.ones((*features.shape[:-1], 1))
+
+        with pytest.raises(ValueError, match="same score"):
+            frontier_point(Constant(), store(), FORMATS, 3)
+
+    def test_allows_a_head_whose_scores_still_vary(self):
+        point = frontier_point(SumHead(), store(), FORMATS, 3)
+        assert point["mean_mrr"] > 0.0
+
+
+class TestDevice:
+    def test_scores_on_the_device_it_is_given(self):
+        point = frontier_point(SumHead(), store(), FORMATS, 3, device="cpu")
+        assert point["n_records"] == N

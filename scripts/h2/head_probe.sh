@@ -11,9 +11,10 @@
 #   FSR_RUNNER   runner to source (default scripts/runners/local.sh)
 #   DATA_ROOT    corpus directory (default data/nq)
 #   NEGATIVES    negatives cached per record (default the script default)
-#   EVAL_BATCH   pairs scored at once
+#   EVAL_BATCH   pairs scored at once by the capture
+#   DEVICE       device the fit runs on
 #   LIMIT        cap on records, for a smoke pass
-#   FORCE        1 to rebuild a cache that is present
+#   FORCE        1 to rebuild an artefact that is present
 
 set -euo pipefail
 
@@ -52,6 +53,7 @@ FIT_ARGS=()
 [ -n "${LAMBDAS:-}" ] && FIT_ARGS+=(--lambdas ${LAMBDAS})
 [ -n "${SEEDS:-}" ] && FIT_ARGS+=(--seeds ${SEEDS})
 [ -n "${MAX_STEPS:-}" ] && FIT_ARGS+=(--max-steps "$MAX_STEPS")
+[ -n "${DEVICE:-}" ] && FIT_ARGS+=(--device "$DEVICE")
 [ "${FORCE:-0}" = "1" ] && FIT_ARGS+=(--force)
 
 wanted() { case ",${STAGES}," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
@@ -69,26 +71,13 @@ stage() {
 
 tag() { set -- $1; echo "capture_${1}_${2}"; }
 
-job_name() { tag "$1"; }
-job_log() { echo "$OUT_DIR/$(tag "$1").log"; }
-job_progress() { echo "$OUT_DIR/$(tag "$1").progress"; }
-job_output() {
-    set -- $1
-    echo "$DATA_ROOT/h2/head_probe/${2}_features_${1}.npy"
-}
-job_command() {
-    set -- $1
-    JOB_CMD=(scripts/h2/capture_features.py --model "$1" --split "$2"
-             "${ARGS[@]}" --progress-file "$(job_progress "$1 $2")")
-}
-
 capture_features() {
     job_name() { tag "$1"; }
     job_log() { echo "$OUT_DIR/$(tag "$1").log"; }
     job_progress() { echo "$OUT_DIR/$(tag "$1").progress"; }
     job_output() {
         set -- $1
-        echo "$OUT_DIR/${2}_features_${1}.npy"
+        echo "$OUT_DIR/${2}_features_${1}.json"
     }
     job_command() {
         set -- $1

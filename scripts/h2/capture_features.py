@@ -140,7 +140,7 @@ def main() -> None:
     score_path = feature_score_path(args.data_root, args.split, entry.slug)
     meta_path = feature_meta_path(args.data_root, args.split, entry.slug)
 
-    if out_path.exists() and not args.force:
+    if meta_path.exists() and not args.force:
         print(f"Skipping {entry.slug} {args.split}: {out_path} is present.")
         return
 

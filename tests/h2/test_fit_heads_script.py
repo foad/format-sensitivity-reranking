@@ -19,7 +19,7 @@ from fsr.head_probe.heads import HEAD_NAMES, LINEAR, TANH
 from fsr.reporting import parse_progress
 
 SLUG = "minilm_l6"
-N, C, D = 24, 5, 4
+N, C, D = 24, 17, 4
 
 
 def write_cache(root, split, seed):
@@ -67,6 +67,8 @@ def run(monkeypatch, data_root, *extra):
             "8",
             "--neg-k",
             "2",
+            "--mrr-neg-k",
+            "3",
             *extra,
         ],
     )
@@ -157,13 +159,99 @@ class TestFailures:
         assert len(payload["points"]) == 1
 
     def test_the_failure_names_the_point(self, monkeypatch, data_root):
+        calls = {"n": 0}
+        original = mod.train_head
+
+        def flaky(*args, **kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise RuntimeError("one bad fit")
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(mod, "train_head", flaky)
+        run(
+            monkeypatch,
+            data_root,
+            "--heads",
+            LINEAR,
+            "--lambdas",
+            "1",
+            "--seeds",
+            "0",
+            "1",
+        )
+        assert frontier(data_root)["failures"][0]["point"] == "linear/lam1/seed0"
+
+    def test_a_sweep_with_no_surviving_point_refuses_to_write(
+        self, monkeypatch, data_root
+    ):
+        """An empty frontier would look finished and block every later run."""
         monkeypatch.setattr(
             mod,
             "train_head",
-            lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("x")),
+            lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("every one")),
         )
-        run(monkeypatch, data_root, "--heads", LINEAR, "--lambdas", "1", "--seeds", "0")
-        assert frontier(data_root)["failures"][0]["point"] == "linear/lam1/seed0"
+        with pytest.raises(SystemExit, match="every one of the"):
+            run(
+                monkeypatch,
+                data_root,
+                "--heads",
+                LINEAR,
+                "--lambdas",
+                "0",
+                "--seeds",
+                "0",
+            )
+        assert not frontier_path(data_root, SLUG).exists()
+
+
+class TestNegativeCounts:
+    def test_measures_against_more_negatives_than_it_fits_on(
+        self, monkeypatch, data_root
+    ):
+        """The guardrail pool is the study's 15, not the training 7."""
+        run(monkeypatch, data_root, "--heads", LINEAR, "--lambdas", "0", "--seeds", "0")
+        payload = frontier(data_root)
+        assert payload["neg_k"] == 2
+        assert payload["mrr_neg_k"] == 3
+
+    def test_refuses_a_cache_too_small_to_measure(self, monkeypatch, data_root):
+        with pytest.raises(SystemExit, match="negatives"):
+            run(
+                monkeypatch,
+                data_root,
+                "--heads",
+                LINEAR,
+                "--lambdas",
+                "0",
+                "--seeds",
+                "0",
+                "--mrr-neg-k",
+                "99",
+            )
+
+    def test_refuses_a_cache_too_small_to_fit(self, monkeypatch, data_root):
+        with pytest.raises(SystemExit, match="negatives"):
+            run(
+                monkeypatch,
+                data_root,
+                "--heads",
+                LINEAR,
+                "--lambdas",
+                "0",
+                "--seeds",
+                "0",
+                "--neg-k",
+                "99",
+            )
+
+    def test_records_the_sweep_it_covered(self, monkeypatch, data_root):
+        """A frontier keyed by model only must say which arms it holds."""
+        run(monkeypatch, data_root, "--heads", LINEAR, "--lambdas", "0", "--seeds", "0")
+        payload = frontier(data_root)
+        assert payload["heads"] == [LINEAR]
+        assert payload["lambdas"] == [0.0]
+        assert payload["seeds"] == [0]
 
 
 class TestProgress:

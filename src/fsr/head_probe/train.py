@@ -103,6 +103,7 @@ def train_head(
     store: FeatureStore,
     config: HeadProbeConfig,
     formats: Sequence[str],
+    device: str = "cpu",
     on_step: Callable[[int], None] | None = None,
 ) -> HeadProbeResult:
     """Fit one head to the cached representations of one model.
@@ -112,6 +113,7 @@ def train_head(
         store: The cached representations.
         config: The settings of the fit.
         formats: The formats the invariance term spans.
+        device: The device to fit on.
         on_step: Called with the step number after each step.
 
     Returns:
@@ -126,6 +128,7 @@ def train_head(
             f"a batch of {config.batch_size} was asked for"
         )
     torch.manual_seed(config.seed)
+    head.to(device)
     optimizer = torch.optim.AdamW(
         head.parameters(), lr=config.lr, weight_decay=config.weight_decay
     )
@@ -142,7 +145,7 @@ def train_head(
     loss = rank = inv = torch.zeros(())
     for step in range(1, config.max_steps + 1):
         gold, negatives = store.batch(
-            order[step - 1].tolist(), formats, config.n_negatives
+            order[step - 1].tolist(), formats, config.n_negatives, device
         )
         loss, rank, inv = compute_loss(
             score_features(head, gold),

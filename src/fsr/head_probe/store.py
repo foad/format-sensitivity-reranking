@@ -75,6 +75,7 @@ class FeatureStore:
         rows: Sequence[int],
         format_names: Sequence[str],
         n_negatives: int,
+        device: str = "cpu",
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Return the representations of one batch, ready for a head.
 
@@ -82,6 +83,7 @@ class FeatureStore:
             rows: The record rows to take.
             format_names: The formats to take, in the order wanted.
             n_negatives: The negatives to take, counting from the first mined.
+            device: The device to move the batch to.
 
         Returns:
             The gold representations of shape (B, F, D) and the negative
@@ -99,9 +101,9 @@ class FeatureStore:
         taken = np.asarray(self.features[list(rows)])[:, :, columns, :]
         gold = torch.from_numpy(np.ascontiguousarray(taken[:, GOLD_COLUMN]))
         negatives = taken[:, GOLD_COLUMN + 1 : GOLD_COLUMN + 1 + n_negatives]
-        return gold, torch.from_numpy(
+        return gold.to(device), torch.from_numpy(
             np.ascontiguousarray(negatives.transpose(0, 2, 1, 3))
-        )
+        ).to(device)
 
     def gold_scores(self, format_names: Sequence[str]) -> np.ndarray:
         """Return the frozen model's own gold score, per record and format.

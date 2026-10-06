@@ -1,4 +1,4 @@
-"""Measuring one fitted head against both axes of the study."""
+"""Measuring one fitted head on the score axis and the ranking guardrail."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from fsr.head_probe.train import score_features
 from fsr.metrics import format_sensitivity_summary, reciprocal_ranks
 
 EVAL_CHUNK = 256
+MIN_SCORE_SPREAD = 1e-6
 
 
 def score_store(
@@ -21,6 +22,7 @@ def score_store(
     store: FeatureStore,
     formats: Sequence[str],
     n_negatives: int,
+    device: str = "cpu",
     chunk: int = EVAL_CHUNK,
 ) -> tuple[dict[str, list[float]], np.ndarray]:
     """Score every record of a cache with one head.
@@ -30,6 +32,7 @@ def score_store(
         store: The cached representations.
         formats: The formats to score, in the order wanted.
         n_negatives: The negatives taken from each record.
+        device: The device to score on.
         chunk: The records scored at one time.
 
     Returns:
@@ -37,12 +40,13 @@ def score_store(
     """
     gold_rows: list[np.ndarray] = []
     negative_rows: list[np.ndarray] = []
+    head.to(device)
     with torch.no_grad():
         for start in range(0, len(store), chunk):
             rows = range(start, min(start + chunk, len(store)))
-            gold, negatives = store.batch(list(rows), formats, n_negatives)
-            gold_rows.append(score_features(head, gold).numpy())
-            negative_rows.append(score_features(head, negatives).numpy())
+            gold, negatives = store.batch(list(rows), formats, n_negatives, device)
+            gold_rows.append(score_features(head, gold).cpu().numpy())
+            negative_rows.append(score_features(head, negatives).cpu().numpy())
     gold_scores = np.concatenate(gold_rows)
     return (
         {name: gold_scores[:, i].tolist() for i, name in enumerate(formats)},
@@ -77,6 +81,7 @@ def frontier_point(
     formats: Sequence[str],
     n_negatives: int,
     seed: int = 0,
+    device: str = "cpu",
 ) -> dict[str, Any]:
     """Measure one fitted head on the score axis and the ranking guardrail.
 
@@ -86,12 +91,24 @@ def frontier_point(
         formats: The formats to measure across.
         n_negatives: The negatives taken from each record.
         seed: The seed for the rank-stability sample.
+        device: The device to score on.
 
     Returns:
         The sensitivity summary, the mean reciprocal rank of each format, and
         the two headline values.
+
+    Raises:
+        ValueError: If the head gives every record the same score.
     """
-    gold_scores, negative_scores = score_store(head, store, formats, n_negatives)
+    gold_scores, negative_scores = score_store(
+        head, store, formats, n_negatives, device
+    )
+    spread = float(np.std(np.concatenate([gold_scores[f] for f in formats])))
+    if spread < MIN_SCORE_SPREAD:
+        raise ValueError(
+            f"the head gave every record the same score (spread {spread:.2e}); "
+            "a collapsed head scores the best point on both axes"
+        )
     summary = format_sensitivity_summary(gold_scores, seed=seed, formats=formats)
     per_format = mrr_per_format(gold_scores, negative_scores, formats)
     return {
