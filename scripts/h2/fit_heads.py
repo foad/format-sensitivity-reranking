@@ -14,7 +14,13 @@ from fsr.cli import add_data_root_arg, resolve_model
 from fsr.formats import FORMAT_NAMES
 from fsr.h2_layout import frontier_path
 from fsr.head_probe.frontier import frontier_point
-from fsr.head_probe.heads import HEAD_NAMES, build_head, parameter_count
+from fsr.head_probe.heads import (
+    HEAD_NAMES,
+    build_head,
+    is_affine,
+    is_bounded,
+    parameter_count,
+)
 from fsr.head_probe.store import load_store
 from fsr.head_probe.train import (
     DEFAULT_BATCH_SIZE,
@@ -119,6 +125,8 @@ def main() -> None:
                         "lambda_inv": lambda_inv,
                         "seed": seed,
                         "parameters": parameter_count(head),
+                        "affine": is_affine(head_name),
+                        "bounded": is_bounded(head_name),
                         "max_abs_cohen_d": point["max_abs_cohen_d"],
                         "mean_mrr": point["mean_mrr"],
                         "min_mrr": point["min_mrr"],

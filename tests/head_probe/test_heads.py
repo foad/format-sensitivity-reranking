@@ -7,12 +7,14 @@ import torch
 
 from fsr.head_probe.heads import (
     DEEP,
+    GELU,
     HEAD_NAMES,
     LINEAR,
     TANH,
     WIDE_LINEAR,
     build_head,
     is_affine,
+    is_bounded,
     parameter_count,
 )
 
@@ -53,12 +55,14 @@ class TestBuildHead:
             build_head("mystery", DIM)
 
 
+ACTIVATION_ARMS = (WIDE_LINEAR, GELU, TANH)
+
+
 class TestCapacityControl:
-    def test_the_wide_linear_head_matches_the_tanh_head_in_size(self):
-        """The control only works when the only difference is the activation."""
-        wide = parameter_count(build_head(WIDE_LINEAR, DIM))
-        tanh = parameter_count(build_head(TANH, DIM))
-        assert wide == tanh
+    def test_the_activation_arms_are_the_same_size(self):
+        """The contrast is only about activation when nothing else differs."""
+        counts = {parameter_count(build_head(n, DIM)) for n in ACTIVATION_ARMS}
+        assert len(counts) == 1
 
     def test_the_plain_linear_head_is_much_smaller(self):
         assert parameter_count(build_head(LINEAR, DIM)) < parameter_count(
@@ -75,6 +79,7 @@ class TestCapacityControl:
         assert is_affine(WIDE_LINEAR)
 
     def test_the_nonlinear_heads_are_not_affine(self):
+        assert not is_affine(GELU)
         assert not is_affine(TANH)
         assert not is_affine(DEEP)
 
@@ -97,3 +102,34 @@ class TestParameterCount:
         head = build_head(TANH, DIM)
         head[0].weight.requires_grad_(False)
         assert parameter_count(head) < sum(p.numel() for p in head.parameters())
+
+
+class TestBoundedness:
+    def test_only_the_tanh_head_saturates(self):
+        """The hypothesis is about a finite range, not about depth."""
+        assert is_bounded(TANH)
+        assert not is_bounded(GELU)
+        assert not is_bounded(LINEAR)
+        assert not is_bounded(WIDE_LINEAR)
+        assert not is_bounded(DEEP)
+
+    def test_the_tanh_head_keeps_a_large_input_in_range(self):
+        head = build_head(TANH, DIM, seed=0)
+        big = head[1](head[0](torch.full((2, DIM), 50.0)))
+        assert big.abs().max() <= 1.0
+
+    def test_the_gelu_head_passes_a_large_input_through(self):
+        head = build_head(GELU, DIM, seed=0)
+        big = head[1](head[0](torch.full((2, DIM), 50.0)))
+        assert big.abs().max() > 1.0
+
+    def test_refuses_an_unknown_head(self):
+        with pytest.raises(ValueError, match="unknown head"):
+            is_bounded("mystery")
+
+
+class TestArmRoster:
+    def test_covers_both_roster_head_shapes(self):
+        """One arm per roster head shape: GELU for mxbai, tanh for the other five."""
+        assert GELU in HEAD_NAMES
+        assert TANH in HEAD_NAMES

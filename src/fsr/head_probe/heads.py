@@ -1,4 +1,4 @@
-"""The classifier heads the capacity probe compares."""
+"""The classifier heads the probe compares, by activation."""
 
 from __future__ import annotations
 
@@ -7,9 +7,12 @@ import torch.nn as nn
 
 LINEAR = "linear"
 WIDE_LINEAR = "wide_linear"
+GELU = "gelu"
 TANH = "tanh"
 DEEP = "deep"
-HEAD_NAMES = (LINEAR, WIDE_LINEAR, TANH, DEEP)
+HEAD_NAMES = (LINEAR, WIDE_LINEAR, GELU, TANH, DEEP)
+
+BOUNDED = (TANH,)
 
 DEEP_WIDTH_FACTOR = 2
 
@@ -24,8 +27,13 @@ def _wide_linear(dim: int) -> nn.Module:
     return nn.Sequential(nn.Linear(dim, dim), nn.Linear(dim, 1))
 
 
+def _gelu(dim: int) -> nn.Module:
+    """Return the head shape mxbai carries, read from the first token."""
+    return nn.Sequential(nn.Linear(dim, dim), nn.GELU(), nn.Linear(dim, 1))
+
+
 def _tanh(dim: int) -> nn.Module:
-    """Return the head shape jina carries."""
+    """Return the head shape the other five rerankers carry."""
     return nn.Sequential(nn.Linear(dim, dim), nn.Tanh(), nn.Linear(dim, 1))
 
 
@@ -44,6 +52,7 @@ def _deep(dim: int) -> nn.Module:
 BUILDERS = {
     LINEAR: _linear,
     WIDE_LINEAR: _wide_linear,
+    GELU: _gelu,
     TANH: _tanh,
     DEEP: _deep,
 }
@@ -101,3 +110,20 @@ def is_affine(name: str) -> bool:
     if name not in BUILDERS:
         raise ValueError(f"unknown head {name!r}, expected one of: {HEAD_NAMES}")
     return name in (LINEAR, WIDE_LINEAR)
+
+
+def is_bounded(name: str) -> bool:
+    """Report whether a head's activation has a finite range.
+
+    Args:
+        name: The head name.
+
+    Returns:
+        True when the activation saturates.
+
+    Raises:
+        ValueError: If the name is not one the probe compares.
+    """
+    if name not in BUILDERS:
+        raise ValueError(f"unknown head {name!r}, expected one of: {HEAD_NAMES}")
+    return name in BOUNDED
