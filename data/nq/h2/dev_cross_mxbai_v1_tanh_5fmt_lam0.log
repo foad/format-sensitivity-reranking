@@ -1,0 +1,47 @@
+
+======================================================================
+EVAL  mxbai-v1-tanh  split=dev  arm=5fmt_lam0   2026-10-06 01:29:07
+======================================================================
+  identifier:  mixedbread-ai/mxbai-rerank-base-v1
+  adapter:     data/nq/h2/train/mxbai_v1_tanh_5fmt_lam0/adapter
+  batch:       16
+  output:      data/nq/h2/dev_cross_mxbai_v1_tanh_5fmt_lam0.json
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:   2%|▏         | 5/202 [00:00<00:04, 45.02it/s]Loading weights:  62%|██████▏   | 125/202 [00:00<00:00, 661.52it/s]Loading weights:  95%|█████████▌| 192/202 [00:00<00:00, 639.53it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 571.09it/s]
+
+787 records in dev
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (711 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (640 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (776 > 512). Running this sequence through the model will result in indexing errors
+  758 kept, 29 dropped
+
+Scoring the formats...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  mean=+7.310  n=758
+  scored       json  mean=+7.245  n=758
+  scored       toml  mean=+7.236  n=758
+  scored  inline_kv  mean=+7.271  n=758
+  scored   markdown  mean=+7.274  n=758
+
+  max |d|:    0.192
+  mean |d|:   0.086
+  min rho:    0.974
+  max flip:   6.2%
+  max |d| 95% interval: [0.112, 0.312]
+  format scoring in 0:00:53
+
+Scoring the ranking guardrail...
+  MRR       yaml: 0.9516
+  MRR       json: 0.9551
+  MRR       toml: 0.9534
+  MRR  inline_kv: 0.9552
+  MRR   markdown: 0.9530
+
+  mean MRR:   0.9537
+  worst MRR:  0.9516
+  guardrail scoring in 0:16:30
+
+Saved 5fmt_lam0 results -> data/nq/h2/dev_cross_mxbai_v1_tanh_5fmt_lam0.json  (0.1 MB)

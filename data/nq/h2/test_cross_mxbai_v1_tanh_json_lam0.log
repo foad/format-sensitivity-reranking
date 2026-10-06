@@ -1,0 +1,48 @@
+
+======================================================================
+EVAL  mxbai-v1-tanh  split=test  arm=json_lam0   2026-10-06 06:54:06
+======================================================================
+  identifier:  mixedbread-ai/mxbai-rerank-base-v1
+  adapter:     data/nq/h2/train/mxbai_v1_tanh_json_lam0/adapter
+  batch:       16
+  output:      data/nq/h2/test_cross_mxbai_v1_tanh_json_lam0.json
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  21%|██▏       | 43/202 [00:00<00:00, 425.29it/s]Loading weights:  43%|████▎     | 86/202 [00:00<00:00, 352.07it/s]Loading weights:  63%|██████▎   | 127/202 [00:00<00:00, 347.57it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 493.51it/s]
+
+821 records in test
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (578 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (698 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (528 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (558 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1277 > 1024). Running this sequence through the model will result in indexing errors
+  770 kept, 51 dropped
+
+Scoring the formats...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  mean=+7.338  n=770
+  scored       json  mean=+7.230  n=770
+  scored       toml  mean=+7.231  n=770
+  scored  inline_kv  mean=+7.272  n=770
+  scored   markdown  mean=+7.303  n=770
+
+  max |d|:    0.318
+  mean |d|:   0.149
+  min rho:    0.976
+  max flip:   6.0%
+  max |d| 95% interval: [0.252, 0.392]
+  format scoring in 0:00:53
+
+Scoring the ranking guardrail...
+  MRR       yaml: 0.9656
+  MRR       json: 0.9656
+  MRR       toml: 0.9671
+  MRR  inline_kv: 0.9670
+  MRR   markdown: 0.9661
+
+  mean MRR:   0.9663
+  worst MRR:  0.9656
+  guardrail scoring in 0:16:45
+
+Saved json_lam0 results -> data/nq/h2/test_cross_mxbai_v1_tanh_json_lam0.json  (0.1 MB)

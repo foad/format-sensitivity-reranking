@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  mxbai-v1  inline_kv_lam0.1  split=test   2026-10-06 01:11:25
+======================================================================
+records: 770   held out: inline_kv
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.645        0.134    -0.511 in_training
+yaml - toml                   0.651        0.164    -0.486 in_training
+yaml - inline_kv              0.154        0.100    -0.053       ood
+yaml - markdown               0.271        0.004    -0.267 in_training
+json - toml                   0.297        0.023    -0.274 in_training
+json - inline_kv              0.555        0.057    -0.499       ood
+json - markdown               0.553        0.155    -0.398 in_training
+toml - inline_kv              0.598        0.062    -0.536       ood
+toml - markdown               0.167        0.135    -0.033 in_training
+inline_kv - markdown          0.150        0.083    -0.067       ood
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          0.651 (medium)      0.164 (trivial)    -0.486     [-0.572, -0.416]
+in_training          0.651 (medium)      0.164 (trivial)    -0.486     [-0.573, -0.413]
+ood                  0.598 (medium)      0.100 (trivial)    -0.498     [-0.582, -0.378]
+
+In-training thresholds, trained max |d| = 0.164
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -2
+  relative change: -83.3%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9332
+  trained MRR:  0.9684
+  change: +0.0352  [+0.0246, +0.0457]  pass
+
+Transfer to inline_kv
+  MRR: 0.9307 -> 0.9702
+  change: +0.0395  [+0.0285, +0.0506]
+  training formats changed by +0.0341 on average, a ratio of 1.16
+
+Metadata-only records: 228
+  in_training  max |d|: 0.649 (medium) -> 0.169 (trivial)
+  ood          max |d|: 0.404 (small) -> 0.240 (small)
+
+Answer axis, held out inline_kv, 693 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           26 (3.8%)         3 (0.4%)       -23       [-4.76, -2.02]
+in_training           23 (3.3%)         2 (0.3%)       -21       [-4.47, -1.73]
+ood                    3 (0.4%)         1 (0.1%)        -2       [-0.87, +0.29]
+
+Saved inline_kv_lam0.1 results -> data/nq/h2/comparison/mxbai_v1_inline_kv_lam0.1.json  (0.0 MB)

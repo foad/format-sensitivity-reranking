@@ -1,0 +1,33 @@
+
+======================================================================
+SELECT lambda  bge-v2-m3   2026-10-05 21:00:32
+======================================================================
+  baseline:   dev_cross_bge_v2_m3_base.json
+  candidates: 5
+    dev_cross_bge_v2_m3_5fmt_lam0.json
+    dev_cross_bge_v2_m3_5fmt_lam0.01.json
+    dev_cross_bge_v2_m3_5fmt_lam0.1.json
+    dev_cross_bge_v2_m3_5fmt_lam1.json
+    dev_cross_bge_v2_m3_5fmt_lam10.json
+
+baseline mean MRR: 0.9539
+baseline max |d|:  0.4502
+
+lambda      dev max|d|    dev MRR   delta MRR         delta interval  keeps MRR
+----------------------------------------------------------------------------------------------------
+0               0.3621     0.9649     +0.0110     [+0.0045, +0.0179]        yes
+0.01            0.2485     0.9661     +0.0122     [+0.0056, +0.0191]        yes
+0.1             0.1261     0.9666     +0.0127     [+0.0062, +0.0194]        yes
+1               0.0923     0.9663     +0.0124     [+0.0053, +0.0196]        yes
+10              0.0893     0.9654     +0.0116     [+0.0044, +0.0189]        yes
+
+3 candidates tie: both intervals meet the leader's.
+  tied: 0.1, 1, 10
+  the sweep takes 1
+
+Winner: lambda = 1
+  dev max |d|:  0.0923
+  dev mean MRR: 0.9663
+  delta MRR:    +0.0124  [+0.0053, +0.0196]
+
+Saved lambda results -> data/nq/h2/selection/bge_v2_m3_lambda.json  (0.0 MB)

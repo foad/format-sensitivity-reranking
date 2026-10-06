@@ -1,0 +1,33 @@
+
+======================================================================
+SELECT lambda  mxbai-v1-tanh   2026-10-06 02:04:49
+======================================================================
+  baseline:   dev_cross_mxbai_v1_tanh_base.json
+  candidates: 5
+    dev_cross_mxbai_v1_tanh_5fmt_lam0.json
+    dev_cross_mxbai_v1_tanh_5fmt_lam0.01.json
+    dev_cross_mxbai_v1_tanh_5fmt_lam0.1.json
+    dev_cross_mxbai_v1_tanh_5fmt_lam1.json
+    dev_cross_mxbai_v1_tanh_5fmt_lam10.json
+
+baseline mean MRR: 0.8913
+baseline max |d|:  0.4097
+
+lambda      dev max|d|    dev MRR   delta MRR         delta interval  keeps MRR
+----------------------------------------------------------------------------------------------------
+0               0.1925     0.9537     +0.0624     [+0.0481, +0.0772]        yes
+0.01            0.0900     0.9534     +0.0621     [+0.0479, +0.0770]        yes
+0.1             0.0309     0.9538     +0.0625     [+0.0481, +0.0777]        yes
+1               0.0524     0.9524     +0.0611     [+0.0471, +0.0760]        yes
+10              0.0920     0.9493     +0.0580     [+0.0449, +0.0719]        yes
+
+5 candidates tie: both intervals meet the leader's.
+  tied: 0, 0.01, 0.1, 1, 10
+  the sweep takes 0.1
+
+Winner: lambda = 0.1
+  dev max |d|:  0.0309
+  dev mean MRR: 0.9538
+  delta MRR:    +0.0625  [+0.0481, +0.0777]
+
+Saved lambda results -> data/nq/h2/selection/mxbai_v1_tanh_lambda.json  (0.0 MB)

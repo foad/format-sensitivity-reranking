@@ -1,0 +1,46 @@
+
+======================================================================
+EVAL  mxbai-v1  split=dev  arm=base   2026-10-05 17:46:01
+======================================================================
+  identifier:  mixedbread-ai/mxbai-rerank-base-v1
+  adapter:     none, untrained baseline
+  batch:       16
+  output:      data/nq/h2/dev_cross_mxbai_v1_base.json
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:   2%|▏         | 5/202 [00:00<00:04, 40.19it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1337.69it/s]
+
+787 records in dev
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (711 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (640 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (776 > 512). Running this sequence through the model will result in indexing errors
+  758 kept, 29 dropped
+
+Scoring the formats...
+  scored       yaml  mean=+2.577  n=758
+  scored       json  mean=+2.355  n=758
+  scored       toml  mean=+2.416  n=758
+  scored  inline_kv  mean=+2.537  n=758
+  scored   markdown  mean=+2.497  n=758
+
+  max |d|:    0.642
+  mean |d|:   0.373
+  min rho:    0.979
+  max flip:   5.9%
+  max |d| 95% interval: [0.567, 0.734]
+  format scoring in 0:00:44
+
+Scoring the ranking guardrail...
+  MRR       yaml: 0.9262
+  MRR       json: 0.9294
+  MRR       toml: 0.9273
+  MRR  inline_kv: 0.9288
+  MRR   markdown: 0.9274
+
+  mean MRR:   0.9278
+  worst MRR:  0.9262
+  guardrail scoring in 0:14:19
+
+Saved base results -> data/nq/h2/dev_cross_mxbai_v1_base.json  (0.1 MB)

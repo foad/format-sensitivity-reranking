@@ -1,0 +1,46 @@
+
+======================================================================
+EVAL  bge-v2-m3  split=dev  arm=base   2026-10-05 17:47:30
+======================================================================
+  identifier:  BAAI/bge-reranker-v2-m3
+  adapter:     none, untrained baseline
+  batch:       16
+  output:      data/nq/h2/dev_cross_bge_v2_m3_base.json
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 6532.80it/s]
+
+787 records in dev
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (711 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (640 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (776 > 512). Running this sequence through the model will result in indexing errors
+  758 kept, 29 dropped
+
+Scoring the formats...
+  scored       yaml  mean=+4.350  n=758
+  scored       json  mean=+4.655  n=758
+  scored       toml  mean=+4.622  n=758
+  scored  inline_kv  mean=+4.580  n=758
+  scored   markdown  mean=+4.439  n=758
+
+  max |d|:    0.450
+  mean |d|:   0.282
+  min rho:    0.958
+  max flip:   8.7%
+  max |d| 95% interval: [0.409, 0.537]
+  format scoring in 0:01:44
+
+Scoring the ranking guardrail...
+  MRR       yaml: 0.9571
+  MRR       json: 0.9529
+  MRR       toml: 0.9550
+  MRR  inline_kv: 0.9519
+  MRR   markdown: 0.9525
+
+  mean MRR:   0.9539
+  worst MRR:  0.9519
+  guardrail scoring in 0:29:52
+
+Saved base results -> data/nq/h2/dev_cross_bge_v2_m3_base.json  (0.1 MB)
