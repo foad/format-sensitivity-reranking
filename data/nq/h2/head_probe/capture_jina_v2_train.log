@@ -1,0 +1,45 @@
+
+======================================================================
+FEATURES  jina-v2  split=train   2026-10-06 17:42:22
+======================================================================
+  identifier:  jinaai/jina-reranker-v2-base-multilingual
+  device:      cuda
+  batch:       16
+  output:      data/nq/h2/probe/train_features_jina_v2.npy
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (963 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (928 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1154 > 1024). Running this sequence through the model will result in indexing errors
+
+6,131 records kept, 449 dropped
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights:   6%|▌         | 9/153 [00:00<00:02, 64.00it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 1040.60it/s]
+
+Scoring yaml...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+
+Scoring json...
+
+Scoring toml...
+
+Scoring inline_kv...
+
+Scoring markdown...
+  feature capture in 1:22:45
+
+Saved jina_v2 train results -> data/nq/h2/probe/train_features_jina_v2.npy  (1506.8 MB)

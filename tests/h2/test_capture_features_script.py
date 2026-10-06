@@ -197,12 +197,30 @@ class TestRun:
 
 class TestProgress:
     @pytest.mark.usefixtures("fake_model")
-    def test_reports_one_unit_per_format(self, monkeypatch, data_root, tmp_path):
+    def test_counts_the_preparation_and_every_format(
+        self, monkeypatch, data_root, tmp_path
+    ):
         path = tmp_path / "p.progress"
         run(monkeypatch, data_root, "--progress-file", str(path))
         state = parse_progress(path.read_text())
-        assert state["done"] == str(len(FORMAT_NAMES))
-        assert state["total"] == str(len(FORMAT_NAMES))
+        assert state["done"] == str(len(FORMAT_NAMES) + 1)
+        assert state["total"] == str(len(FORMAT_NAMES) + 1)
+
+    def test_writes_the_file_before_the_preparation(
+        self, monkeypatch, data_root, tmp_path
+    ):
+        """A long preparation must not look like a stalled or stale job."""
+        path = tmp_path / "p.progress"
+        seen = {}
+
+        def spy(*_args, **_kwargs):
+            seen["existed"] = path.exists()
+            raise SystemExit("stop here")
+
+        monkeypatch.setattr(mod, "prepare_train_records", spy)
+        with pytest.raises(SystemExit):
+            run(monkeypatch, data_root, "--progress-file", str(path))
+        assert seen["existed"]
 
 
 class TestSkipAndForce:

@@ -154,6 +154,9 @@ def main() -> None:
     print(f"  batch:       {batch_size}")
     print(f"  output:      {out_path}")
 
+    # The counter covers the preparation as well as the five formats.
+    counter = ProgressCounter(len(FORMAT_NAMES) + 1, args.progress_file)
+
     records = load_records(args.data_root, args.split, verbose=False)
     if args.limit:
         records = records[: args.limit]
@@ -168,6 +171,7 @@ def main() -> None:
     print(f"\n{len(prepared):,} records kept, {dropped:,} dropped")
     if not prepared:
         raise SystemExit("no records survived preparation; nothing to cache.")
+    counter.step("prepared")
 
     tokenizer = load_tokenizer(entry.model_id)
     model = load_model(
@@ -175,7 +179,6 @@ def main() -> None:
     )
 
     n_candidates = 1 + args.negatives
-    counter = ProgressCounter(len(FORMAT_NAMES), args.progress_file)
     started = time.time()
     features = None
     scores = np.empty(
