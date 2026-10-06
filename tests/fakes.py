@@ -96,15 +96,30 @@ class HashingPairTokenizer:
         return Encoding(input_ids=torch.tensor(rows, dtype=torch.long))
 
 
+class FakeEncoder(torch.nn.Module):
+    """A stand-in transformer that returns a two-token sequence."""
+
+    def forward(self, input_ids=None, **_kwargs) -> Any:
+        """Return the hidden states, first position first."""
+        scaled = input_ids.to(torch.float32) / 1000.0
+        return (torch.stack([scaled, scaled * 2.0], dim=1),)
+
+
 class ScoringModel(torch.nn.Module):
-    """A differentiable scorer with trainable parameters."""
+    """A differentiable scorer shaped like a sequence classifier."""
 
     def __init__(self, width: int = 4) -> None:
-        """Build the scoring head."""
+        """Build the encoder and the scoring head."""
         super().__init__()
+        self.encoder = FakeEncoder()
         self.classifier = torch.nn.Linear(width, 1)
+
+    @property
+    def base_model(self) -> torch.nn.Module:
+        """Return the encoder below the head."""
+        return self.encoder
 
     def forward(self, input_ids=None, **_kwargs) -> Any:
         """Return one logit per row of the batch."""
-        scaled = input_ids.to(torch.float32) / 1000.0
-        return types.SimpleNamespace(logits=self.classifier(scaled))
+        hidden = self.encoder(input_ids=input_ids)[0]
+        return types.SimpleNamespace(logits=self.classifier(hidden[:, 0]))

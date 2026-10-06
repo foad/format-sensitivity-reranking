@@ -1,4 +1,4 @@
-"""Penultimate representations, captured from the scoring forward pass."""
+"""The encoder representation a head reads, captured from the scoring pass."""
 
 from __future__ import annotations
 
@@ -12,38 +12,33 @@ import torch.nn as nn
 
 from fsr.scoring import MAX_TOKENS, score_batch
 
+CLS_POSITION = 0
 
-def classifier_input_module(model: Any) -> nn.Module:
-    """Return the module whose input is the representation the head consumes.
+
+def encoder_module(model: Any) -> nn.Module:
+    """Return the module whose output holds the representation a head reads.
 
     Args:
         model: The loaded cross-encoder.
 
     Returns:
-        The classifier when it is a single linear layer, otherwise the first
-        linear layer inside it.
+        The base transformer, below every pooling and classification layer.
 
     Raises:
-        RuntimeError: If the model has no classifier, or the classifier holds
-            no linear layer.
+        RuntimeError: If the model exposes no base transformer.
     """
-    if not hasattr(model, "classifier"):
-        raise RuntimeError("model has no `classifier` attribute")
-    classifier = model.classifier
-    if isinstance(classifier, nn.Linear):
-        return classifier
-    for module in classifier.modules():
-        if isinstance(module, nn.Linear):
-            return module
-    raise RuntimeError(
-        f"model.classifier is {type(classifier).__name__} and holds no "
-        "nn.Linear, so the representation it consumes cannot be located"
-    )
+    base = getattr(model, "base_model", None)
+    if base is None or base is model:
+        raise RuntimeError(
+            f"{type(model).__name__} exposes no base transformer, so the "
+            "representation its head reads cannot be located"
+        )
+    return base
 
 
 @contextmanager
-def capture_classifier_input(model: Any) -> Generator[list[torch.Tensor]]:
-    """Collect the representation each forward pass gives to the head.
+def capture_encoder_output(model: Any) -> Generator[list[torch.Tensor]]:
+    """Collect the first-position representation of each forward pass.
 
     Args:
         model: The loaded cross-encoder.
@@ -53,10 +48,11 @@ def capture_classifier_input(model: Any) -> Generator[list[torch.Tensor]]:
     """
     captured: list[torch.Tensor] = []
 
-    def hook(_module: nn.Module, inputs: tuple, _output: Any) -> None:
-        captured.append(inputs[0].detach().float().cpu())
+    def hook(_module: nn.Module, _inputs: tuple, output: Any) -> None:
+        hidden = output[0]
+        captured.append(hidden[:, CLS_POSITION].detach().float().cpu())
 
-    handle = classifier_input_module(model).register_forward_hook(hook)
+    handle = encoder_module(model).register_forward_hook(hook)
     try:
         yield captured
     finally:
@@ -72,7 +68,7 @@ def features_and_scores(
     max_tokens: int = MAX_TOKENS,
     on_batch: Callable[[int], None] | None = None,
 ) -> tuple[np.ndarray, list[float]]:
-    """Score every pair and keep the representation the head consumed.
+    """Score every pair and keep the representation its head read.
 
     Args:
         model: The loaded cross-encoder, in evaluation mode.
@@ -91,14 +87,14 @@ def features_and_scores(
         RuntimeError: If the captured representation is not one vector per
             pair.
     """
-    with capture_classifier_input(model) as captured:
+    with capture_encoder_output(model) as captured:
         scores = score_batch(
             model, tokenizer, pairs, batch_size, device, max_tokens, on_batch
         )
     for batch in captured:
         if batch.ndim != 2:
             raise RuntimeError(
-                f"the head consumed a {batch.ndim}-dimensional tensor, "
+                f"the encoder gave a {batch.ndim}-dimensional representation, "
                 "expected one vector per pair"
             )
     features = torch.cat(captured).numpy() if captured else np.empty((0, 0))

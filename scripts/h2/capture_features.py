@@ -1,7 +1,10 @@
-"""Cache the representation a frozen model's head consumes, per format.
+"""Cache the encoder representation a frozen model's head reads, per format.
 
-Writes `h2/head_probe/{split}_features_{model}.npy`, the matching `_scores_` file,
-and a JSON description.
+Scores the gold passage and its mined negatives in every format, and keeps
+the first-position encoder output for each one. Cuts at the CLS token.
+
+Writes `h2/head_probe/{split}_features_{model}.npy`, the matching `_scores_`
+file, and a JSON description.
 """
 
 from __future__ import annotations
