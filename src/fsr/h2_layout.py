@@ -8,14 +8,14 @@ H2_SUBDIR = "h2"
 TRAIN_SUBDIR = "train"
 SELECTION_SUBDIR = "selection"
 COMPARISON_SUBDIR = "comparison"
-PROBE_SUBDIR = "probe"
+HEAD_PROBE_SUBDIR = "head_probe"
 ADAPTER_NAME = "adapter"
 ADAPTER_CONFIG_NAME = "adapter_config.json"
 
 BASE_ARM = "base"
 PHASE1_FOLD = "5fmt"
 SPLITS = ("dev", "test", "prose")
-PROBE_SPLITS = ("train", "dev")
+HEAD_PROBE_SPLITS = ("train", "dev")
 AXES = ("cross", "within", "mrr")
 SWEEPS = ("lambda", "rank")
 
@@ -154,9 +154,9 @@ def adapter_config_path(data_root: Path, model: str, arm_name: str) -> Path:
     return adapter_dir(data_root, model, arm_name) / ADAPTER_CONFIG_NAME
 
 
-def probe_dir(data_root: Path) -> Path:
+def head_probe_dir(data_root: Path) -> Path:
     """Return the directory that holds the head-probe artefacts."""
-    return h2_dir(data_root) / PROBE_SUBDIR
+    return h2_dir(data_root) / HEAD_PROBE_SUBDIR
 
 
 def feature_path(data_root: Path, split: str, model: str) -> Path:
@@ -171,13 +171,13 @@ def feature_path(data_root: Path, split: str, model: str) -> Path:
         The file.
 
     Raises:
-        ValueError: If the split is not one the probe covers.
+        ValueError: If the split is not one the head probe covers.
     """
-    if split not in PROBE_SPLITS:
+    if split not in HEAD_PROBE_SPLITS:
         raise ValueError(
-            f"unknown probe split {split!r}, expected one of: {PROBE_SPLITS}"
+            f"unknown head-probe split {split!r}, expected one of: {HEAD_PROBE_SPLITS}"
         )
-    return probe_dir(data_root) / f"{split}_features_{model}.npy"
+    return head_probe_dir(data_root) / f"{split}_features_{model}.npy"
 
 
 def feature_score_path(data_root: Path, split: str, model: str) -> Path:

@@ -1,4 +1,4 @@
-"""Tests for fsr.probe.store."""
+"""Tests for fsr.head_probe.store."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import pytest
 import torch
 
 from fsr.h2_layout import feature_meta_path, feature_path, feature_score_path
-from fsr.probe.store import FeatureStore, load_store
+from fsr.head_probe.store import FeatureStore, load_store
 
 MODEL = "minilm_l6"
 FORMATS = ["yaml", "json", "toml"]

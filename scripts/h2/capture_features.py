@@ -1,6 +1,6 @@
 """Cache the representation a frozen model's head consumes, per format.
 
-Writes `h2/probe/{split}_features_{model}.npy`, the matching `_scores_` file,
+Writes `h2/head_probe/{split}_features_{model}.npy`, the matching `_scores_` file,
 and a JSON description.
 """
 
@@ -24,7 +24,7 @@ from fsr.corpus.splitting import load_records
 from fsr.features import features_and_scores
 from fsr.formats import FORMAT_NAMES
 from fsr.h2_layout import (
-    PROBE_SPLITS,
+    HEAD_PROBE_SPLITS,
     feature_meta_path,
     feature_path,
     feature_score_path,
@@ -39,7 +39,7 @@ from fsr.training.data import (
     prepare_train_records,
 )
 
-PROBE_NEGATIVES = 15
+HEAD_PROBE_NEGATIVES = 15
 
 
 def load_budget_tokenizers(names: list[str]) -> dict[str, Any]:
@@ -93,13 +93,16 @@ def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--model", required=True, help="Registry slug or identifier")
     ap.add_argument(
-        "--split", default="train", choices=list(PROBE_SPLITS), help="Split to cache"
+        "--split",
+        default="train",
+        choices=list(HEAD_PROBE_SPLITS),
+        help="Split to cache",
     )
     ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument(
         "--negatives",
         type=int,
-        default=PROBE_NEGATIVES,
+        default=HEAD_PROBE_NEGATIVES,
         help="Negatives cached for each record",
     )
     ap.add_argument(

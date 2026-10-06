@@ -2,7 +2,7 @@
 # Cache the representations the head-capacity probe fits to.
 #
 # Usage:
-#   MODELS=mxbai_v1,jina_v2 GPUS=0,1 bash scripts/h2/probe.sh
+#   MODELS=mxbai_v1,jina_v2 GPUS=0,1 bash scripts/h2/head_probe.sh
 #
 # Environment:
 #   MODELS       comma-separated registry slugs (default mxbai_v1,jina_v2)
@@ -27,7 +27,7 @@ source "$REPO_ROOT/scripts/runners/dispatch.sh"
 roster() { PYTHONPATH="$REPO_ROOT/src" python3 -m fsr.models.registry --list; }
 
 DATA_ROOT="${DATA_ROOT:-data/nq}"
-OUT_DIR="$DATA_ROOT/h2/probe"
+OUT_DIR="$DATA_ROOT/h2/head_probe"
 IFS=',' read -ra MODEL_LIST <<< "${MODELS:-mxbai_v1,jina_v2}"
 IFS=',' read -ra SPLIT_LIST <<< "${SPLITS:-train,dev}"
 mkdir -p "$OUT_DIR"
@@ -53,7 +53,7 @@ job_log() { echo "$OUT_DIR/$(tag "$1").log"; }
 job_progress() { echo "$OUT_DIR/$(tag "$1").progress"; }
 job_output() {
     set -- $1
-    echo "$DATA_ROOT/h2/probe/${2}_features_${1}.npy"
+    echo "$DATA_ROOT/h2/head_probe/${2}_features_${1}.npy"
 }
 job_command() {
     set -- $1

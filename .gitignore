@@ -22,7 +22,7 @@ data/**/*.npz
 data/**/*roster*.log
 data/**/*.progress
 data/**/checkpoint.pt
-data/**/probe/*.npy
+data/**/head_probe/*.npy
 
 # Smoke test data
 data/smoke/

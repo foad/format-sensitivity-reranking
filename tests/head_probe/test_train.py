@@ -1,4 +1,4 @@
-"""Tests for fsr.probe.train."""
+"""Tests for fsr.head_probe.train."""
 
 from __future__ import annotations
 
@@ -6,10 +6,10 @@ import numpy as np
 import pytest
 import torch
 
-from fsr.probe.heads import LINEAR, TANH, build_head
-from fsr.probe.store import FeatureStore
-from fsr.probe.train import (
-    ProbeConfig,
+from fsr.head_probe.heads import LINEAR, TANH, build_head
+from fsr.head_probe.store import FeatureStore
+from fsr.head_probe.train import (
+    HeadProbeConfig,
     record_order,
     score_features,
     train_head,
@@ -35,7 +35,7 @@ def store(seed: int = 0, separable: bool = True) -> FeatureStore:
     )
 
 
-def config(**kwargs) -> ProbeConfig:
+def config(**kwargs) -> HeadProbeConfig:
     base = {
         "lambda_inv": 0.0,
         "max_steps": 60,
@@ -45,7 +45,7 @@ def config(**kwargs) -> ProbeConfig:
         "log_every": 20,
     }
     base.update(kwargs)
-    return ProbeConfig(**base)
+    return HeadProbeConfig(**base)
 
 
 class TestScoreFeatures:

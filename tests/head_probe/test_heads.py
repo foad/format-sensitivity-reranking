@@ -1,11 +1,11 @@
-"""Tests for fsr.probe.heads."""
+"""Tests for fsr.head_probe.heads."""
 
 from __future__ import annotations
 
 import pytest
 import torch
 
-from fsr.probe.heads import (
+from fsr.head_probe.heads import (
     DEEP,
     HEAD_NAMES,
     LINEAR,

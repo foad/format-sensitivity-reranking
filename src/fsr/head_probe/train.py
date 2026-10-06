@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 from transformers import get_scheduler
 
-from fsr.probe.store import FeatureStore
+from fsr.head_probe.store import FeatureStore
 from fsr.training.batch import compute_loss
 
 DEFAULT_LR = 1e-3
@@ -22,7 +22,7 @@ DEFAULT_LOG_EVERY = 100
 
 
 @dataclass(frozen=True)
-class ProbeConfig:
+class HeadProbeConfig:
     """The settings of one head fit.
 
     Attributes:
@@ -49,7 +49,7 @@ class ProbeConfig:
 
 
 @dataclass
-class ProbeResult:
+class HeadProbeResult:
     """What one head fit produced.
 
     Attributes:
@@ -80,7 +80,7 @@ def score_features(head: nn.Module, features: torch.Tensor) -> torch.Tensor:
     return head(features).squeeze(-1)
 
 
-def record_order(n_records: int, config: ProbeConfig) -> np.ndarray:
+def record_order(n_records: int, config: HeadProbeConfig) -> np.ndarray:
     """Return the record rows of every step, one row per batch position.
 
     Args:
@@ -101,10 +101,10 @@ def record_order(n_records: int, config: ProbeConfig) -> np.ndarray:
 def train_head(
     head: nn.Module,
     store: FeatureStore,
-    config: ProbeConfig,
+    config: HeadProbeConfig,
     formats: Sequence[str],
     on_step: Callable[[int], None] | None = None,
-) -> ProbeResult:
+) -> HeadProbeResult:
     """Fit one head to the cached representations of one model.
 
     Args:
@@ -166,7 +166,7 @@ def train_head(
             on_step(step)
 
     head.eval()
-    return ProbeResult(
+    return HeadProbeResult(
         steps=config.max_steps,
         loss=float(loss),
         rank_loss=float(rank),
