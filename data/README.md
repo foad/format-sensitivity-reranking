@@ -14,6 +14,7 @@ download it from the release and unpack into `data/`, or build it manually.
 | `nq/h1/*.json` | Per-model H1 results, both axes and both modes. Tracked | `scripts/h1/run.sh` |
 | `nq/h1/*_candidates*.json` | Candidate lists, rebuilt by the measurement | `scripts/within_query.py` |
 | `nq/h2_compare/`, `h2_selection/` | H2 result JSONs | H2 sweep scripts |
+| `nq/h2/head_probe/` | Head-probe frontiers, tracked. The cached representations beside them are release assets | `scripts/h2/head_probe.sh` |
 | `nq/matched_{train,validation}.json` | The raw Wikipedia HTML cache (2.9 GB). Only needed to re-parse without re-streaming. | `scripts/corpus/fetch.py` |
 
 ## Result file names

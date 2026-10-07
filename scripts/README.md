@@ -43,3 +43,6 @@ uv run python scripts/watch.py --pattern 'all_cross_*.log'
  - `select.py`: choose the invariance weight, or the adapter rank.
  - `compare.py`: one trained fold against the untrained baseline.
  - `eval_prose.py`, `compare_prose.py`: the capability check on ordinary prose.
+ - `head_probe.sh`: the head-probe supporting study, capture then fit.
+ - `capture_features.py`: cache the frozen encoder representation of every candidate under all five formats.
+ - `fit_heads.py`: fit every head of the probe to one model's cached representations and write the frontier.
