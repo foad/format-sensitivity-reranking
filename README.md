@@ -34,6 +34,8 @@ Figures and intervals are in [`notebooks/h2/h2_analysis.ipynb`](notebooks/h2/h2_
 
  - Head-probe study: determining whether mxbai-v1's low responsiveness to the intervention is due to a difference in head shape. [Notebook](notebooks/h2/h2_head_probe.ipynb)
 
+ - Prose (nonbox) study: determining whether the LoRA training on infobox content has a negative effect on non-infobox, prose-only content. [Notebook](notebooks/h2/h2_ablation_nonbox.ipynb)
+
 ## Repository layout
 
 ```
@@ -53,7 +55,7 @@ src/fsr/           # library code
   training/        #   batch construction and the composite objective
 scripts/           # runnable pipeline entry points
 notebooks/         # analysis notebooks
-data/              # refined corpus
+data/              # refined corpus, raw results, run-time logs
 adapters/          # trained LoRA adapter weights
 docs/              # reproduction guide
 ```
