@@ -1,0 +1,31 @@
+
+======================================================================
+PROSE  jina-v2  arm=yaml_lam0   2026-10-07 00:05:38
+======================================================================
+  identifier: jinaai/jina-reranker-v2-base-multilingual
+  adapter:    data/nq/h2/train/jina_v2_yaml_lam0/adapter
+  records:    2,027 against 15 negatives each
+  batch:      16
+  device:     cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 2385.32it/s]
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+
+scored 32,432 pairs in 322.6s
+MRR: 0.9458  over 2,027 records
+
+Saved yaml_lam0 results -> data/nq/h2/prose_mrr_jina_v2_yaml_lam0.json  (0.1 MB)

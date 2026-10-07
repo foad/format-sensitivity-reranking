@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  jina-v2  inline_kv_lam0.1   2026-10-07 01:02:24
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.9426
+  trained MRR:    0.9551
+  change:         +0.0125  [+0.0072, +0.0178]
+  kept, margin 0.03: yes
+
+Saved prose inline_kv_lam0.1 results -> data/nq/h2/comparison/jina_v2_prose_inline_kv_lam0.1.json  (0.1 MB)

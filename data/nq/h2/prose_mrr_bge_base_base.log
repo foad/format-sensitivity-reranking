@@ -1,0 +1,17 @@
+
+======================================================================
+PROSE  bge-base  arm=base   2026-10-06 23:59:06
+======================================================================
+  identifier: BAAI/bge-reranker-base
+  adapter:    none, untrained baseline
+  records:    2,027 against 15 negatives each
+  batch:      16
+  device:     cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 2867.56it/s]
+
+scored 32,432 pairs in 386.9s
+MRR: 0.8539  over 2,027 records
+
+Saved base results -> data/nq/h2/prose_mrr_bge_base_base.json  (0.1 MB)

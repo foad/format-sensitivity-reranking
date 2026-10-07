@@ -1,0 +1,18 @@
+
+======================================================================
+PROSE  bge-base  arm=toml_lam1   2026-10-07 00:33:44
+======================================================================
+  identifier: BAAI/bge-reranker-base
+  adapter:    data/nq/h2/train/bge_base_toml_lam1/adapter
+  records:    2,027 against 15 negatives each
+  batch:      16
+  device:     cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 5035.69it/s]
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+
+scored 32,432 pairs in 321.7s
+MRR: 0.9215  over 2,027 records
+
+Saved toml_lam1 results -> data/nq/h2/prose_mrr_bge_base_toml_lam1.json  (0.1 MB)

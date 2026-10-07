@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  mxbai-v1  toml_lam0   2026-10-07 01:19:31
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.9222
+  trained MRR:    0.9398
+  change:         +0.0176  [+0.0117, +0.0234]
+  kept, margin 0.03: yes
+
+Saved prose toml_lam0 results -> data/nq/h2/comparison/mxbai_v1_prose_toml_lam0.json  (0.1 MB)

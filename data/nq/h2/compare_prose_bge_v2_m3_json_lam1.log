@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  bge-v2-m3  json_lam1   2026-10-07 02:32:33
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.9481
+  trained MRR:    0.9554
+  change:         +0.0073  [+0.0026, +0.0122]
+  kept, margin 0.03: yes
+
+Saved prose json_lam1 results -> data/nq/h2/comparison/bge_v2_m3_prose_json_lam1.json  (0.1 MB)
