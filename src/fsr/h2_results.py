@@ -26,13 +26,24 @@ from fsr.h2_layout import (
     result_path,
     selection_path,
 )
-from fsr.metrics import DEFAULT_CI, DEFAULT_N_BOOT, DEFAULT_SEED
+from fsr.metrics import (
+    DEFAULT_CI,
+    DEFAULT_N_BOOT,
+    DEFAULT_SEED,
+    bootstrap_ci_of_mean,
+)
 from fsr.models.registry import BASE_MODELS, by_slug
 
 CONTROL_WEIGHT = 0.0
 SPLIT = "test"
 SWEEP = "lambda"
 AXES = ("score", "answer")
+
+PROSE_SPLIT = "prose"
+MRR_AXIS = "mrr"
+CONTROL = "control"
+WINNER = "winner"
+PROSE_ARMS = (CONTROL, WINNER)
 
 
 def load_selection(data_root: Path, model: str) -> dict[str, Any]:
@@ -682,3 +693,247 @@ def correlation(frame: pd.DataFrame, left: str, right: str) -> float:
     if len(frame) < 2:
         return float("nan")
     return float(np.corrcoef(frame[left], frame[right])[0, 1])
+
+
+def load_prose_result(data_root: Path, model: str, arm_name: str) -> dict[str, Any]:
+    """Load the prose ranking of one arm.
+
+    Args:
+        data_root: The corpus directory.
+        model: The registry slug.
+        arm_name: The trained condition, or BASE_ARM for the untrained model.
+
+    Returns:
+        The result.
+    """
+    path = result_path(data_root, PROSE_SPLIT, MRR_AXIS, model, arm_name)
+    return json.loads(path.read_text())
+
+
+def load_prose_comparison(data_root: Path, model: str, arm_name: str) -> dict[str, Any]:
+    """Load one arm's prose comparison against the untrained model.
+
+    Args:
+        data_root: The corpus directory.
+        model: The registry slug.
+        arm_name: The trained condition.
+
+    Returns:
+        The comparison.
+    """
+    return json.loads(
+        comparison_path(data_root, model, f"{PROSE_SPLIT}_{arm_name}").read_text()
+    )
+
+
+def prose_arms(data_root: Path, model: str) -> dict[str, dict[str, str]]:
+    """Return the control arm and the winner arm of every fold.
+
+    Args:
+        data_root: The corpus directory.
+        model: The registry slug.
+
+    Returns:
+        The arm names, by held-out format and then by condition.
+    """
+    weight = winner_weight(load_selection(data_root, model))
+    return {
+        fold: {CONTROL: arm(fold, CONTROL_WEIGHT), WINNER: arm(fold, weight)}
+        for fold in FORMAT_NAMES
+    }
+
+
+def prose_available(data_root: Path) -> list[str]:
+    """Return the core models whose prose ranking is complete, in roster order.
+
+    Args:
+        data_root: The corpus directory.
+
+    Returns:
+        The registry slugs.
+    """
+    found = []
+    for model in BASE_MODELS:
+        if not selection_path(data_root, model.slug, SWEEP).exists():
+            continue
+        names = prose_arms(data_root, model.slug)
+        paths = [result_path(data_root, PROSE_SPLIT, MRR_AXIS, model.slug, BASE_ARM)]
+        paths += [
+            comparison_path(data_root, model.slug, f"{PROSE_SPLIT}_{names[fold][key]}")
+            for fold in FORMAT_NAMES
+            for key in PROSE_ARMS
+        ]
+        if all(path.exists() for path in paths):
+            found.append(model.slug)
+    return found
+
+
+def prose_baseline_mrr(data_root: Path, model: str) -> float:
+    """Return the untrained ranking quality on prose.
+
+    Args:
+        data_root: The corpus directory.
+        model: The registry slug.
+
+    Returns:
+        The mean reciprocal rank.
+    """
+    return float(load_prose_result(data_root, model, BASE_ARM)["mrr"])
+
+
+def prose_paired_gains(data_root: Path, model: str) -> np.ndarray:
+    """Return the gain of the winner over the control, record by record.
+
+    Args:
+        data_root: The corpus directory.
+        model: The registry slug.
+
+    Returns:
+        One row per held-out format, one column per record.
+
+    Raises:
+        ValueError: If two arms cover different records.
+    """
+    names = prose_arms(data_root, model)
+    rows = []
+    reference = None
+    for fold in FORMAT_NAMES:
+        control = load_prose_comparison(data_root, model, names[fold][CONTROL])
+        winner = load_prose_comparison(data_root, model, names[fold][WINNER])
+        reference = control["record_ids"] if reference is None else reference
+        for name, entry in ((CONTROL, control), (WINNER, winner)):
+            if entry["record_ids"] != reference:
+                raise ValueError(
+                    f"{model} {fold} {name} covers different records from the rest"
+                )
+        rows.append(
+            np.asarray(winner["per_record_delta_rr"], dtype=float)
+            - np.asarray(control["per_record_delta_rr"], dtype=float)
+        )
+    return np.stack(rows)
+
+
+def prose_paired_delta(
+    data_root: Path,
+    model: str,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    ci: float = DEFAULT_CI,
+) -> tuple[float, float, float]:
+    """Bound the gain of the winner over the control, over every fold.
+
+    One resample is applied to every fold, so the interval is paired.
+
+    Args:
+        data_root: The corpus directory.
+        model: The registry slug.
+        n_boot: The number of replicates.
+        seed: The seed for the resample.
+        ci: The interval width.
+
+    Returns:
+        The mean gain and the bounds of its interval.
+    """
+    per_record = prose_paired_gains(data_root, model).mean(axis=0)
+    low, high = bootstrap_ci_of_mean(per_record, n_boot=n_boot, seed=seed, ci=ci)
+    return float(per_record.mean()), low, high
+
+
+def prose_fold_frame(data_root: Path, model: str) -> pd.DataFrame:
+    """Tabulate the prose ranking of every fold of one model.
+
+    Args:
+        data_root: The corpus directory.
+        model: The registry slug.
+
+    Returns:
+        One row per held-out format, holding each arm's mean reciprocal rank,
+        the change against the untrained model with its interval, whether the
+        arm kept its quality, and the gain of the winner over the control.
+    """
+    names = prose_arms(data_root, model)
+    gains = prose_paired_gains(data_root, model)
+    rows = {}
+    for index, fold in enumerate(FORMAT_NAMES):
+        row: dict[str, Any] = {}
+        for key in PROSE_ARMS:
+            entry = load_prose_comparison(data_root, model, names[fold][key])
+            low, high = entry["delta_mrr_ci"]
+            row[f"{key}_mrr"] = entry["trained_mrr"]
+            row[f"{key}_delta"] = entry["delta_mrr_mean"]
+            row[f"{key}_lo"] = low
+            row[f"{key}_hi"] = high
+            row[f"{key}_kept"] = bool(entry["ni_pass"])
+        row["winner_gain"] = float(gains[index].mean())
+        rows[fold] = row
+    frame = pd.DataFrame.from_dict(rows, orient="index")
+    frame.index.name = "held_out"
+    return frame
+
+
+def prose_table(
+    data_root: Path,
+    slugs: Sequence[str],
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    ci: float = DEFAULT_CI,
+) -> pd.DataFrame:
+    """Summarise prose ranking quality for every model.
+
+    Args:
+        data_root: The corpus directory.
+        slugs: The registry slugs to report.
+        n_boot: The number of replicates.
+        seed: The seed for the resample.
+        ci: The interval width.
+
+    Returns:
+        The untrained mean reciprocal rank, the fold mean of each arm and its
+        change, the gain of the winner over the control with its interval,
+        and the arms that kept their quality.
+    """
+    rows = {}
+    for slug in slugs:
+        folds = prose_fold_frame(data_root, slug)
+        gain, low, high = prose_paired_delta(
+            data_root, slug, n_boot=n_boot, seed=seed, ci=ci
+        )
+        rows[slug] = {
+            "weight": winner_weight(load_selection(data_root, slug)),
+            "baseline_mrr": prose_baseline_mrr(data_root, slug),
+            "control_mrr": float(folds["control_mrr"].mean()),
+            "winner_mrr": float(folds["winner_mrr"].mean()),
+            "control_delta": float(folds["control_delta"].mean()),
+            "winner_delta": float(folds["winner_delta"].mean()),
+            "winner_gain": gain,
+            "gain_lo": low,
+            "gain_hi": high,
+            "gain_excludes_zero": bool(high < 0 or low > 0),
+            "arms_kept": int(folds["control_kept"].sum() + folds["winner_kept"].sum()),
+        }
+    return _frame(rows)
+
+
+def prose_matrix(
+    data_root: Path, slugs: Sequence[str], condition: str = WINNER
+) -> pd.DataFrame:
+    """Tabulate one arm's prose change against every held-out format.
+
+    Args:
+        data_root: The corpus directory.
+        slugs: The registry slugs to report.
+        condition: The arm to report, one of PROSE_ARMS.
+
+    Returns:
+        One row per model, one column per held-out format.
+
+    Raises:
+        ValueError: If the condition is not a known name.
+    """
+    if condition not in PROSE_ARMS:
+        raise ValueError(f"unknown arm {condition!r}, expected one of: {PROSE_ARMS}")
+    rows = {}
+    for slug in slugs:
+        folds = prose_fold_frame(data_root, slug)
+        rows[slug] = dict(folds[f"{condition}_delta"])
+    return _frame(rows)

@@ -521,3 +521,198 @@ class TestTransferFrame:
     def test_carries_no_threshold(self, root):
         frame = mod.transfer_frame(root, SLUGS)
         assert "passed" not in frame.columns
+
+
+N_PROSE = 12
+PROSE_IDS = [f"p{i}" for i in range(N_PROSE)]
+# The winner beats the control on every record of every fold, by this much.
+PROSE_GAIN = 0.02
+BASE_PROSE_MRR = 0.90
+
+
+def prose_result(slug, arm_name, mrr):
+    return {
+        "model": slug,
+        "arm": arm_name,
+        "split": "prose",
+        "mrr": mrr,
+        "record_ids": list(PROSE_IDS),
+        "reciprocal_ranks": [mrr] * N_PROSE,
+    }
+
+
+def prose_comparison(slug, arm_name, delta, ni_pass=True, ids=None):
+    return {
+        "model": slug,
+        "arm": arm_name,
+        "split": "prose",
+        "baseline_mrr": BASE_PROSE_MRR,
+        "trained_mrr": BASE_PROSE_MRR + delta,
+        "delta_mrr_mean": delta,
+        "delta_mrr_ci": [delta - 0.005, delta + 0.005],
+        "ni_pass": ni_pass,
+        "record_ids": list(PROSE_IDS if ids is None else ids),
+        "per_record_delta_rr": [delta] * N_PROSE,
+    }
+
+
+def write_prose(root, slug, control_delta=0.01, ni_pass=True, ids=None):
+    """Write one model's prose baseline and both arms of every fold."""
+    path = result_path(root, "prose", "mrr", slug, "base")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(prose_result(slug, "base", BASE_PROSE_MRR)))
+    for weight, delta in ((0.0, control_delta), (1.0, control_delta + PROSE_GAIN)):
+        for fold in FORMAT_NAMES:
+            name = arm(fold, weight)
+            out = comparison_path(root, slug, f"prose_{name}")
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(
+                json.dumps(
+                    prose_comparison(
+                        slug,
+                        name,
+                        delta,
+                        ni_pass,
+                        ids if weight == 1.0 else None,
+                    )
+                )
+            )
+
+
+@pytest.fixture
+def prose_root(root):
+    """Add a complete prose result set to the standard corpus."""
+    for slug in SLUGS:
+        write_prose(root, slug)
+    return root
+
+
+class TestProseAvailable:
+    def test_finds_a_model_whose_prose_run_is_complete(self, prose_root):
+        assert mod.prose_available(prose_root) == SLUGS
+
+    def test_reports_nothing_when_no_prose_run_is_present(self, root):
+        assert mod.prose_available(root) == []
+
+    def test_skips_a_model_missing_one_arm(self, prose_root):
+        target = comparison_path(prose_root, "bge_base", "prose_toml_lam1")
+        target.unlink()
+        assert mod.prose_available(prose_root) == ["minilm_l6"]
+
+    def test_skips_a_model_with_no_selection(self, prose_root):
+        selection_path(prose_root, "bge_base", "lambda").unlink()
+        assert mod.prose_available(prose_root) == ["minilm_l6"]
+
+
+class TestProseArms:
+    def test_names_the_control_and_the_winner_of_every_fold(self, prose_root):
+        names = mod.prose_arms(prose_root, "minilm_l6")
+        assert set(names) == set(FORMAT_NAMES)
+        assert names["yaml"] == {"control": "yaml_lam0", "winner": "yaml_lam1"}
+
+
+class TestProseBaseline:
+    def test_reads_the_untrained_ranking_quality(self, prose_root):
+        assert mod.prose_baseline_mrr(prose_root, "minilm_l6") == BASE_PROSE_MRR
+
+
+class TestProsePairedGains:
+    def test_holds_one_row_per_fold(self, prose_root):
+        gains = mod.prose_paired_gains(prose_root, "minilm_l6")
+        assert gains.shape == (len(FORMAT_NAMES), N_PROSE)
+
+    def test_subtracts_the_control_from_the_winner(self, prose_root):
+        gains = mod.prose_paired_gains(prose_root, "minilm_l6")
+        assert gains == pytest.approx(PROSE_GAIN)
+
+    def test_refuses_arms_that_cover_different_records(self, root):
+        """An unpaired subtraction would silently compare different queries."""
+        write_prose(root, "minilm_l6", ids=[f"q{i}" for i in range(N_PROSE)])
+        with pytest.raises(ValueError, match="different records"):
+            mod.prose_paired_gains(root, "minilm_l6")
+
+
+class TestProsePairedDelta:
+    def test_reports_the_mean_gain(self, prose_root):
+        mean, _, _ = mod.prose_paired_delta(prose_root, "minilm_l6", n_boot=BOOT)
+        assert mean == pytest.approx(PROSE_GAIN)
+
+    def test_a_constant_gain_gives_a_degenerate_interval(self, prose_root):
+        """Every record moves by the same amount, so no resample can differ."""
+        _, low, high = mod.prose_paired_delta(prose_root, "minilm_l6", n_boot=BOOT)
+        assert low == pytest.approx(PROSE_GAIN)
+        assert high == pytest.approx(PROSE_GAIN)
+
+
+class TestProseFoldFrame:
+    def test_holds_one_row_per_held_out_format(self, prose_root):
+        frame = mod.prose_fold_frame(prose_root, "minilm_l6")
+        assert list(frame.index) == list(FORMAT_NAMES)
+
+    def test_carries_both_arms(self, prose_root):
+        frame = mod.prose_fold_frame(prose_root, "minilm_l6")
+        assert frame.loc["yaml", "control_delta"] == pytest.approx(0.01)
+        assert frame.loc["yaml", "winner_delta"] == pytest.approx(0.01 + PROSE_GAIN)
+
+    def test_carries_the_gain_of_each_fold(self, prose_root):
+        frame = mod.prose_fold_frame(prose_root, "minilm_l6")
+        assert frame["winner_gain"].to_numpy() == pytest.approx(PROSE_GAIN)
+
+    def test_marks_the_arms_that_kept_their_quality(self, prose_root):
+        frame = mod.prose_fold_frame(prose_root, "minilm_l6")
+        assert frame["control_kept"].all()
+        assert frame["winner_kept"].all()
+
+    def test_marks_an_arm_that_lost_quality(self, root):
+        write_prose(root, "minilm_l6", ni_pass=False)
+        frame = mod.prose_fold_frame(root, "minilm_l6")
+        assert not frame["winner_kept"].any()
+
+
+class TestProseTable:
+    def test_holds_one_row_per_model(self, prose_root):
+        table = mod.prose_table(prose_root, SLUGS, n_boot=BOOT)
+        assert list(table.index) == [by_slug(s).label for s in SLUGS]
+
+    def test_reports_the_untrained_quality_and_both_arms(self, prose_root):
+        table = mod.prose_table(prose_root, SLUGS, n_boot=BOOT)
+        row = table.loc[by_slug("minilm_l6").label]
+        assert row["baseline_mrr"] == BASE_PROSE_MRR
+        assert row["control_mrr"] == pytest.approx(BASE_PROSE_MRR + 0.01)
+        assert row["winner_mrr"] == pytest.approx(BASE_PROSE_MRR + 0.01 + PROSE_GAIN)
+
+    def test_counts_the_arms_that_kept_their_quality(self, prose_root):
+        table = mod.prose_table(prose_root, SLUGS, n_boot=BOOT)
+        assert (table["arms_kept"] == 2 * len(FORMAT_NAMES)).all()
+
+    def test_a_gain_clear_of_zero_is_marked(self, prose_root):
+        table = mod.prose_table(prose_root, SLUGS, n_boot=BOOT)
+        assert table["gain_excludes_zero"].all()
+
+    def test_no_gain_is_not_marked(self, root):
+        """A winner that matches its control must not read as an improvement."""
+        for slug in SLUGS:
+            write_prose(root, slug)
+            for fold in FORMAT_NAMES:
+                out = comparison_path(root, slug, f"prose_{arm(fold, 1.0)}")
+                out.write_text(json.dumps(prose_comparison(slug, fold, 0.01)))
+        table = mod.prose_table(root, SLUGS, n_boot=BOOT)
+        assert not table["gain_excludes_zero"].any()
+
+
+class TestProseMatrix:
+    def test_holds_one_column_per_held_out_format(self, prose_root):
+        grid = mod.prose_matrix(prose_root, SLUGS)
+        assert list(grid.columns) == list(FORMAT_NAMES)
+
+    def test_reports_the_winner_by_default(self, prose_root):
+        grid = mod.prose_matrix(prose_root, SLUGS)
+        assert grid.to_numpy() == pytest.approx(0.01 + PROSE_GAIN)
+
+    def test_reports_the_control_when_asked(self, prose_root):
+        grid = mod.prose_matrix(prose_root, SLUGS, condition="control")
+        assert grid.to_numpy() == pytest.approx(0.01)
+
+    def test_refuses_an_unknown_arm(self, prose_root):
+        with pytest.raises(ValueError, match="unknown arm"):
+            mod.prose_matrix(prose_root, SLUGS, condition="winner_lam3")

@@ -18,7 +18,7 @@ DEEP_WIDTH_FACTOR = 2
 
 
 def _linear(dim: int) -> nn.Module:
-    """Return the head shape mxbai carries."""
+    """Return a one-layer head, the capacity floor of the probe."""
     return nn.Linear(dim, 1)
 
 

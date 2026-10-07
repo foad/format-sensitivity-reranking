@@ -1,4 +1,4 @@
-"""Classifier patch that gives the mxbai reranker a jina-shaped head."""
+"""Classifier patch that gives the mxbai reranker a two-layer tanh head."""
 
 from __future__ import annotations
 
