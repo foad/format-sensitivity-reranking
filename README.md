@@ -5,7 +5,7 @@ Companion code and artefacts for the MSc dissertation *Evaluating and Mitigating
 The study runs in two phases:
 
 - **H1 (characterisation).** Does a pointwise cross-encoder reranker score the same passage differently when its metadata is serialised as YAML, JSON, TOML, inline key-value, or Markdown? Measured across six models on a refined Natural Questions corpus.
-- **H2 (mitigation).** Can a LoRA adapter trained with a composite ranking-plus-invariance objective (`L_total = L_rank + lambda*L_inv`) reduce that sensitivity without harming ranking quality? Evaluated on seven model variants with a five-fold hold-one-out design over the five formats, under a fixed training budget.
+- **H2 (mitigation).** Can a LoRA adapter trained with a composite ranking-plus-invariance objective (`L_total = L_rank + lambda*L_inv`) reduce that sensitivity without harming ranking quality? Evaluated on six model variants with a five-fold hold-one-out design over the five formats, under a fixed training budget.
 
 ## Results
 
@@ -22,22 +22,36 @@ Sensitivity is measured on two axes: the shift in a passage's absolute score, as
 
 Figures and intervals are in [`notebooks/h1/h1_analysis.ipynb`](notebooks/h1/h1_analysis.ipynb) and [`notebooks/h1/h1_ablation_metadata_only.ipynb`](notebooks/h1/h1_ablation_metadata_only.ipynb).
 
+### H2: mitigation
+
+- The invariance term reduces out-of-distribution sensitivity on all six models, by up to **0.218** in maximum pairwise |d| on the held-out format, with every interval excluding zero. The reduction is measured against a rank-only control, so it is the contribution of the invariance term rather than of LoRA fine-tuning.
+- The answer axis responds on **three of the six**. MiniLM-L6, bge-base and MiniLM-L12 reduce conditional inconsistency with intervals excluding zero; bge-v2-m3, mxbai-v1 and jina-v2 do not move. The two axes disagree about which models respond, so the near-independence H1 found in the untrained models survives the intervention.
+- Ranking quality is preserved on every arm, well inside the pre-registered non-inferiority margin. Capability transfers to the unseen format in full, while invariance transfers only partly and unevenly across models, which is the clearest limit on the intervention.
+
+Figures and intervals are in [`notebooks/h2/h2_analysis.ipynb`](notebooks/h2/h2_analysis.ipynb).
+
 ## Repository layout
 
 ```
-src/fsr/         # library code
-  formats.py     #   the five metadata renderers under study
-  passages.py    #   tokenizer contract, body budgeting, truncation
-  scoring.py     #   cross-encoder scoring primitives
-  metrics.py     #   format-sensitivity statistics and intervals
-  corpus/        #   infobox location and text extraction
-  models/        #   model loading and vendor-specific patches
-  training/      #   batch construction and the composite objective
-scripts/         # runnable pipeline entry points
-notebooks/       # analysis notebooks
-data/            # refined corpus
-adapters/        # trained LoRA adapter weights
-docs/            # reproduction guide
+src/fsr/           # library code
+  formats.py       #   the five metadata renderers under study
+  passages.py      #   tokenizer contract, body budgeting, truncation
+  scoring.py       #   cross-encoder scoring primitives
+  metrics.py       #   score-axis statistics and bootstrap intervals
+  within_query.py  #   answer-axis statistics over one query's candidates
+  selection.py     #   the sweep rule that picks the invariance weight
+  comparison.py    #   a trained arm against the untrained baseline, both axes
+  h2_layout.py     #   artefact paths for the mitigation phase
+  h1_results.py    #   notebook readers and table builders
+  h2_results.py    #
+  corpus/          #   infobox location and text extraction
+  models/          #   model loading and vendor-specific patches
+  training/        #   batch construction and the composite objective
+scripts/           # runnable pipeline entry points
+notebooks/         # analysis notebooks
+data/              # refined corpus
+adapters/          # trained LoRA adapter weights
+docs/              # reproduction guide
 ```
 
 ## Prerequisites
@@ -62,7 +76,7 @@ H1 scores six models:
  - [`mixedbread-ai/mxbai-rerank-base-v1`](https://huggingface.co/mixedbread-ai/mxbai-rerank-base-v1)
  - [`jinaai/jina-reranker-v2-base-multilingual`](https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual)
 
-H2 fine-tunes every H1 model, plus `mxbai` with a jina-matched tanh classifier head.
+H2 fine-tunes every H1 model.
 
 ## Licensing
 
