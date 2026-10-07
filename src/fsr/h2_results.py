@@ -250,6 +250,78 @@ def fold_mean_mrr(data_root: Path, model: str, weight: float) -> dict[str, float
     return values
 
 
+def guardrail_frame(data_root: Path, slugs: Sequence[str]) -> pd.DataFrame:
+    """Tabulate the ranking-quality guardrail of every fold of every model.
+
+    The guardrail compares the treatment arm against the untrained model. The
+    interval is reported whether or not the arm passes.
+
+    Args:
+        data_root: The corpus directory.
+        slugs: The registry slugs to report.
+
+    Returns:
+        One row per model and held-out format, holding the change in mean
+        reciprocal rank, its interval, the margin, and the outcome.
+    """
+    rows = []
+    for slug in slugs:
+        weight = winner_weight(load_selection(data_root, slug))
+        for fold in FORMAT_NAMES:
+            section = load_comparison(data_root, slug, fold, weight)["score_axis"][
+                "mrr_non_inferiority"
+            ]
+            low, high = section["delta_mrr_bootstrap"]["delta_ci"]
+            rows.append(
+                {
+                    "model": by_slug(slug).label,
+                    "held_out": fold,
+                    "delta_mrr": section["delta_mrr_bootstrap"]["delta_mean"],
+                    "ci_lo": low,
+                    "ci_hi": high,
+                    "margin": section["margin"],
+                    "passed": section["passed"],
+                }
+            )
+    return pd.DataFrame(rows).set_index(["model", "held_out"])
+
+
+def transfer_frame(data_root: Path, slugs: Sequence[str]) -> pd.DataFrame:
+    """Tabulate the ranking quality of the held-out format of every fold.
+
+    The quantities are descriptive, so no threshold is applied to them.
+
+    Args:
+        data_root: The corpus directory.
+        slugs: The registry slugs to report.
+
+    Returns:
+        One row per model and held-out format, holding the change in mean
+        reciprocal rank on the held-out format, its interval, the mean change
+        over the training formats, and the ratio of the two.
+    """
+    rows = []
+    for slug in slugs:
+        weight = winner_weight(load_selection(data_root, slug))
+        for fold in FORMAT_NAMES:
+            section = load_comparison(data_root, slug, fold, weight)["score_axis"][
+                "heldout_transfer"
+            ]
+            low, high = section["delta_mrr_ci"]
+            rows.append(
+                {
+                    "model": by_slug(slug).label,
+                    "held_out": fold,
+                    "delta_mrr": section["delta_mrr"],
+                    "ci_lo": low,
+                    "ci_hi": high,
+                    "training_mean": section["training_format_mean_delta_mrr"],
+                    "transfer_ratio": section["transfer_ratio"],
+                }
+            )
+    return pd.DataFrame(rows).set_index(["model", "held_out"])
+
+
 def baseline_max_d(data_root: Path, model: str) -> float:
     """Return the untrained maximum absolute Cohen's d over every format pair."""
     comparison = load_comparison(data_root, model, FORMAT_NAMES[0], CONTROL_WEIGHT)

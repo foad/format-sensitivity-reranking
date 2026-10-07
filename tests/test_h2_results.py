@@ -63,7 +63,18 @@ def comparison(held_out, spread, trained_mrr=0.95):
                 "margin": 0.03,
                 "baseline_mean_mrr": 0.88,
                 "trained_mean_mrr": trained_mrr,
+                "delta_mrr_bootstrap": {
+                    "delta_mean": trained_mrr - 0.88,
+                    "delta_ci": [trained_mrr - 0.90, trained_mrr - 0.86],
+                },
                 "passed": True,
+            },
+            "heldout_transfer": {
+                "held_out_format": held_out,
+                "delta_mrr": 0.07,
+                "delta_mrr_ci": [0.06, 0.08],
+                "training_format_mean_delta_mrr": 0.0625,
+                "transfer_ratio": 0.07 / 0.0625,
             },
         },
         "answer_axis": {"n_queries": N_QUERIES, "n_pool": N_QUERIES},
@@ -479,3 +490,34 @@ class TestWeightFrame:
         del payload["tied_lambdas"]
         selection_path(root, "bge_base", "lambda").write_text(json.dumps(payload))
         assert not mod.weight_frame(root, "bge_base")["tied"].any()
+
+
+class TestGuardrailFrame:
+    def test_has_a_row_for_every_model_and_fold(self, root):
+        frame = mod.guardrail_frame(root, SLUGS)
+        assert len(frame) == len(SLUGS) * len(FORMAT_NAMES)
+        assert list(frame.index.names) == ["model", "held_out"]
+
+    def test_carries_the_interval_and_the_margin(self, root):
+        frame = mod.guardrail_frame(root, SLUGS)
+        assert (frame["ci_lo"] <= frame["delta_mrr"]).all()
+        assert (frame["delta_mrr"] <= frame["ci_hi"]).all()
+        assert frame["margin"].unique().tolist() == [0.03]
+
+    def test_reports_the_outcome_without_recomputing_it(self, root):
+        assert mod.guardrail_frame(root, SLUGS)["passed"].all()
+
+
+class TestTransferFrame:
+    def test_has_a_row_for_every_model_and_fold(self, root):
+        frame = mod.transfer_frame(root, SLUGS)
+        assert len(frame) == len(SLUGS) * len(FORMAT_NAMES)
+
+    def test_ratio_relates_the_held_out_change_to_the_training_mean(self, root):
+        frame = mod.transfer_frame(root, SLUGS)
+        expected = frame["delta_mrr"] / frame["training_mean"]
+        assert frame["transfer_ratio"].tolist() == pytest.approx(expected.tolist())
+
+    def test_carries_no_threshold(self, root):
+        frame = mod.transfer_frame(root, SLUGS)
+        assert "passed" not in frame.columns
