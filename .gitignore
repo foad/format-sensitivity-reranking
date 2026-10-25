@@ -10,8 +10,8 @@ __pycache__/
 
 # Release assets: corpus data and trained adapters, packaged with the tag
 data/**/matched_*.json
-data/nq/parsed_*.json
-data/nq/splits/
+data/nq*/parsed_*.json
+data/nq*/splits/
 data/nq/prose.json
 data/nq/prose_eval.json
 data/**/adapter/

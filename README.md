@@ -21,6 +21,7 @@ Figures and intervals are in [`notebooks/h1/h1_analysis.ipynb`](notebooks/h1/h1_
 **Supporting studies**
 
 - Metadata-only ablation: whether the sensitivity comes from the metadata block or from its interaction with the surrounding prose. [Notebook](notebooks/h1/h1_ablation_metadata_only.ipynb)
+- Split-draw sweep: whether the characterisation depends on which tenth of the corpus was held out, over five draws of the evaluation sample. [Notebook](notebooks/h1/h1_seed_sweep.ipynb)
 
 ### H2: mitigation
 
