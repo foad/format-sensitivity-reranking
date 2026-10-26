@@ -1,0 +1,86 @@
+Device: cuda
+
+Loading tokenizers for 6 budget models...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  ok  cross-encoder/ms-marco-MiniLM-L6-v2
+  ok  cross-encoder/ms-marco-MiniLM-L12-v2
+  ok  BAAI/bge-reranker-base
+  ok  BAAI/bge-reranker-v2-m3
+  ok  mixedbread-ai/mxbai-rerank-base-v1
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+  ok  jinaai/jina-reranker-v2-base-multilingual
+Loading data/nq_s1/splits/test.json...
+
+Split 'test': 812 queries
+
+Reusing candidate lists from data/nq_s1/h1/test_candidates.json
+  778 queries
+  dropped_gold_budget: 33
+  dropped_no_bm25_negs: 0
+  dropped_too_few_eligible_negs: 1
+  negatives_skipped_for_budget: 393
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (538 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 25/100
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (526 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (526 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 50/100
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 75/100
+    overflow check 100/100
+  >512-token renderings: worst model 1.70% (sampled 100 queries)
+
+----------------------------------------------------------------------
+BAAI/bge-reranker-base   2026-10-15 14:37:27
+----------------------------------------------------------------------
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 4069.76it/s]
+  metadata_only
+  scored       yaml  gold mean=-0.610  neg mean=-4.535
+  scored       json  gold mean=+0.285  neg mean=-2.524
+  scored       toml  gold mean=+1.548  neg mean=-1.307
+  scored  inline_kv  gold mean=+0.146  neg mean=-3.359
+  scored   markdown  gold mean=+0.324  neg mean=-3.034
+
+  max within-query flip %: 22.1%  (yaml vs json)
+  min Kendall tau:         0.557  (yaml vs json)
+  max top-1 change %:      62.3%  (yaml vs toml)
+  delta/S_within:          0.482
+  gold top-1 all formats:  15.7%  |  format-dependent: 40.2%  |  never: 44.1%
+  MRR per format:          yaml=0.590  json=0.474  toml=0.423  inline_kv=0.520  markdown=0.516
+  with_body
+  scored       yaml  gold mean=+4.976  neg mean=-2.938
+  scored       json  gold mean=+4.728  neg mean=-2.269
+  scored       toml  gold mean=+4.903  neg mean=-1.931
+  scored  inline_kv  gold mean=+4.996  neg mean=-2.446
+  scored   markdown  gold mean=+5.008  neg mean=-2.456
+
+  max within-query flip %: 12.8%  (yaml vs json)
+  min Kendall tau:         0.745  (yaml vs json)
+  max top-1 change %:      12.9%  (yaml vs toml)
+  delta/S_within:          0.183
+  gold top-1 all formats:  75.3%  |  format-dependent: 14.8%  |  never: 9.9%
+  MRR per format:          yaml=0.910  json=0.893  toml=0.888  inline_kv=0.906  markdown=0.906
+  scored in 0:13:41
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=test/metadata_only  n_queries=778  candidates=16   2026-10-15 14:51:10
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+----------------------------------------------------------------------------------------------------
+BAAI/bge-reranker-base                                22.1%     0.557      62.3%     40.2%     0.482
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved metadata_only results -> data/nq_s1/h1/test_within_metadata_only_bge_base.json  (0.4 MB)
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=test/with_body  n_queries=778  candidates=16   2026-10-15 14:51:10
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+----------------------------------------------------------------------------------------------------
+BAAI/bge-reranker-base                                12.8%     0.745      12.9%     14.8%     0.183
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved with_body results -> data/nq_s1/h1/test_within_with_body_bge_base.json  (0.4 MB)
+
+Pass complete in 0:13:43

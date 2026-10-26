@@ -1,0 +1,86 @@
+Device: cuda
+trust_remote_code: True
+Loading data/nq_s1/splits/test.json...
+  812 records
+
+Loading tokenizers for 6 models...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  ok mixedbread-ai/mxbai-rerank-base-v1
+  ok cross-encoder/ms-marco-MiniLM-L6-v2
+  ok cross-encoder/ms-marco-MiniLM-L12-v2
+  ok BAAI/bge-reranker-base
+  ok BAAI/bge-reranker-v2-m3
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+  ok jinaai/jina-reranker-v2-base-multilingual
+
+Preparing records (body budget across the whole roster)...
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (534 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (794 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (513 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (615 > 512). Running this sequence through the model will result in indexing errors
+  779 / 812 kept  (33 dropped, budget < 20)
+  body budget tokens: min=21 median=318 max=455
+  tightest tokenizer distribution:
+      746  BAAI/bge-reranker-base
+       54  cross-encoder/ms-marco-MiniLM-L6-v2
+       12  mixedbread-ai/mxbai-rerank-base-v1
+
+======================================================================
+MODE: metadata_only   n_records = 779   2026-10-15 14:30:28
+======================================================================
+
+----------------------------------------------------------------------
+mixedbread-ai/mxbai-rerank-base-v1   2026-10-15 14:30:28
+----------------------------------------------------------------------
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 2224.74it/s]
+  scored yaml  (mean=-1.389)
+  scored json  (mean=-1.911)
+  scored toml  (mean=-1.671)
+  scored inline_kv  (mean=-1.551)
+  scored markdown  (mean=-1.665)
+
+  max |d|:     0.828  (yaml - json)
+  min rho:     0.977  (yaml vs json)
+  max flip %:  6.2%  (yaml vs json)
+  ranking:     yaml > inline_kv > markdown > toml > json
+  scored in 0:00:27
+
+====================================================================================================
+CROSS-MODEL SUMMARY - metadata_only  (n=779)   2026-10-15 14:30:55
+====================================================================================================
+model                                               max |d|  min rho  max flip% ranking
+----------------------------------------------------------------------------------------------------
+mixedbread-ai/mxbai-rerank-base-v1                    0.828    0.977       6.2% yaml > inline_kv > markdown > toml > json
+
+Saved metadata_only results -> data/nq_s1/h1/test_cross_metadata_only_mxbai_v1.json  (0.1 MB)
+
+======================================================================
+MODE: with_body   n_records = 779   2026-10-15 14:30:55
+======================================================================
+
+----------------------------------------------------------------------
+mixedbread-ai/mxbai-rerank-base-v1   2026-10-15 14:30:55
+----------------------------------------------------------------------
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 2598.56it/s]
+  scored yaml  (mean=+2.600)
+  scored json  (mean=+2.358)
+  scored toml  (mean=+2.438)
+  scored inline_kv  (mean=+2.558)
+  scored markdown  (mean=+2.518)
+
+  max |d|:     0.639  (yaml - json)
+  min rho:     0.976  (yaml vs json)
+  max flip %:  5.9%  (yaml vs json)
+  ranking:     yaml > inline_kv > markdown > toml > json
+  scored in 0:00:45
+
+====================================================================================================
+CROSS-MODEL SUMMARY - with_body  (n=779)   2026-10-15 14:31:41
+====================================================================================================
+model                                               max |d|  min rho  max flip% ranking
+----------------------------------------------------------------------------------------------------
+mixedbread-ai/mxbai-rerank-base-v1                    0.639    0.976       5.9% yaml > inline_kv > markdown > toml > json
+
+Saved with_body results -> data/nq_s1/h1/test_cross_with_body_mxbai_v1.json  (0.1 MB)
+
+Pass complete in 0:01:12

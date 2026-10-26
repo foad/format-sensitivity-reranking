@@ -1,0 +1,86 @@
+Device: cuda
+
+Loading tokenizers for 6 budget models...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  ok  cross-encoder/ms-marco-MiniLM-L6-v2
+  ok  cross-encoder/ms-marco-MiniLM-L12-v2
+  ok  BAAI/bge-reranker-base
+  ok  BAAI/bge-reranker-v2-m3
+  ok  mixedbread-ai/mxbai-rerank-base-v1
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+  ok  jinaai/jina-reranker-v2-base-multilingual
+Loading data/nq_s4/splits/test.json...
+
+Split 'test': 782 queries
+
+Reusing candidate lists from data/nq_s4/h1/test_candidates.json
+  729 queries
+  dropped_gold_budget: 52
+  dropped_no_bm25_negs: 0
+  dropped_too_few_eligible_negs: 1
+  negatives_skipped_for_budget: 354
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (520 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 25/100
+    overflow check 50/100
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (519 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 75/100
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (519 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (519 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 100/100
+  >512-token renderings: worst model 1.16% (sampled 100 queries)
+
+----------------------------------------------------------------------
+mixedbread-ai/mxbai-rerank-base-v1   2026-10-15 18:35:40
+----------------------------------------------------------------------
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 2268.17it/s]
+  metadata_only
+  scored       yaml  gold mean=-1.680  neg mean=-4.911
+  scored       json  gold mean=-2.135  neg mean=-5.127
+  scored       toml  gold mean=-1.945  neg mean=-5.030
+  scored  inline_kv  gold mean=-1.823  neg mean=-4.954
+  scored   markdown  gold mean=-1.911  neg mean=-5.038
+
+  max within-query flip %: 9.8%  (yaml vs json)
+  min Kendall tau:         0.804  (yaml vs json)
+  max top-1 change %:      15.1%  (yaml vs json)
+  delta/S_within:          0.117
+  gold top-1 all formats:  48.8%  |  format-dependent: 11.2%  |  never: 39.9%
+  MRR per format:          yaml=0.678  json=0.671  toml=0.675  inline_kv=0.670  markdown=0.674
+  with_body
+  scored       yaml  gold mean=+2.556  neg mean=-4.387
+  scored       json  gold mean=+2.315  neg mean=-4.506
+  scored       toml  gold mean=+2.377  neg mean=-4.451
+  scored  inline_kv  gold mean=+2.497  neg mean=-4.405
+  scored   markdown  gold mean=+2.472  neg mean=-4.457
+
+  max within-query flip %: 4.9%  (yaml vs json)
+  min Kendall tau:         0.901  (yaml vs json)
+  max top-1 change %:      3.6%  (yaml vs json)
+  delta/S_within:          0.045
+  gold top-1 all formats:  87.1%  |  format-dependent: 3.4%  |  never: 9.5%
+  MRR per format:          yaml=0.932  json=0.931  toml=0.935  inline_kv=0.932  markdown=0.934
+  scored in 0:16:52
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=test/metadata_only  n_queries=729  candidates=16   2026-10-15 18:52:33
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+----------------------------------------------------------------------------------------------------
+mixedbread-ai/mxbai-rerank-base-v1                     9.8%     0.804      15.1%     11.2%     0.117
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved metadata_only results -> data/nq_s4/h1/test_within_metadata_only_mxbai_v1.json  (0.4 MB)
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=test/with_body  n_queries=729  candidates=16   2026-10-15 18:52:33
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+----------------------------------------------------------------------------------------------------
+mixedbread-ai/mxbai-rerank-base-v1                     4.9%     0.901       3.6%      3.4%     0.045
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved with_body results -> data/nq_s4/h1/test_within_with_body_mxbai_v1.json  (0.4 MB)
+
+Pass complete in 0:16:53

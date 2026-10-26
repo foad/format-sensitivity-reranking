@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "fsr_version": "1.0.0",
+  "config": {
+    "dataset": "google-research-datasets/natural_questions",
+    "dataset_revision": "e8103d566bef4154c2c12b17c6095ec5275840cc",
+    "body_chars": 3000,
+    "min_paragraph_chars": 30,
+    "max_key_chars": 80,
+    "max_value_chars": 400,
+    "min_pairs": 3,
+    "min_body_chars": 100,
+    "min_infobox_chars": 200,
+    "split_seed": 3,
+    "frac_train": 0.8,
+    "frac_dev": 0.1,
+    "negatives_seed": 42,
+    "cache_k": 25,
+    "frac_test": 0.09999999999999995
+  },
+  "stages": [
+    {
+      "name": "split",
+      "outputs": [
+        {
+          "path": "splits/train.json",
+          "sha256": "7a66664a41782cdba3559dbd008794759cc70eece0b1d66a22c13e1fc890511f",
+          "bytes": 23551463,
+          "records": 6570
+        },
+        {
+          "path": "splits/dev.json",
+          "sha256": "d1fd6d0343f5fce0590f56f1c38d34c1199bed84c0af1f00808ed3d74e208792",
+          "bytes": 2961394,
+          "records": 837
+        },
+        {
+          "path": "splits/test.json",
+          "sha256": "4aa210aa4deceb5e3beed959ce4d8a1b5f654f9334c7bc50a058b55cfa2d5e0d",
+          "bytes": 2828589,
+          "records": 781
+        },
+        {
+          "path": "splits/nq_val.json",
+          "sha256": "e68a1062c52c9e60ea056fa1ddaf515534c0cf34cc10204a5bc4a47212d4fbca",
+          "bytes": 612930,
+          "records": 171
+        },
+        {
+          "path": "splits/meta.json",
+          "sha256": "14193ac33bfe2dcc7efa6cb586da7d0361c87e8e94d20ecf1774d25499573fcb",
+          "bytes": 265,
+          "records": null
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+Device: cuda
+
+Loading tokenizers for 6 budget models...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+  ok  cross-encoder/ms-marco-MiniLM-L6-v2
+  ok  cross-encoder/ms-marco-MiniLM-L12-v2
+  ok  BAAI/bge-reranker-base
+  ok  BAAI/bge-reranker-v2-m3
+  ok  mixedbread-ai/mxbai-rerank-base-v1
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+  ok  jinaai/jina-reranker-v2-base-multilingual
+Loading data/nq_s3/splits/test.json...
+
+Split 'test': 781 queries
+
+Reusing candidate lists from data/nq_s3/h1/test_candidates.json
+  706 queries
+  dropped_gold_budget: 73
+  dropped_no_bm25_negs: 0
+  dropped_too_few_eligible_negs: 2
+  negatives_skipped_for_budget: 382
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (547 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 25/100
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+    overflow check 50/100
+    overflow check 75/100
+    overflow check 100/100
+  >512-token renderings: worst model 1.56% (sampled 100 queries)
+
+----------------------------------------------------------------------
+cross-encoder/ms-marco-MiniLM-L12-v2   2026-10-15 16:56:23
+----------------------------------------------------------------------
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3649.19it/s]
+  metadata_only
+  scored       yaml  gold mean=-1.892  neg mean=-8.467
+  scored       json  gold mean=-2.782  neg mean=-8.705
+  scored       toml  gold mean=-3.063  neg mean=-9.025
+  scored  inline_kv  gold mean=-2.788  neg mean=-8.902
+  scored   markdown  gold mean=-2.162  neg mean=-8.409
+
+  max within-query flip %: 8.9%  (json vs inline_kv)
+  min Kendall tau:         0.823  (json vs inline_kv)
+  max top-1 change %:      18.6%  (json vs inline_kv)
+  delta/S_within:          0.133
+  gold top-1 all formats:  44.8%  |  format-dependent: 10.6%  |  never: 44.6%
+  MRR per format:          yaml=0.632  json=0.618  toml=0.614  inline_kv=0.622  markdown=0.631
+  with_body
+  scored       yaml  gold mean=+5.483  neg mean=-5.590
+  scored       json  gold mean=+4.854  neg mean=-5.241
+  scored       toml  gold mean=+4.789  neg mean=-5.959
+  scored  inline_kv  gold mean=+5.072  neg mean=-5.865
+  scored   markdown  gold mean=+5.064  neg mean=-5.447
+
+  max within-query flip %: 10.3%  (json vs inline_kv)
+  min Kendall tau:         0.794  (json vs inline_kv)
+  max top-1 change %:      8.1%  (json vs inline_kv)
+  delta/S_within:          0.111
+  gold top-1 all formats:  81.4%  |  format-dependent: 7.9%  |  never: 10.6%
+  MRR per format:          yaml=0.920  json=0.897  toml=0.904  inline_kv=0.912  markdown=0.909
+  scored in 0:05:40
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=test/metadata_only  n_queries=706  candidates=16   2026-10-15 17:02:05
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+----------------------------------------------------------------------------------------------------
+cross-encoder/ms-marco-MiniLM-L12-v2                   8.9%     0.823      18.6%     10.6%     0.133
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved metadata_only results -> data/nq_s3/h1/test_within_metadata_only_minilm_l12.json  (0.4 MB)
+
+====================================================================================================
+WITHIN-QUERY SUMMARY - split=test/with_body  n_queries=706  candidates=16   2026-10-15 17:02:05
+====================================================================================================
+model                                             max flip%   min tau  top1 chg%  fmt-dep%   delta/S
+----------------------------------------------------------------------------------------------------
+cross-encoder/ms-marco-MiniLM-L12-v2                  10.3%     0.794       8.1%      7.9%     0.111
+
+  fmt-dep% = queries whose gold ranks first under some formats but not others.
+
+Saved with_body results -> data/nq_s3/h1/test_within_with_body_minilm_l12.json  (0.4 MB)
+
+Pass complete in 0:05:41
