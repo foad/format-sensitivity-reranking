@@ -1,0 +1,17 @@
+
+======================================================================
+STANDARDISATION  mxbai-v1  arm=base   2026-10-23 21:23:05
+======================================================================
+  identifier: mixedbread-ai/mxbai-rerank-base-v1
+  adapter:    none, untrained baseline
+  queries:    767
+  candidates: 16 each
+  formats:    yaml json toml inline_kv markdown
+  batch:      16
+  device:     cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  73%|███████▎  | 147/202 [00:00<00:00, 1330.44it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1229.92it/s]
+  standardisation capture in 0:13:09
+
+Saved mxbai_v1 base scores results -> data/nq/h2/standardisation/test_scores_mxbai_v1_base.npy  (0.2 MB)

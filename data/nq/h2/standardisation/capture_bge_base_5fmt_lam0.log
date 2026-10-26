@@ -1,0 +1,18 @@
+
+======================================================================
+STANDARDISATION  bge-base  arm=5fmt_lam0   2026-10-23 20:42:08
+======================================================================
+  identifier: BAAI/bge-reranker-base
+  adapter:    data/nq/h2/train/bge_base_5fmt_lam0/adapter
+  queries:    767
+  candidates: 16 each
+  formats:    yaml json toml inline_kv markdown
+  batch:      16
+  device:     cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3180.21it/s]
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  standardisation capture in 0:10:01
+
+Saved bge_base 5fmt_lam0 scores results -> data/nq/h2/standardisation/test_scores_bge_base_5fmt_lam0.npy  (0.2 MB)
