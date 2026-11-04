@@ -1,0 +1,17 @@
+
+======================================================================
+DEMO SCORING  bge-base  arm=base   2026-10-26 19:30:58
+======================================================================
+  identifier: BAAI/bge-reranker-base
+  adapter:    none, untrained baseline
+  pools:      2,000
+  candidates: 10 each
+  formats:    yaml json toml inline_kv markdown
+  batch:      16
+  device:     cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3055.89it/s]
+  demo scoring in 0:07:17
+
+Saved bge_base base scores results -> data/demo/scores_bge_base_base.npy  (0.4 MB)

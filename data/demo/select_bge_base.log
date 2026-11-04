@@ -1,0 +1,21 @@
+
+======================================================================
+DEMO SELECTION  bge-base  k=3   2026-10-26 19:48:45
+======================================================================
+  untrained    base           standard yaml
+  rank only    5fmt_lam0      standard yaml
+  invariance   5fmt_lam1      standard yaml
+
+   2,000  generated
+     255  untrained loses it, mixed
+      49  untrained loses it, standardised
+      25  rank only loses it, mixed
+      19  rank only loses it, standardised
+       2  invariance keeps it, mixed
+       1  invariance keeps it, every uniform format
+       1  re-rendering the gold alone rescues it, untrained
+       0  of which the wrong answer survives the cut
+
+Saved selection results -> data/demo/selection_bge_base.json  (0.0 MB)
+
+Saved demo01108 top-k results -> data/demo/topk_bge_base_demo01108.md  (0.0 MB)

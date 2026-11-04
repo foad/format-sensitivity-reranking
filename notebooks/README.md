@@ -12,3 +12,6 @@ Analysis notebooks that produce the figures and tables.
 - `h2_ablation_nonbox.ipynb`: capability preservation on non-infobox prose.
 - `h2_confounds.ipynb`: range compression, fold symmetry, and negative-side stability.
 - `h2_mxbai_tanh.ipynb`: the tanh classifier head, length-matched.
+
+## `demo/`
+- `demo_pipeline.ipynb`: the pipeline demonstration, four conditions on one question and its format assignments.

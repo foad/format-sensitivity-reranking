@@ -1,0 +1,104 @@
+{
+ "k": 3,
+ "n_candidates": 10,
+ "arms": {
+  "untrained": "base",
+  "rank only": "5fmt_lam0",
+  "invariance": "5fmt_lam1"
+ },
+ "standards": {
+  "untrained": "yaml",
+  "rank only": "yaml",
+  "invariance": "yaml"
+ },
+ "funnel": [
+  {
+   "step": "generated",
+   "n": 2000
+  },
+  {
+   "step": "untrained loses it, mixed",
+   "n": 255
+  },
+  {
+   "step": "untrained loses it, standardised",
+   "n": 49
+  },
+  {
+   "step": "rank only loses it, mixed",
+   "n": 25
+  },
+  {
+   "step": "rank only loses it, standardised",
+   "n": 19
+  },
+  {
+   "step": "invariance keeps it, mixed",
+   "n": 2
+  },
+  {
+   "step": "invariance keeps it, every uniform format",
+   "n": 1
+  },
+  {
+   "step": "re-rendering the gold alone rescues it, untrained",
+   "n": 1
+  }
+ ],
+ "n_wrong_in_topk": 0,
+ "matches": [
+  {
+   "id": "demo01108",
+   "kind": "river",
+   "target": "mouth",
+   "question": "Into which body of water does the Zelish River flow?",
+   "answer": "the Gulf of Durish",
+   "wrong_answer": "the Athwen Sea",
+   "wrong_in_topk": false,
+   "ranks": {
+    "untrained": {
+     "mixed": 4,
+     "standardised": 4,
+     "uniform": {
+      "yaml": 4,
+      "json": 4,
+      "toml": 4,
+      "inline_kv": 2,
+      "markdown": 2
+     }
+    },
+    "rank only": {
+     "mixed": 4,
+     "standardised": 4,
+     "uniform": {
+      "yaml": 4,
+      "json": 4,
+      "toml": 3,
+      "inline_kv": 3,
+      "markdown": 2
+     }
+    },
+    "invariance": {
+     "mixed": 1,
+     "standardised": 3,
+     "uniform": {
+      "yaml": 3,
+      "json": 3,
+      "toml": 3,
+      "inline_kv": 2,
+      "markdown": 2
+     }
+    }
+   },
+   "rescued_by": {
+    "mixed": [
+     "inline_kv",
+     "markdown"
+    ],
+    "standardised": [
+     "markdown"
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,50 @@
+{
+  "questions": [
+    {
+      "id": "upload-limit",
+      "wordings": [
+        "What's the maximum file size I can upload in one request to the v3 API?",
+        "How big can a file be for a single POST to /v3/uploads?",
+        "Is there a size limit on v3 uploads?"
+      ],
+      "required": ["cl-3-4-0"],
+      "key": "cl-3-4-0",
+      "expected_answer": "200 MB per request (raised from 50 MB in release 3.4.0)",
+      "stale_answer": "50 MB"
+    },
+    {
+      "id": "regions",
+      "wordings": [
+        "Which regions can I choose for data residency?",
+        "Where can a workspace's data be hosted?",
+        "Can we keep our documents in Australia?"
+      ],
+      "required": ["ref-regions", "cl-3-6-0"],
+      "key": "cl-3-6-0",
+      "expected_answer": "eu-west-1 (Dublin), us-east-1 (Virginia) and ap-southeast-2 (Sydney, added in 3.6.0)",
+      "stale_answer": "EU and US only"
+    },
+    {
+      "id": "key-lifetime",
+      "wordings": [
+        "How long is an API key valid, and does rotating it cut off the old one straight away?",
+        "When do API keys expire and what happens to the old secret after a rotation?"
+      ],
+      "required": ["wiki-key-lifetime", "ref-key-rotation"],
+      "key": "wiki-key-lifetime",
+      "expected_answer": "60 days for keys issued since the July 2025 policy change; the old secret keeps working for 24 hours after rotation",
+      "stale_answer": "90 days"
+    },
+    {
+      "id": "v2-batch",
+      "wordings": [
+        "Is /v2/batch still supported?",
+        "Can we keep using the v2 batch endpoint for nightly loads?"
+      ],
+      "required": ["ref-v2-batch", "cl-3-2-0"],
+      "key": "ref-v2-batch",
+      "expected_answer": "No: it is deprecated, removed after 31 December 2025, and replaced by /v3/jobs",
+      "stale_answer": "Yes, it is still supported"
+    }
+  ]
+}

@@ -1,0 +1,431 @@
+{
+  "round": 4,
+  "note": "Round 3 cut the best shortfall to 0.49 via a stale-premise wording ('Is 50 MB still the cap...?'). Round 4 adds stale-premise wordings to all four questions, at each question's best metadata levels so far. The stale competitor passages are now part of the shared knowledge base.",
+  "global": {
+    "replace": {
+      "cl-3-6-0": {
+        "pairs": [
+          [
+            "release",
+            "3.6.0"
+          ],
+          [
+            "date",
+            "2025-09-02"
+          ],
+          [
+            "component",
+            "workspaces"
+          ],
+          [
+            "type",
+            "added"
+          ]
+        ],
+        "body": "- New region: ap-southeast-2 (Sydney, Australia). Available to all plans for newly created workspaces.\n- Workspace responses now include created_region.\n- Dashboard shows region next to the workspace name."
+      }
+    },
+    "add": [
+      {
+        "id": "tk-4519",
+        "source": "tickets",
+        "pairs": [
+          [
+            "ticket",
+            "FH-4519"
+          ],
+          [
+            "product",
+            "ingest-api"
+          ],
+          [
+            "priority",
+            "low"
+          ],
+          [
+            "created",
+            "2025-03-14"
+          ]
+        ],
+        "body": "Customer: whats the biggest file we can push through /v3/uploads in one go? want to size our exports\n\nAgent (Priya): Hi! It's 50 MB per request. For anything bigger the upload sessions endpoint takes files in 16 MB parts, so there's no practical ceiling there."
+      },
+      {
+        "id": "wiki-choosing-region",
+        "source": "wiki",
+        "pairs": [
+          [
+            "space",
+            "Onboarding"
+          ],
+          [
+            "owner_team",
+            "customer-success"
+          ],
+          [
+            "last_modified",
+            "2025-04-02"
+          ]
+        ],
+        "body": "## Choosing a workspace region\n\nDuring onboarding, ask the customer where their data has to live before the first workspace is created, because it cannot be moved afterwards. The two options are Dublin (eu-west-1) and Virginia (us-east-1). Most UK and EU customers pick Dublin; if they are unsure, legal usually has an opinion."
+      },
+      {
+        "id": "tk-4388",
+        "source": "tickets",
+        "pairs": [
+          [
+            "ticket",
+            "FH-4388"
+          ],
+          [
+            "product",
+            "ingest-api"
+          ],
+          [
+            "priority",
+            "normal"
+          ],
+          [
+            "created",
+            "2025-01-08"
+          ]
+        ],
+        "body": "Customer: how long do api keys last before they expire? and if we rotate does the old one die immediately, we have a few services sharing one\n\nAgent (Jo): Keys last 90 days. When you rotate, the old secret keeps working for 24 hours, so you have a day to roll it out everywhere."
+      },
+      {
+        "id": "tk-4555",
+        "source": "tickets",
+        "pairs": [
+          [
+            "ticket",
+            "FH-4555"
+          ],
+          [
+            "product",
+            "ingest-api"
+          ],
+          [
+            "priority",
+            "normal"
+          ],
+          [
+            "created",
+            "2024-10-21"
+          ]
+        ],
+        "body": "Customer: is there a cap on how many urls one /v2/batch call can take? planning our nightly job around it\n\nAgent (Tom): 500 per call, and that hasn't changed. If you need more just send several batches, there's no limit on how many you run a night."
+      }
+    ]
+  },
+  "questions": {
+    "upload-limit": {
+      "add_wordings": [
+        "Our 120 MB scans are being rejected by /v3/uploads. What is the actual limit?",
+        "What's the per-request upload limit on v3 now?",
+        "What file size does /v3/uploads accept?",
+        "We're getting 413 Payload Too Large on a 90 MB upload, is that expected?",
+        "How large a document can I send in a single upload request?",
+        "Has the upload size limit changed recently?",
+        "Do I need upload sessions for a 150 MB file, or will a normal upload work?",
+        "What's the max body size for POST /v3/uploads?",
+        "Is 50 MB still the cap on single uploads?",
+        "upload limit v3",
+        "Biggest file the v3 upload endpoint takes in one request?",
+        "Can I upload a 180 MB PDF without splitting it?",
+        "Is the v3 upload limit still 50 MB?",
+        "Do we still have to split files over 50 MB?",
+        "Are single uploads still capped at 50 MB per request?",
+        "We were told uploads max out at 50 MB, is that still right?",
+        "Do files over 50 MB still need upload sessions?"
+      ],
+      "factors": {
+        "key_meta": {
+          "B3": {
+            "replace": {
+              "cl-3-4-0": {
+                "pairs": [
+                  [
+                    "release",
+                    "3.4.0"
+                  ],
+                  [
+                    "date",
+                    "2025-04-08"
+                  ],
+                  [
+                    "component",
+                    "uploads"
+                  ],
+                  [
+                    "type",
+                    "changed"
+                  ],
+                  [
+                    "title",
+                    "Raise the upload body limit"
+                  ],
+                  [
+                    "affects",
+                    "POST /v3/uploads, POST /v3/upload-sessions"
+                  ],
+                  [
+                    "breaking",
+                    "false"
+                  ]
+                ],
+                "body": "- Single-request body ceiling raised from 50 MB to 200 MB on all plans.\n- 413 responses now include max_bytes in the error body.\n- Fixed checksums occasionally missing from 201 responses."
+              }
+            }
+          }
+        },
+        "v2_page": {
+          "soft": {
+            "replace": {
+              "ref-v2-uploads": {
+                "body": "POST /v2/upload\n\nAccepts multipart/form-data with a single file field, up to 25 MB. The response includes a job_id; the document is not available until the job reports done.\n\nThis endpoint is kept for existing integrations. New integrations should use the v3 Uploads endpoint."
+              }
+            }
+          }
+        },
+        "v3_page": {
+          "plain": {},
+          "rich": {
+            "replace": {
+              "ref-v3-uploads": {
+                "pairs": [
+                  [
+                    "title",
+                    "Uploads"
+                  ],
+                  [
+                    "api_version",
+                    "3"
+                  ],
+                  [
+                    "status",
+                    "current"
+                  ],
+                  [
+                    "endpoint",
+                    "POST /v3/uploads"
+                  ],
+                  [
+                    "owner",
+                    "storage-team"
+                  ],
+                  [
+                    "last_updated",
+                    "2024-12-02"
+                  ]
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "regions": {
+      "add_wordings": [
+        "Is there an Asia-Pacific region for workspaces?",
+        "Can we host a workspace in Asia-Pacific?",
+        "Do you have a data centre in Australia?",
+        "Which data residency regions are available now?",
+        "Is Sydney available as a workspace region?",
+        "We need APAC data residency, what are our options?",
+        "List the regions a new workspace can be created in.",
+        "Has a new region been added recently?",
+        "Can an Australian customer keep their data in-country?",
+        "workspace regions available",
+        "Are EU and US still the only hosting regions?",
+        "What region should an Australian customer choose for their workspace?",
+        "Is it still only Dublin and Virginia for workspaces?",
+        "Do you still not have an Australian region?",
+        "Are we still limited to EU or US hosting?",
+        "Last year you said there was no Australian region, has that changed?",
+        "Is data residency still EU or US only?"
+      ],
+      "factors": {
+        "key_meta": {
+          "B2": {
+            "replace": {
+              "cl-3-6-0": {
+                "pairs": [
+                  [
+                    "release",
+                    "3.6.0"
+                  ],
+                  [
+                    "date",
+                    "2025-09-02"
+                  ],
+                  [
+                    "component",
+                    "workspaces"
+                  ],
+                  [
+                    "type",
+                    "added"
+                  ],
+                  [
+                    "title",
+                    "Sydney region"
+                  ],
+                  [
+                    "affects",
+                    "POST /v3/workspaces"
+                  ],
+                  [
+                    "breaking",
+                    "false"
+                  ],
+                  [
+                    "regions_added",
+                    "ap-southeast-2"
+                  ]
+                ]
+              }
+            }
+          }
+        },
+        "regions_page": {
+          "plain": {}
+        }
+      }
+    },
+    "key-lifetime": {
+      "add_wordings": [
+        "Do API keys expire after 90 days?",
+        "Do API keys still last 90 days?",
+        "Are keys still valid for 90 days after creation?",
+        "Is the API key lifetime still 90 days?",
+        "We rotate keys every 90 days, is that still the expiry?",
+        "Has the 90-day key expiry changed?"
+      ],
+      "factors": {
+        "key_meta": {
+          "B": {
+            "replace": {
+              "wiki-key-lifetime": {
+                "pairs": [
+                  [
+                    "space",
+                    "Platform Security"
+                  ],
+                  [
+                    "owner_team",
+                    "platform-security"
+                  ],
+                  [
+                    "last_modified",
+                    "2025-07-21"
+                  ],
+                  [
+                    "title",
+                    "Credential lifetime policy"
+                  ],
+                  [
+                    "labels",
+                    "security, api-keys, policy"
+                  ],
+                  [
+                    "status",
+                    "approved"
+                  ]
+                ],
+                "body": "## Credential lifetime policy\n\nFollowing the July security review, the lifetime of newly issued API credentials has been shortened from 90 to 60 days. Existing credentials keep their original expiry date and are not affected until they are next rotated.\n\nCustomers get a reminder email 14 days before expiry. Support should point anyone asking about automated rotation to the rotate endpoint rather than suggesting they create new keys."
+              }
+            }
+          },
+          "C": {
+            "replace": {
+              "wiki-key-lifetime": {
+                "pairs": [
+                  [
+                    "space",
+                    "Platform Security"
+                  ],
+                  [
+                    "owner_team",
+                    "platform-security"
+                  ],
+                  [
+                    "last_modified",
+                    "2025-07-21"
+                  ],
+                  [
+                    "title",
+                    "Credential lifetime policy"
+                  ],
+                  [
+                    "summary",
+                    "New API keys expire after 60 days, down from 90"
+                  ],
+                  [
+                    "status",
+                    "approved"
+                  ]
+                ],
+                "body": "## Credential lifetime policy\n\nThis follows the July security review. Existing credentials keep their original expiry date and are not affected until they are next rotated.\n\nCustomers get a reminder email 14 days before expiry. Support should point anyone asking about automated rotation to the rotate endpoint rather than suggesting they create new keys."
+              }
+            }
+          }
+        }
+      }
+    },
+    "v2-batch": {
+      "add_wordings": [
+        "Do we need to migrate off /v2/batch?",
+        "Is /v2/batch still OK to use for nightly loads?",
+        "Can we still rely on /v2/batch long term?",
+        "Is the v2 batch endpoint still supported?",
+        "We were told /v2/batch isn't changing, is that still true?",
+        "Are nightly /v2/batch loads still fine?"
+      ],
+      "factors": {
+        "key_meta": {
+          "A": {},
+          "B": {
+            "replace": {
+              "ref-v2-batch": {
+                "pairs": [
+                  [
+                    "title",
+                    "Batch submit (v2)"
+                  ],
+                  [
+                    "api_version",
+                    "2"
+                  ],
+                  [
+                    "status",
+                    "deprecated"
+                  ],
+                  [
+                    "deprecated_in",
+                    "3.2.0"
+                  ],
+                  [
+                    "sunset",
+                    "2025-12-31"
+                  ],
+                  [
+                    "replacement",
+                    "/v3/jobs"
+                  ],
+                  [
+                    "migration_guide",
+                    "/docs/migrate/v2-batch-to-jobs"
+                  ],
+                  [
+                    "last_updated",
+                    "2025-01-09"
+                  ]
+                ],
+                "body": "POST /v2/batch\n\nSubmits up to 500 document URLs for ingestion in one call. Each URL is fetched once; failures are listed in the batch report rather than retried. Poll GET /v2/batch/{batch_id} until state is complete."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
