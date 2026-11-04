@@ -1,0 +1,29 @@
+
+======================================================================
+DEMO LOOP WORKER  bge-base  worker=gpu0   2026-10-26 22:11:10
+======================================================================
+  identifier: BAAI/bge-reranker-base
+  arms:       base 5fmt_lam0 5fmt_lam1 json_lam0 json_lam1
+  formats:    yaml json toml inline_kv markdown
+  inbox:      data/demo/loop/inbox
+  outbox:     data/demo/loop/outbox
+  batch:      64
+  device:     cuda
+  stops:      10 min idle, 6 h in all
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3628.29it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3071.09it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3209.54it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3131.38it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 2957.92it/s]
+  memory:     5.2 GiB loaded
+2026-10-26 22:11:18 watching the inbox
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+2026-10-26 22:11:31 round1: 1255 pairs, 2700 scored, 0 truncated, 12.83s
+2026-10-26 22:13:34 round2: 925 pairs, 1800 scored, 0 truncated, 8.23s
+2026-10-26 22:15:59 round3: 2460 pairs, 8175 scored, 0 truncated, 35.16s
+2026-10-26 22:20:39 round4: 4375 pairs, 9150 scored, 0 truncated, 40.06s
+2026-10-26 22:21:50 round5: 2600 pairs, 5500 scored, 0 truncated, 25.43s
+2026-10-26 22:23:41 round6: 2730 pairs, 3250 scored, 0 truncated, 16.24s
+2026-10-26 22:26:41 round7: 2860 pairs, 3250 scored, 0 truncated, 14.28s

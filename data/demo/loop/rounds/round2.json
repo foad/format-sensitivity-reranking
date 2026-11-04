@@ -1,0 +1,123 @@
+{
+  "round": 2,
+  "note": "Round 1: richer key metadata (B) raised lam0's format spread on upload-limit from 0.38 to 0.88; best pools fail only on lam1 cutting the key narrowly. Round 2 keeps B and the stale competitors (now part of the knowledge base), varies the key's metadata around B, and the metadata or wording of the nearest competitors. Upload-limit and regions only.",
+  "global": {
+    "replace": {
+      "cl-3-6-0": {
+        "pairs": [["release", "3.6.0"], ["date", "2025-09-02"], ["component", "workspaces"], ["type", "added"]],
+        "body": "- New region: ap-southeast-2 (Sydney, Australia). Available to all plans for newly created workspaces.\n- Workspace responses now include created_region.\n- Dashboard shows region next to the workspace name."
+      }
+    },
+    "add": [
+      {
+        "id": "tk-4519",
+        "source": "tickets",
+        "pairs": [["ticket", "FH-4519"], ["product", "ingest-api"], ["priority", "low"], ["created", "2025-03-14"]],
+        "body": "Customer: whats the biggest file we can push through /v3/uploads in one go? want to size our exports\n\nAgent (Priya): Hi! It's 50 MB per request. For anything bigger the upload sessions endpoint takes files in 16 MB parts, so there's no practical ceiling there."
+      },
+      {
+        "id": "wiki-choosing-region",
+        "source": "wiki",
+        "pairs": [["space", "Onboarding"], ["owner_team", "customer-success"], ["last_modified", "2025-04-02"]],
+        "body": "## Choosing a workspace region\n\nDuring onboarding, ask the customer where their data has to live before the first workspace is created, because it cannot be moved afterwards. The two options are Dublin (eu-west-1) and Virginia (us-east-1). Most UK and EU customers pick Dublin; if they are unsure, legal usually has an opinion."
+      }
+    ]
+  },
+  "questions": {
+    "upload-limit": {
+      "add_wordings": [
+        "Our 120 MB scans are being rejected by /v3/uploads. What is the actual limit?",
+        "What's the per-request upload limit on v3 now?"
+      ],
+      "factors": {
+        "key_meta": {
+          "B": {
+            "replace": {
+              "cl-3-4-0": {
+                "pairs": [["release", "3.4.0"], ["date", "2025-04-08"], ["component", "uploads"], ["type", "changed"], ["title", "Larger single-request uploads"], ["affects", "POST /v3/uploads"], ["breaking", "false"]],
+                "body": "- Single-request body ceiling raised from 50 MB to 200 MB on all plans.\n- 413 responses now include max_bytes in the error body.\n- Fixed checksums occasionally missing from 201 responses."
+              }
+            }
+          },
+          "B2": {
+            "replace": {
+              "cl-3-4-0": {
+                "pairs": [["release", "3.4.0"], ["date", "2025-04-08"], ["component", "uploads"], ["type", "changed"], ["title", "Larger single-request uploads"], ["affects", "POST /v3/uploads"], ["breaking", "false"], ["owner", "storage-team"], ["docs", "/docs/uploads#limits"]],
+                "body": "- Single-request body ceiling raised from 50 MB to 200 MB on all plans.\n- 413 responses now include max_bytes in the error body.\n- Fixed checksums occasionally missing from 201 responses."
+              }
+            }
+          },
+          "B3": {
+            "replace": {
+              "cl-3-4-0": {
+                "pairs": [["release", "3.4.0"], ["date", "2025-04-08"], ["component", "uploads"], ["type", "changed"], ["title", "Raise the upload body limit"], ["affects", "POST /v3/uploads, POST /v3/upload-sessions"], ["breaking", "false"]],
+                "body": "- Single-request body ceiling raised from 50 MB to 200 MB on all plans.\n- 413 responses now include max_bytes in the error body.\n- Fixed checksums occasionally missing from 201 responses."
+              }
+            }
+          }
+        },
+        "v2_page": {
+          "plain": {},
+          "soft": {
+            "replace": {
+              "ref-v2-uploads": {
+                "body": "POST /v2/upload\n\nAccepts multipart/form-data with a single file field, up to 25 MB. The response includes a job_id; the document is not available until the job reports done.\n\nThis endpoint is kept for existing integrations. New integrations should use the v3 Uploads endpoint."
+              }
+            }
+          }
+        },
+        "v3_page": {
+          "plain": {},
+          "rich": {
+            "replace": {
+              "ref-v3-uploads": {
+                "pairs": [["title", "Uploads"], ["api_version", "3"], ["status", "current"], ["endpoint", "POST /v3/uploads"], ["owner", "storage-team"], ["last_updated", "2024-12-02"]]
+              }
+            }
+          }
+        }
+      }
+    },
+    "regions": {
+      "add_wordings": [
+        "Is there an Asia-Pacific region for workspaces?",
+        "Can we host a workspace in Asia-Pacific?"
+      ],
+      "factors": {
+        "key_meta": {
+          "B": {
+            "replace": {
+              "cl-3-6-0": {
+                "pairs": [["release", "3.6.0"], ["date", "2025-09-02"], ["component", "workspaces"], ["type", "added"], ["title", "Sydney region"], ["affects", "POST /v3/workspaces"], ["breaking", "false"]]
+              }
+            }
+          },
+          "B2": {
+            "replace": {
+              "cl-3-6-0": {
+                "pairs": [["release", "3.6.0"], ["date", "2025-09-02"], ["component", "workspaces"], ["type", "added"], ["title", "Sydney region"], ["affects", "POST /v3/workspaces"], ["breaking", "false"], ["regions_added", "ap-southeast-2"]]
+              }
+            }
+          },
+          "B3": {
+            "replace": {
+              "cl-3-6-0": {
+                "pairs": [["release", "3.6.0"], ["date", "2025-09-02"], ["component", "workspaces"], ["type", "added"], ["title", "Sydney region (ap-southeast-2)"], ["affects", "POST /v3/workspaces"], ["breaking", "false"]]
+              }
+            }
+          }
+        },
+        "regions_page": {
+          "plain": {},
+          "rich": {
+            "replace": {
+              "ref-regions": {
+                "pairs": [["title", "Regions"], ["api_version", "3"], ["status", "current"], ["regions", "eu-west-1, us-east-1"], ["last_updated", "2025-03-11"]]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

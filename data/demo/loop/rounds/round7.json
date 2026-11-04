@@ -1,0 +1,577 @@
+{
+  "round": 7,
+  "note": "Round 6 stalled at 0.20: tags on the competitors trade lam1's worst standard against lam0's standardised cell. Round 7 varies the key passage's own metadata around B3 (type, component, field order, a plans field, the affects value), with the two best ticket taggings and the labelled wiki page.",
+  "global": {
+    "replace": {
+      "cl-3-6-0": {
+        "pairs": [
+          [
+            "release",
+            "3.6.0"
+          ],
+          [
+            "date",
+            "2025-09-02"
+          ],
+          [
+            "component",
+            "workspaces"
+          ],
+          [
+            "type",
+            "added"
+          ]
+        ],
+        "body": "- New region: ap-southeast-2 (Sydney, Australia). Available to all plans for newly created workspaces.\n- Workspace responses now include created_region.\n- Dashboard shows region next to the workspace name."
+      }
+    },
+    "add": [
+      {
+        "id": "tk-4519",
+        "source": "tickets",
+        "pairs": [
+          [
+            "ticket",
+            "FH-4519"
+          ],
+          [
+            "product",
+            "ingest-api"
+          ],
+          [
+            "priority",
+            "low"
+          ],
+          [
+            "created",
+            "2025-03-14"
+          ]
+        ],
+        "body": "Customer: whats the biggest file we can push through /v3/uploads in one go? want to size our exports\n\nAgent (Priya): Hi! It's 50 MB per request. For anything bigger the upload sessions endpoint takes files in 16 MB parts, so there's no practical ceiling there."
+      },
+      {
+        "id": "wiki-choosing-region",
+        "source": "wiki",
+        "pairs": [
+          [
+            "space",
+            "Onboarding"
+          ],
+          [
+            "owner_team",
+            "customer-success"
+          ],
+          [
+            "last_modified",
+            "2025-04-02"
+          ]
+        ],
+        "body": "## Choosing a workspace region\n\nDuring onboarding, ask the customer where their data has to live before the first workspace is created, because it cannot be moved afterwards. The two options are Dublin (eu-west-1) and Virginia (us-east-1). Most UK and EU customers pick Dublin; if they are unsure, legal usually has an opinion."
+      },
+      {
+        "id": "tk-4388",
+        "source": "tickets",
+        "pairs": [
+          [
+            "ticket",
+            "FH-4388"
+          ],
+          [
+            "product",
+            "ingest-api"
+          ],
+          [
+            "priority",
+            "normal"
+          ],
+          [
+            "created",
+            "2025-01-08"
+          ]
+        ],
+        "body": "Customer: how long do api keys last before they expire? and if we rotate does the old one die immediately, we have a few services sharing one\n\nAgent (Jo): Keys last 90 days. When you rotate, the old secret keeps working for 24 hours, so you have a day to roll it out everywhere."
+      },
+      {
+        "id": "tk-4555",
+        "source": "tickets",
+        "pairs": [
+          [
+            "ticket",
+            "FH-4555"
+          ],
+          [
+            "product",
+            "ingest-api"
+          ],
+          [
+            "priority",
+            "normal"
+          ],
+          [
+            "created",
+            "2024-10-21"
+          ]
+        ],
+        "body": "Customer: is there a cap on how many urls one /v2/batch call can take? planning our nightly job around it\n\nAgent (Tom): 500 per call, and that hasn't changed. If you need more just send several batches, there's no limit on how many you run a night."
+      }
+    ]
+  },
+  "questions": {
+    "upload-limit": {
+      "add_wordings": [
+        "Our 120 MB scans are being rejected by /v3/uploads. What is the actual limit?",
+        "What's the per-request upload limit on v3 now?",
+        "What file size does /v3/uploads accept?",
+        "We're getting 413 Payload Too Large on a 90 MB upload, is that expected?",
+        "How large a document can I send in a single upload request?",
+        "Has the upload size limit changed recently?",
+        "Do I need upload sessions for a 150 MB file, or will a normal upload work?",
+        "What's the max body size for POST /v3/uploads?",
+        "Is 50 MB still the cap on single uploads?",
+        "upload limit v3",
+        "Biggest file the v3 upload endpoint takes in one request?",
+        "Can I upload a 180 MB PDF without splitting it?",
+        "Is the v3 upload limit still 50 MB?",
+        "Do we still have to split files over 50 MB?",
+        "Are single uploads still capped at 50 MB per request?",
+        "We were told uploads max out at 50 MB, is that still right?",
+        "Do files over 50 MB still need upload sessions?",
+        "Is 50 MB still the limit for one upload?",
+        "Are uploads still capped at 50 MB?",
+        "Is 50 MB still the max per upload request?",
+        "Is the single-upload cap still 50 MB?",
+        "Still a 50 MB cap on v3 uploads?",
+        "Is 50 MB still the most I can send in one request?"
+      ],
+      "factors": {
+        "key_meta": {
+          "B3": {
+            "replace": {
+              "cl-3-4-0": {
+                "pairs": [
+                  [
+                    "release",
+                    "3.4.0"
+                  ],
+                  [
+                    "date",
+                    "2025-04-08"
+                  ],
+                  [
+                    "component",
+                    "uploads"
+                  ],
+                  [
+                    "type",
+                    "changed"
+                  ],
+                  [
+                    "title",
+                    "Raise the upload body limit"
+                  ],
+                  [
+                    "affects",
+                    "POST /v3/uploads, POST /v3/upload-sessions"
+                  ],
+                  [
+                    "breaking",
+                    "false"
+                  ]
+                ],
+                "body": "- Single-request body ceiling raised from 50 MB to 200 MB on all plans.\n- 413 responses now include max_bytes in the error body.\n- Fixed checksums occasionally missing from 201 responses."
+              }
+            }
+          },
+          "B3d": {
+            "replace": {
+              "cl-3-4-0": {
+                "pairs": [
+                  [
+                    "release",
+                    "3.4.0"
+                  ],
+                  [
+                    "date",
+                    "2025-04-08"
+                  ],
+                  [
+                    "component",
+                    "uploads"
+                  ],
+                  [
+                    "type",
+                    "improved"
+                  ],
+                  [
+                    "title",
+                    "Raise the upload body limit"
+                  ],
+                  [
+                    "affects",
+                    "POST /v3/uploads, POST /v3/upload-sessions"
+                  ],
+                  [
+                    "breaking",
+                    "false"
+                  ]
+                ],
+                "body": "- Single-request body ceiling raised from 50 MB to 200 MB on all plans.\n- 413 responses now include max_bytes in the error body.\n- Fixed checksums occasionally missing from 201 responses."
+              }
+            }
+          },
+          "B3e": {
+            "replace": {
+              "cl-3-4-0": {
+                "pairs": [
+                  [
+                    "release",
+                    "3.4.0"
+                  ],
+                  [
+                    "date",
+                    "2025-04-08"
+                  ],
+                  [
+                    "component",
+                    "ingest"
+                  ],
+                  [
+                    "type",
+                    "changed"
+                  ],
+                  [
+                    "title",
+                    "Raise the upload body limit"
+                  ],
+                  [
+                    "affects",
+                    "POST /v3/uploads, POST /v3/upload-sessions"
+                  ],
+                  [
+                    "breaking",
+                    "false"
+                  ]
+                ],
+                "body": "- Single-request body ceiling raised from 50 MB to 200 MB on all plans.\n- 413 responses now include max_bytes in the error body.\n- Fixed checksums occasionally missing from 201 responses."
+              }
+            }
+          },
+          "B3f": {
+            "replace": {
+              "cl-3-4-0": {
+                "pairs": [
+                  [
+                    "title",
+                    "Raise the upload body limit"
+                  ],
+                  [
+                    "release",
+                    "3.4.0"
+                  ],
+                  [
+                    "date",
+                    "2025-04-08"
+                  ],
+                  [
+                    "component",
+                    "uploads"
+                  ],
+                  [
+                    "type",
+                    "changed"
+                  ],
+                  [
+                    "affects",
+                    "POST /v3/uploads, POST /v3/upload-sessions"
+                  ],
+                  [
+                    "breaking",
+                    "false"
+                  ]
+                ],
+                "body": "- Single-request body ceiling raised from 50 MB to 200 MB on all plans.\n- 413 responses now include max_bytes in the error body.\n- Fixed checksums occasionally missing from 201 responses."
+              }
+            }
+          },
+          "B3g": {
+            "replace": {
+              "cl-3-4-0": {
+                "pairs": [
+                  [
+                    "release",
+                    "3.4.0"
+                  ],
+                  [
+                    "date",
+                    "2025-04-08"
+                  ],
+                  [
+                    "component",
+                    "uploads"
+                  ],
+                  [
+                    "type",
+                    "changed"
+                  ],
+                  [
+                    "title",
+                    "Raise the upload body limit"
+                  ],
+                  [
+                    "affects",
+                    "POST /v3/uploads, POST /v3/upload-sessions"
+                  ],
+                  [
+                    "breaking",
+                    "false"
+                  ],
+                  [
+                    "plans",
+                    "all"
+                  ]
+                ],
+                "body": "- Single-request body ceiling raised from 50 MB to 200 MB on all plans.\n- 413 responses now include max_bytes in the error body.\n- Fixed checksums occasionally missing from 201 responses."
+              }
+            }
+          },
+          "B3h": {
+            "replace": {
+              "cl-3-4-0": {
+                "pairs": [
+                  [
+                    "release",
+                    "3.4.0"
+                  ],
+                  [
+                    "date",
+                    "2025-04-08"
+                  ],
+                  [
+                    "component",
+                    "uploads"
+                  ],
+                  [
+                    "type",
+                    "changed"
+                  ],
+                  [
+                    "title",
+                    "Raise the upload body limit"
+                  ],
+                  [
+                    "affects",
+                    "POST /v3/uploads (single request)"
+                  ],
+                  [
+                    "breaking",
+                    "false"
+                  ]
+                ],
+                "body": "- Single-request body ceiling raised from 50 MB to 200 MB on all plans.\n- 413 responses now include max_bytes in the error body.\n- Fixed checksums occasionally missing from 201 responses."
+              }
+            }
+          }
+        },
+        "v2_page": {
+          "soft": {
+            "replace": {
+              "ref-v2-uploads": {
+                "body": "POST /v2/upload\n\nAccepts multipart/form-data with a single file field, up to 25 MB. The response includes a job_id; the document is not available until the job reports done.\n\nThis endpoint is kept for existing integrations. New integrations should use the v3 Uploads endpoint."
+              }
+            }
+          }
+        },
+        "v3_page": {
+          "rich": {
+            "replace": {
+              "ref-v3-uploads": {
+                "pairs": [
+                  [
+                    "title",
+                    "Uploads"
+                  ],
+                  [
+                    "api_version",
+                    "3"
+                  ],
+                  [
+                    "status",
+                    "current"
+                  ],
+                  [
+                    "endpoint",
+                    "POST /v3/uploads"
+                  ],
+                  [
+                    "owner",
+                    "storage-team"
+                  ],
+                  [
+                    "last_updated",
+                    "2024-12-02"
+                  ]
+                ]
+              }
+            }
+          }
+        },
+        "tickets": {
+          "tagged": {
+            "replace": {
+              "tk-4471": {
+                "pairs": [
+                  [
+                    "ticket",
+                    "FH-4471"
+                  ],
+                  [
+                    "product",
+                    "ingest-api"
+                  ],
+                  [
+                    "priority",
+                    "normal"
+                  ],
+                  [
+                    "status",
+                    "closed"
+                  ],
+                  [
+                    "tags",
+                    "uploads, 413"
+                  ],
+                  [
+                    "created",
+                    "2025-02-03"
+                  ]
+                ]
+              },
+              "tk-4519": {
+                "pairs": [
+                  [
+                    "ticket",
+                    "FH-4519"
+                  ],
+                  [
+                    "product",
+                    "ingest-api"
+                  ],
+                  [
+                    "priority",
+                    "low"
+                  ],
+                  [
+                    "status",
+                    "closed"
+                  ],
+                  [
+                    "tags",
+                    "uploads, limits"
+                  ],
+                  [
+                    "created",
+                    "2025-03-14"
+                  ]
+                ]
+              }
+            }
+          },
+          "tagged3": {
+            "replace": {
+              "tk-4471": {
+                "pairs": [
+                  [
+                    "ticket",
+                    "FH-4471"
+                  ],
+                  [
+                    "product",
+                    "ingest-api"
+                  ],
+                  [
+                    "priority",
+                    "normal"
+                  ],
+                  [
+                    "status",
+                    "closed"
+                  ],
+                  [
+                    "tags",
+                    "uploads, 413"
+                  ],
+                  [
+                    "resolution",
+                    "answered"
+                  ],
+                  [
+                    "created",
+                    "2025-02-03"
+                  ]
+                ]
+              },
+              "tk-4519": {
+                "pairs": [
+                  [
+                    "ticket",
+                    "FH-4519"
+                  ],
+                  [
+                    "product",
+                    "ingest-api"
+                  ],
+                  [
+                    "priority",
+                    "low"
+                  ],
+                  [
+                    "status",
+                    "closed"
+                  ],
+                  [
+                    "tags",
+                    "uploads, limits"
+                  ],
+                  [
+                    "resolution",
+                    "answered"
+                  ],
+                  [
+                    "created",
+                    "2025-03-14"
+                  ]
+                ]
+              }
+            }
+          }
+        },
+        "wiki": {
+          "labelled": {
+            "replace": {
+              "wiki-large-files": {
+                "pairs": [
+                  [
+                    "space",
+                    "Solutions Engineering"
+                  ],
+                  [
+                    "owner_team",
+                    "solutions"
+                  ],
+                  [
+                    "labels",
+                    "uploads, large-files"
+                  ],
+                  [
+                    "last_modified",
+                    "2024-10-22"
+                  ]
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+
+======================================================================
+DEMO SCORING  bge-base  arm=5fmt_lam0   2026-10-26 19:30:57
+======================================================================
+  identifier: BAAI/bge-reranker-base
+  adapter:    data/nq/h2/train/bge_base_5fmt_lam0/adapter
+  pools:      2,000
+  candidates: 10 each
+  formats:    yaml json toml inline_kv markdown
+  batch:      16
+  device:     cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 2789.55it/s]
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  demo scoring in 0:07:54
+
+Saved bge_base 5fmt_lam0 scores results -> data/demo/scores_bge_base_5fmt_lam0.npy  (0.4 MB)

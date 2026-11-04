@@ -1,0 +1,21 @@
+
+======================================================================
+DEMO SCENARIOS   2026-10-26 19:30:37
+======================================================================
+  pools:      2,000
+  candidates: 10 each
+  seed:       0
+    company    chief_executive  167
+    company    founder          168
+    company    headquarters     167
+    composer   birthplace       166
+    composer   notable_work     167
+    composer   teacher          166
+    river      length           166
+    river      mouth            165
+    river      source           168
+    satellite  launch_date      166
+    satellite  launch_site      166
+    satellite  operator         168
+
+Saved scenario results -> data/demo/scenarios.json  (13.9 MB)

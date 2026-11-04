@@ -1,0 +1,162 @@
+{
+  "round": 1,
+  "note": "Metadata on the key passage at three levels (A as drafted, B richer, C with the headline fact in the metadata), crossed with an extra stale competitor (off, on). One new wording per question. The Sydney changelog entry names Australia in every variant, so the Australia wording can retrieve it.",
+  "global": {
+    "replace": {
+      "cl-3-6-0": {
+        "pairs": [["release", "3.6.0"], ["date", "2025-09-02"], ["component", "workspaces"], ["type", "added"]],
+        "body": "- New region: ap-southeast-2 (Sydney, Australia). Available to all plans for newly created workspaces.\n- Workspace responses now include created_region.\n- Dashboard shows region next to the workspace name."
+      }
+    }
+  },
+  "questions": {
+    "upload-limit": {
+      "add_wordings": ["Our 120 MB scans are being rejected by /v3/uploads. What is the actual limit?"],
+      "factors": {
+        "key_meta": {
+          "A": {},
+          "B": {
+            "replace": {
+              "cl-3-4-0": {
+                "pairs": [["release", "3.4.0"], ["date", "2025-04-08"], ["component", "uploads"], ["type", "changed"], ["title", "Larger single-request uploads"], ["affects", "POST /v3/uploads"], ["breaking", "false"]],
+                "body": "- Single-request body ceiling raised from 50 MB to 200 MB on all plans.\n- 413 responses now include max_bytes in the error body.\n- Fixed checksums occasionally missing from 201 responses."
+              }
+            }
+          },
+          "C": {
+            "replace": {
+              "cl-3-4-0": {
+                "pairs": [["release", "3.4.0"], ["date", "2025-04-08"], ["component", "uploads"], ["type", "changed"], ["title", "Single-request body ceiling raised from 50 MB to 200 MB"], ["affects", "POST /v3/uploads"], ["breaking", "false"]],
+                "body": "- Applies to all plans. Resumable sessions are unchanged.\n- 413 responses now include max_bytes in the error body.\n- Fixed checksums occasionally missing from 201 responses."
+              }
+            }
+          }
+        },
+        "competitor": {
+          "off": {},
+          "on": {
+            "add": [
+              {
+                "id": "tk-4519",
+                "source": "tickets",
+                "pairs": [["ticket", "FH-4519"], ["product", "ingest-api"], ["priority", "low"], ["created", "2025-03-14"]],
+                "body": "Customer: whats the biggest file we can push through /v3/uploads in one go? want to size our exports\n\nAgent (Priya): Hi! It's 50 MB per request. For anything bigger the upload sessions endpoint takes files in 16 MB parts, so there's no practical ceiling there."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "regions": {
+      "add_wordings": ["Is there an Asia-Pacific region for workspaces?"],
+      "factors": {
+        "key_meta": {
+          "A": {},
+          "B": {
+            "replace": {
+              "cl-3-6-0": {
+                "pairs": [["release", "3.6.0"], ["date", "2025-09-02"], ["component", "workspaces"], ["type", "added"], ["title", "Sydney region"], ["affects", "POST /v3/workspaces"], ["breaking", "false"]],
+                "body": "- New region: ap-southeast-2 (Sydney, Australia). Available to all plans for newly created workspaces.\n- Workspace responses now include created_region.\n- Dashboard shows region next to the workspace name."
+              }
+            }
+          },
+          "C": {
+            "replace": {
+              "cl-3-6-0": {
+                "pairs": [["release", "3.6.0"], ["date", "2025-09-02"], ["component", "workspaces"], ["type", "added"], ["title", "New region: ap-southeast-2 (Sydney, Australia)"], ["affects", "POST /v3/workspaces"], ["breaking", "false"]],
+                "body": "- Available to all plans for newly created workspaces. Existing workspaces stay where they are.\n- Workspace responses now include created_region.\n- Dashboard shows region next to the workspace name."
+              }
+            }
+          }
+        },
+        "competitor": {
+          "off": {},
+          "on": {
+            "add": [
+              {
+                "id": "wiki-choosing-region",
+                "source": "wiki",
+                "pairs": [["space", "Onboarding"], ["owner_team", "customer-success"], ["last_modified", "2025-04-02"]],
+                "body": "## Choosing a workspace region\n\nDuring onboarding, ask the customer where their data has to live before the first workspace is created, because it cannot be moved afterwards. The two options are Dublin (eu-west-1) and Virginia (us-east-1). Most UK and EU customers pick Dublin; if they are unsure, legal usually has an opinion."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "key-lifetime": {
+      "add_wordings": ["Do API keys expire after 90 days?"],
+      "factors": {
+        "key_meta": {
+          "A": {},
+          "B": {
+            "replace": {
+              "wiki-key-lifetime": {
+                "pairs": [["space", "Platform Security"], ["owner_team", "platform-security"], ["last_modified", "2025-07-21"], ["title", "Credential lifetime policy"], ["labels", "security, api-keys, policy"], ["status", "approved"]],
+                "body": "## Credential lifetime policy\n\nFollowing the July security review, the lifetime of newly issued API credentials has been shortened from 90 to 60 days. Existing credentials keep their original expiry date and are not affected until they are next rotated.\n\nCustomers get a reminder email 14 days before expiry. Support should point anyone asking about automated rotation to the rotate endpoint rather than suggesting they create new keys."
+              }
+            }
+          },
+          "C": {
+            "replace": {
+              "wiki-key-lifetime": {
+                "pairs": [["space", "Platform Security"], ["owner_team", "platform-security"], ["last_modified", "2025-07-21"], ["title", "Credential lifetime policy"], ["summary", "New API keys expire after 60 days, down from 90"], ["status", "approved"]],
+                "body": "## Credential lifetime policy\n\nThis follows the July security review. Existing credentials keep their original expiry date and are not affected until they are next rotated.\n\nCustomers get a reminder email 14 days before expiry. Support should point anyone asking about automated rotation to the rotate endpoint rather than suggesting they create new keys."
+              }
+            }
+          }
+        },
+        "competitor": {
+          "off": {},
+          "on": {
+            "add": [
+              {
+                "id": "tk-4388",
+                "source": "tickets",
+                "pairs": [["ticket", "FH-4388"], ["product", "ingest-api"], ["priority", "normal"], ["created", "2025-01-08"]],
+                "body": "Customer: how long do api keys last before they expire? and if we rotate does the old one die immediately, we have a few services sharing one\n\nAgent (Jo): Keys last 90 days. When you rotate, the old secret keeps working for 24 hours, so you have a day to roll it out everywhere."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "v2-batch": {
+      "add_wordings": ["Do we need to migrate off /v2/batch?"],
+      "factors": {
+        "key_meta": {
+          "A": {},
+          "B": {
+            "replace": {
+              "ref-v2-batch": {
+                "pairs": [["title", "Batch submit (v2)"], ["api_version", "2"], ["status", "deprecated"], ["deprecated_in", "3.2.0"], ["sunset", "2025-12-31"], ["replacement", "/v3/jobs"], ["migration_guide", "/docs/migrate/v2-batch-to-jobs"], ["last_updated", "2025-01-09"]],
+                "body": "POST /v2/batch\n\nSubmits up to 500 document URLs for ingestion in one call. Each URL is fetched once; failures are listed in the batch report rather than retried. Poll GET /v2/batch/{batch_id} until state is complete."
+              }
+            }
+          },
+          "C": {
+            "replace": {
+              "ref-v2-batch": {
+                "pairs": [["title", "Batch submit (v2)"], ["api_version", "2"], ["status", "deprecated"], ["sunset", "2025-12-31"], ["replacement", "/v3/jobs"], ["last_updated", "2025-01-09"]],
+                "body": "POST /v2/batch\n\nDeprecated. Requests are rejected after the sunset date; use /v3/jobs instead.\n\nSubmits up to 500 document URLs for ingestion in one call. Each URL is fetched once; failures are listed in the batch report rather than retried."
+              }
+            }
+          }
+        },
+        "competitor": {
+          "off": {},
+          "on": {
+            "add": [
+              {
+                "id": "tk-4555",
+                "source": "tickets",
+                "pairs": [["ticket", "FH-4555"], ["product", "ingest-api"], ["priority", "normal"], ["created", "2024-10-21"]],
+                "body": "Customer: is there a cap on how many urls one /v2/batch call can take? planning our nightly job around it\n\nAgent (Tom): 500 per call, and that hasn't changed. If you need more just send several batches, there's no limit on how many you run a night."
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
