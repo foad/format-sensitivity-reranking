@@ -82,7 +82,7 @@ print(chosen['winner_lambda'])
 arms_for() {
     local NAME="$1" WINNER
     if [ -n "${ARMS:-}" ]; then
-        printf '%s\n' "${ARMS//,/ }"
+        tr ',' '\n' <<< "$ARMS"
         return
     fi
     WINNER="$(winner_weight "$NAME")"

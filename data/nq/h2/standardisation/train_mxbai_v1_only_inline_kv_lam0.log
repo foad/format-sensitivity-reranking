@@ -1,0 +1,67 @@
+
+======================================================================
+TRAIN  mxbai-v1  arm=only_inline_kv_lam0   2026-11-05 15:19:59
+======================================================================
+  identifier:  mixedbread-ai/mxbai-rerank-base-v1
+  formats:     1 of 5  ['inline_kv']
+  lambda_inv:  0.0
+  batch:       2 x 8
+  steps:       500, warmup 30
+  output:      data/nq/h2/train/mxbai_v1_only_inline_kv_lam0
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  80%|███████▉  | 161/202 [00:00<00:00, 1500.29it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1565.76it/s]
+  trainable:   885,505 / 185,308,418 (0.48%)
+
+Loading the corpus...
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (963 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (928 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1154 > 1024). Running this sequence through the model will result in indexing errors
+  train: 6,131 kept, 449 dropped
+  dev:   758 kept
+  corpus loading in 0:02:24
+
+Training mxbai_v1 only_inline_kv_lam0
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+step     1/500  loss=0.0257  rank=0.0257  inv=0.0000  lr=6.67e-06  6.85s/step  eta 0:57:00
+step    20/500  loss=0.0422  rank=0.0422  inv=0.0000  lr=1.33e-04  7.05s/step  eta 0:56:23
+step    40/500  loss=0.0171  rank=0.0171  inv=0.0000  lr=2.00e-04  6.86s/step  eta 0:52:37
+  dev max|d|=0.0000  (pair=None)
+step    60/500  loss=0.0245  rank=0.0245  inv=0.0000  lr=1.98e-04  7.13s/step  eta 0:52:17
+step    80/500  loss=0.0303  rank=0.0303  inv=0.0000  lr=1.94e-04  7.08s/step  eta 0:49:33
+step   100/500  loss=0.0318  rank=0.0318  inv=0.0000  lr=1.89e-04  7.00s/step  eta 0:46:41
+  dev max|d|=0.0000  (pair=None)
+step   120/500  loss=0.0118  rank=0.0118  inv=0.0000  lr=1.82e-04  7.22s/step  eta 0:45:42
+step   140/500  loss=0.0536  rank=0.0536  inv=0.0000  lr=1.74e-04  7.18s/step  eta 0:43:03
+  dev max|d|=0.0000  (pair=None)
+step   160/500  loss=0.0182  rank=0.0182  inv=0.0000  lr=1.65e-04  7.26s/step  eta 0:41:09
+step   180/500  loss=0.0390  rank=0.0390  inv=0.0000  lr=1.54e-04  7.27s/step  eta 0:38:45
+step   200/500  loss=0.0238  rank=0.0238  inv=0.0000  lr=1.42e-04  7.21s/step  eta 0:36:02
+  dev max|d|=0.0000  (pair=None)
+step   220/500  loss=0.0054  rank=0.0054  inv=0.0000  lr=1.30e-04  7.30s/step  eta 0:34:04
+step   240/500  loss=0.0091  rank=0.0091  inv=0.0000  lr=1.17e-04  7.30s/step  eta 0:31:36
+  dev max|d|=0.0000  (pair=None)
+step   260/500  loss=0.0334  rank=0.0334  inv=0.0000  lr=1.03e-04  7.41s/step  eta 0:29:38
+step   280/500  loss=0.0480  rank=0.0480  inv=0.0000  lr=9.00e-05  7.36s/step  eta 0:26:59
+step   300/500  loss=0.0525  rank=0.0525  inv=0.0000  lr=7.68e-05  7.32s/step  eta 0:24:23
+  dev max|d|=0.0000  (pair=None)
+step   320/500  loss=0.0378  rank=0.0378  inv=0.0000  lr=6.41e-05  7.32s/step  eta 0:21:57
+step   340/500  loss=0.0085  rank=0.0085  inv=0.0000  lr=5.19e-05  7.27s/step  eta 0:19:23
+  dev max|d|=0.0000  (pair=None)
+step   360/500  loss=0.1288  rank=0.1288  inv=0.0000  lr=4.07e-05  7.27s/step  eta 0:16:57
+step   380/500  loss=0.0412  rank=0.0412  inv=0.0000  lr=3.05e-05  7.24s/step  eta 0:14:29
+step   400/500  loss=0.0246  rank=0.0246  inv=0.0000  lr=2.15e-05  7.23s/step  eta 0:12:02
+  dev max|d|=0.0000  (pair=None)
+step   420/500  loss=0.0037  rank=0.0037  inv=0.0000  lr=1.40e-05  7.24s/step  eta 0:09:39
+step   440/500  loss=0.0104  rank=0.0104  inv=0.0000  lr=7.94e-06  7.23s/step  eta 0:07:14
+  dev max|d|=0.0000  (pair=None)
+step   460/500  loss=0.0448  rank=0.0448  inv=0.0000  lr=3.55e-06  7.24s/step  eta 0:04:49
+step   480/500  loss=0.0019  rank=0.0019  inv=0.0000  lr=8.92e-07  7.21s/step  eta 0:02:24
+step   500/500  loss=0.0133  rank=0.0133  inv=0.0000  lr=0.00e+00  7.19s/step  eta 0:00:00
+  dev max|d|=0.0000  (pair=None)
+
+Finished at step 500 in 3612s, dev max|d|=0.0000
+Saved adapter -> data/nq/h2/train/mxbai_v1_only_inline_kv_lam0/adapter

@@ -14,6 +14,8 @@ ADAPTER_CONFIG_NAME = "adapter_config.json"
 
 BASE_ARM = "base"
 PHASE1_FOLD = "5fmt"
+ONLY_PREFIX = "only"
+DEFAULT_SEED = 0
 SPLITS = ("dev", "test", "prose")
 HEAD_PROBE_SPLITS = ("train", "dev")
 AXES = ("cross", "within", "mrr")
@@ -37,7 +39,13 @@ def format_lambda(value: float) -> str:
     return f"{value:g}"
 
 
-def arm(held_out: str | None, lambda_inv: float, rank: int | None = None) -> str:
+def arm(
+    held_out: str | None,
+    lambda_inv: float,
+    rank: int | None = None,
+    only: str | None = None,
+    seed: int = DEFAULT_SEED,
+) -> str:
     """Return the name of one trained condition.
 
     Args:
@@ -45,13 +53,27 @@ def arm(held_out: str | None, lambda_inv: float, rank: int | None = None) -> str
             five-format phase.
         lambda_inv: The weight of the invariance term.
         rank: The adapter rank, when the run is part of a rank sweep.
+        only: The single format the run trains on, or None for a run over
+            several formats.
+        seed: The training seed. The default seed adds nothing to the name,
+            so the published arms keep their names.
 
     Returns:
-        The name, such as `5fmt_lam0.1`, `yaml_lam0` or `5fmt_lam0.1_r8`.
+        The name, such as `5fmt_lam0.1`, `yaml_lam0`, `5fmt_lam0.1_r8`,
+        `only_yaml_lam0` or `only_yaml_lam0_s2`.
+
+    Raises:
+        ValueError: If a run both withholds a format and trains on one only.
     """
-    fold = held_out or PHASE1_FOLD
+    if held_out is not None and only is not None:
+        raise ValueError("a run withholds one format or trains on one, not both")
+    fold = f"{ONLY_PREFIX}_{only}" if only is not None else held_out or PHASE1_FOLD
     name = f"{fold}_lam{format_lambda(lambda_inv)}"
-    return f"{name}_r{rank}" if rank is not None else name
+    if rank is not None:
+        name = f"{name}_r{rank}"
+    if seed != DEFAULT_SEED:
+        name = f"{name}_s{seed}"
+    return name
 
 
 def train_dir(data_root: Path, model: str, arm_name: str) -> Path:

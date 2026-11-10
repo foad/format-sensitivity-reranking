@@ -131,6 +131,9 @@ class TestTrainingFormats:
     def test_leaves_four_formats_for_a_fold(self):
         assert len(mod.training_formats("markdown")) == len(FORMAT_NAMES) - 1
 
+    def test_keeps_the_one_named_format(self):
+        assert mod.training_formats(None, "toml") == ["toml"]
+
 
 class TestDefaults:
     def test_uses_the_published_step_budget(self):
@@ -203,6 +206,47 @@ class TestRun:
     def test_the_run_record_names_the_training_formats(self, monkeypatch, data_root):
         run(monkeypatch, data_root, "--held-out-format", "json")
         assert "json" not in log_of(data_root, "json_lam1")[0]["formats"]
+
+    @pytest.mark.usefixtures("fake_model")
+    def test_a_single_format_run_trains_on_that_format(self, monkeypatch, data_root):
+        run(monkeypatch, data_root, "--only-format", "json", "--lambda-inv", "0")
+        entry = log_of(data_root, "only_json_lam0")[0]
+        assert entry["formats"] == ["json"]
+        assert entry["only"] == "json"
+        assert entry["held_out"] is None
+
+    @pytest.mark.usefixtures("fake_model")
+    def test_a_single_format_run_spends_the_step_budget(self, monkeypatch, data_root):
+        """One format leaves no invariance term and no format pair to compare."""
+        run(monkeypatch, data_root, "--only-format", "yaml", "--lambda-inv", "0")
+        records = log_of(data_root, "only_yaml_lam0")
+        assert records[-1]["step"] == 4
+        assert all(r["l_inv"] == 0.0 for r in events(records, STEP))
+
+    @pytest.mark.usefixtures("fake_model")
+    def test_another_seed_trains_a_separate_arm(self, monkeypatch, data_root):
+        """A reseeded run must not find the default seed's adapter and skip."""
+        run(monkeypatch, data_root, "--only-format", "json", "--lambda-inv", "0")
+        run(
+            monkeypatch,
+            data_root,
+            *("--only-format", "json", "--lambda-inv", "0", "--seed", "2"),
+        )
+        entry = log_of(data_root, "only_json_lam0_s2")[0]
+        assert entry["seed"] == 2
+        assert log_of(data_root, "only_json_lam0")[0]["seed"] == 0
+
+    @pytest.mark.usefixtures("fake_model")
+    def test_refuses_to_withhold_and_keep_one_format(self, monkeypatch, data_root):
+        with pytest.raises(SystemExit, match="cannot be combined"):
+            run(
+                monkeypatch,
+                data_root,
+                "--held-out-format",
+                "yaml",
+                "--only-format",
+                "json",
+            )
 
     @pytest.mark.usefixtures("fake_model")
     def test_runs_the_step_budget(self, monkeypatch, data_root):
@@ -496,8 +540,10 @@ class TestSeeding:
     def test_the_sampler_follows_the_seed(self, monkeypatch, data_root):
         run(monkeypatch, data_root, "--seed", "0")
         with_zero = [r["loss"] for r in events(log_of(data_root), "step")]
-        run(monkeypatch, data_root, "--force", "--seed", "7")
-        with_seven = [r["loss"] for r in events(log_of(data_root), "step")]
+        run(monkeypatch, data_root, "--seed", "7")
+        with_seven = [
+            r["loss"] for r in events(log_of(data_root, f"{DEFAULT_ARM}_s7"), "step")
+        ]
         assert with_zero != with_seven
 
 

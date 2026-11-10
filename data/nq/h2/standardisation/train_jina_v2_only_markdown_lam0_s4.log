@@ -1,0 +1,83 @@
+
+======================================================================
+TRAIN  jina-v2  arm=only_markdown_lam0_s4   2026-11-06 13:24:43
+======================================================================
+  identifier:  jinaai/jina-reranker-v2-base-multilingual
+  formats:     1 of 5  ['markdown']
+  lambda_inv:  0.0
+  batch:       2 x 8
+  steps:       500, warmup 30
+  output:      data/nq/h2/train/jina_v2_only_markdown_lam0_s4
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights:  63%|██████▎   | 97/153 [00:00<00:00, 937.99it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 1201.40it/s]
+[transformers] XLMRobertaForSequenceClassification does not expose input embeddings. Gradients cannot flow back to the token embeddings when using adapters or gradient checkpointing. Override `get_input_embeddings` to fully support those features, or set `_input_embed_layer` to the attribute name that holds the embeddings.
+[transformers] You are using an old version of the checkpointing format that is deprecated (We will also silently ignore `gradient_checkpointing_kwargs` in case you passed it).Please update to the new format on your modeling file. To use the new format, you need to completely remove the definition of the method `_set_gradient_checkpointing` in your model.
+  fused projections patched: 12
+  trainable:   1,181,185 / 279,618,818 (0.42%)
+
+Loading the corpus...
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (963 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (928 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1154 > 1024). Running this sequence through the model will result in indexing errors
+  train: 6,131 kept, 449 dropped
+  dev:   758 kept
+  corpus loading in 0:02:30
+
+Training jina_v2 only_markdown_lam0_s4
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+step     1/500  loss=0.1572  rank=0.1572  inv=0.0000  lr=6.67e-06  2.10s/step  eta 0:17:29
+step    20/500  loss=0.1291  rank=0.1291  inv=0.0000  lr=1.33e-04  1.67s/step  eta 0:13:20
+step    40/500  loss=0.0499  rank=0.0499  inv=0.0000  lr=2.00e-04  1.66s/step  eta 0:12:43
+  dev max|d|=0.0000  (pair=None)
+step    60/500  loss=0.0032  rank=0.0032  inv=0.0000  lr=1.98e-04  1.80s/step  eta 0:13:10
+step    80/500  loss=0.0301  rank=0.0301  inv=0.0000  lr=1.94e-04  1.76s/step  eta 0:12:20
+step   100/500  loss=0.0056  rank=0.0056  inv=0.0000  lr=1.89e-04  1.75s/step  eta 0:11:38
+  dev max|d|=0.0000  (pair=None)
+step   120/500  loss=0.0162  rank=0.0162  inv=0.0000  lr=1.82e-04  1.80s/step  eta 0:11:23
+step   140/500  loss=0.0154  rank=0.0154  inv=0.0000  lr=1.74e-04  1.78s/step  eta 0:10:41
+  dev max|d|=0.0000  (pair=None)
+step   160/500  loss=0.0159  rank=0.0159  inv=0.0000  lr=1.65e-04  1.82s/step  eta 0:10:18
+step   180/500  loss=0.0273  rank=0.0273  inv=0.0000  lr=1.54e-04  1.80s/step  eta 0:09:36
+step   200/500  loss=0.0530  rank=0.0530  inv=0.0000  lr=1.42e-04  1.79s/step  eta 0:08:56
+  dev max|d|=0.0000  (pair=None)
+step   220/500  loss=0.0031  rank=0.0031  inv=0.0000  lr=1.30e-04  1.81s/step  eta 0:08:27
+step   240/500  loss=0.0067  rank=0.0067  inv=0.0000  lr=1.17e-04  1.80s/step  eta 0:07:48
+  dev max|d|=0.0000  (pair=None)
+step   260/500  loss=0.0394  rank=0.0394  inv=0.0000  lr=1.03e-04  1.82s/step  eta 0:07:17
+step   280/500  loss=0.0350  rank=0.0350  inv=0.0000  lr=9.00e-05  1.83s/step  eta 0:06:43
+step   300/500  loss=0.0036  rank=0.0036  inv=0.0000  lr=7.68e-05  1.85s/step  eta 0:06:10
+  dev max|d|=0.0000  (pair=None)
+step   320/500  loss=0.0229  rank=0.0229  inv=0.0000  lr=6.41e-05  1.87s/step  eta 0:05:35
+step   340/500  loss=0.0139  rank=0.0139  inv=0.0000  lr=5.19e-05  1.89s/step  eta 0:05:02
+  dev max|d|=0.0000  (pair=None)
+step   360/500  loss=0.0023  rank=0.0023  inv=0.0000  lr=4.07e-05  1.93s/step  eta 0:04:29
+step   380/500  loss=0.0447  rank=0.0447  inv=0.0000  lr=3.05e-05  1.95s/step  eta 0:03:53
+step   400/500  loss=0.0318  rank=0.0318  inv=0.0000  lr=2.15e-05  1.97s/step  eta 0:03:16
+  dev max|d|=0.0000  (pair=None)
+step   420/500  loss=0.0030  rank=0.0030  inv=0.0000  lr=1.40e-05  1.97s/step  eta 0:02:37
+step   440/500  loss=0.0053  rank=0.0053  inv=0.0000  lr=7.94e-06  1.96s/step  eta 0:01:57
+  dev max|d|=0.0000  (pair=None)
+step   460/500  loss=0.0099  rank=0.0099  inv=0.0000  lr=3.55e-06  1.96s/step  eta 0:01:18
+step   480/500  loss=0.0052  rank=0.0052  inv=0.0000  lr=8.92e-07  1.95s/step  eta 0:00:39
+step   500/500  loss=0.0069  rank=0.0069  inv=0.0000  lr=0.00e+00  1.96s/step  eta 0:00:00
+  dev max|d|=0.0000  (pair=None)
+
+Finished at step 500 in 988s, dev max|d|=0.0000
+Saved adapter -> data/nq/h2/train/jina_v2_only_markdown_lam0_s4/adapter

@@ -409,7 +409,9 @@ class TestBuildParser:
     def test_defaults_to_the_results_directory(self):
         args = mod.build_parser().parse_args([])
         assert args.results_subdir == mod.RESULTS_SUBDIR
-        assert args.pattern == mod.DEFAULT_PATTERN == "*.progress"
+        assert args.patterns is None
+        assert mod.DEFAULT_PATTERN == "*.progress"
+        assert args.max_age_hours is None
         assert args.interval == mod.DEFAULT_INTERVAL
         assert not args.once
 
@@ -417,7 +419,7 @@ class TestBuildParser:
         args = mod.build_parser().parse_args(
             ["--pattern", "all_*.progress", "--interval", "2", "--once"]
         )
-        assert args.pattern == "all_*.progress"
+        assert args.patterns == ["all_*.progress"]
         assert args.interval == pytest.approx(2.0)
         assert args.once
 
@@ -440,3 +442,227 @@ class TestMain:
             ["prog", "--data-root", str(tmp_path), "--once"],
         )
         assert mod.main() == 0
+
+
+class TestFindStates:
+    def test_takes_several_patterns(self, tmp_path):
+        state(tmp_path, "train_jina_v2_a")
+        state(tmp_path, "train_mxbai_v1_a")
+        state(tmp_path, "train_bge_base_a")
+        names = {
+            s.name for s in mod.find_states(tmp_path, ["*_jina_v2_*", "*_mxbai_v1_*"])
+        }
+        assert names == {"train_jina_v2_a", "train_mxbai_v1_a"}
+
+    def test_lists_a_job_two_patterns_name_once(self, tmp_path):
+        state(tmp_path, "train_jina_v2_a")
+        states = mod.find_states(tmp_path, ["*jina*", "train_*"])
+        assert [s.name for s in states] == ["train_jina_v2_a"]
+
+    def test_takes_one_pattern_as_a_string(self, tmp_path):
+        state(tmp_path, "a")
+        assert len(mod.find_states(tmp_path, "*.progress")) == 1
+
+    def test_reads_only_progress_files_whatever_the_pattern(self, tmp_path):
+        """A pattern that names the job also names its logs."""
+        state(tmp_path, "train_jina_v2_a")
+        (tmp_path / "train_jina_v2_a.log").write_text("human output\n")
+        (tmp_path / "train_jina_v2_a.hare.log").write_text("container output\n")
+        states = mod.find_states(tmp_path, ["*_jina_v2_*"])
+        assert [s.name for s in states] == ["train_jina_v2_a"]
+
+    def test_leaves_out_a_job_older_than_the_limit(self, tmp_path):
+        age_file(state(tmp_path, "old"), 7200)
+        state(tmp_path, "new")
+        states = mod.find_states(tmp_path, ["*"], max_age=3600)
+        assert [s.name for s in states] == ["new"]
+
+    def test_keeps_every_job_without_a_limit(self, tmp_path):
+        age_file(state(tmp_path, "old"), 10**6)
+        assert len(mod.find_states(tmp_path, ["*"])) == 1
+
+
+class TestParser:
+    def test_collects_each_pattern(self):
+        args = mod.build_parser().parse_args(["--pattern", "a*", "--pattern", "b*"])
+        assert args.patterns == ["a*", "b*"]
+
+    def test_the_watcher_converts_hours_to_seconds(self, tmp_path, monkeypatch):
+        seen = {}
+
+        def fake_watch(_directory, patterns, _interval, _once, _out, max_age):
+            seen.update(patterns=patterns, max_age=max_age)
+            return 0
+
+        monkeypatch.setattr(mod, "watch", fake_watch)
+        monkeypatch.setattr(
+            "sys.argv",
+            ["watch.py", "--data-root", str(tmp_path), "--max-age-hours", "2"],
+        )
+        assert mod.main() == 0
+        assert seen == {"patterns": [mod.DEFAULT_PATTERN], "max_age": 7200}
+
+
+class TestWatchFilters:
+    def test_hides_old_jobs_from_the_drawing(self, tmp_path):
+        age_file(state(tmp_path, "finished_long_ago", done=10, total=10), 10**6)
+        state(tmp_path, "running_now", done=1)
+        out = io.StringIO()
+        mod.watch(tmp_path, ["*"], 0.0, True, out, max_age=3600)
+        assert "running_now" in out.getvalue()
+        assert "finished_long_ago" not in out.getvalue()
+
+
+SLUGS = ["bge_base", "bge_v2_m3", "mxbai_v1", "mxbai_v1_tanh", "minilm_l6"]
+
+
+class TestSplitName:
+    def test_finds_the_model_and_keeps_the_rest(self):
+        assert mod.split_name("train_bge_v2_m3_only_yaml_lam0_s1", SLUGS) == (
+            "bge_v2_m3",
+            "train only_yaml_lam0_s1",
+        )
+
+    def test_finds_a_model_at_the_end(self):
+        assert mod.split_name("test_cross_bge_base", SLUGS) == (
+            "bge_base",
+            "test_cross",
+        )
+
+    def test_prefers_the_longest_slug(self):
+        """mxbai_v1 is a prefix of mxbai_v1_tanh."""
+        assert mod.split_name("train_mxbai_v1_tanh_5fmt_lam0", SLUGS)[0] == (
+            "mxbai_v1_tanh"
+        )
+
+    def test_needs_the_whole_slug(self):
+        """bge_base must not match a name holding bge_base_x as one word."""
+        assert mod.split_name("train_minilm_l62_a", SLUGS) == (
+            None,
+            "train_minilm_l62_a",
+        )
+
+    def test_leaves_a_name_with_no_model(self):
+        assert mod.split_name("test_cross_a", SLUGS) == (None, "test_cross_a")
+
+    def test_reads_the_registry_by_default(self):
+        assert mod.split_name("train_jina_v2_only_json_lam0")[0] == "jina_v2"
+
+
+class TestElide:
+    def test_leaves_short_text(self):
+        assert mod.elide("abc", 5) == "abc"
+
+    def test_keeps_the_start_and_the_end(self):
+        cut = mod.elide("train_only_inline_kv_lam0_s3", 15)
+        assert len(cut) == 15
+        assert cut.startswith("train_o")
+        assert cut.endswith("_s3")
+        assert "..." in cut
+
+    def test_cuts_plainly_below_the_ellipsis(self):
+        assert mod.elide("abcdef", 2) == "ab"
+
+
+def jobs(tmp_path):
+    return [
+        mod.read_state(state(tmp_path, "train_bge_v2_m3_only_yaml_lam0_s1", done=3)),
+        mod.read_state(state(tmp_path, "capture_bge_v2_m3_only_yaml_lam0_s1", done=0)),
+        mod.read_state(state(tmp_path, "train_minilm_l6_5fmt_lam1_s2", done=10)),
+    ]
+
+
+class TestGroupedRender:
+    def test_heads_each_model_with_its_jobs_beneath(self, tmp_path):
+        lines = mod.render(jobs(tmp_path))
+        assert lines[0].strip() == "bge_v2_m3  0/2 done"
+        assert "train only_yaml_lam0_s1" in lines[1]
+        assert "capture only_yaml_lam0_s1" in lines[2]
+        assert lines[3].strip() == "minilm_l6  1/1 done"
+
+    def test_keeps_one_line_for_the_run(self, tmp_path):
+        lines = mod.render(jobs(tmp_path))
+        assert len(lines) == 2 + 3 + 1
+        assert "3 jobs" in lines[-1]
+
+    def test_lists_jobs_naming_no_model_flat_and_first(self, tmp_path):
+        states = [*jobs(tmp_path), mod.read_state(state(tmp_path, "select_lambda"))]
+        lines = mod.render(states)
+        assert lines[0].startswith("  select_lambda")
+
+    def test_bars_line_up_across_groups(self, tmp_path):
+        lines = [line for line in mod.render(jobs(tmp_path)) if "[" in line]
+        assert len({line.index("[") for line in lines}) == 1
+
+
+class TestFitting:
+    def test_draws_in_full_without_a_width(self, tmp_path):
+        lines = mod.render(jobs(tmp_path))
+        assert any("#" * 2 in line for line in lines)
+        assert any("with_body/yaml" in line for line in lines)
+
+    @pytest.mark.parametrize("width", [100, 70, 60, 50, 40, 30, 20, 12])
+    def test_no_line_passes_the_width(self, tmp_path, width):
+        assert all(len(line) <= width for line in mod.render(jobs(tmp_path), width))
+
+    def test_narrows_the_bar_before_anything_else(self, tmp_path):
+        full = mod.render(jobs(tmp_path))
+        widest = max(len(line) for line in full)
+        squeezed = mod.render(jobs(tmp_path), widest - 8)
+        assert any("with_body/yaml" in line for line in squeezed)
+        assert "[" + "-" * mod.BAR_WIDTH not in "".join(squeezed)
+
+    def test_drops_the_label_when_the_bar_is_not_enough(self, tmp_path):
+        lines = mod.render(jobs(tmp_path), 60)
+        assert not any("with_body/yaml" in line for line in lines)
+        assert any("eta" in line for line in lines)
+
+    def test_drops_the_bar_before_shortening_names(self, tmp_path):
+        lines = mod.render(jobs(tmp_path), 56)
+        assert not any("[" in line for line in lines)
+        assert any("train only_yaml_lam0_s1" in line for line in lines)
+
+    def test_shortens_the_names_before_cutting_lines(self, tmp_path):
+        lines = mod.render(jobs(tmp_path), 40)
+        rows = [line for line in lines if "/10" in line]
+        assert any("..." in row for row in rows)
+        assert all(
+            row.rstrip().endswith(("eta 0:00:29", "eta 0:00:30", "starting", "done"))
+            for row in rows
+        )
+
+    def test_a_shortened_name_keeps_more_of_its_start(self):
+        cut = mod.elide("capture only_markdown_lam0_s2", 18)
+        assert cut.startswith("capture on")
+        assert cut.endswith("_s2")
+
+    def test_keeps_a_wide_enough_block_whole(self, tmp_path):
+        assert mod.render(jobs(tmp_path), 500) == mod.render(jobs(tmp_path))
+
+
+class TestDrawClears:
+    def test_clears_below_a_redrawn_block(self):
+        out = io.StringIO()
+        mod.draw(["a"], out, redraw=3)
+        assert out.getvalue().endswith(mod.CLEAR_BELOW)
+
+    def test_a_first_block_clears_nothing(self):
+        out = io.StringIO()
+        mod.draw(["a"], out, redraw=0)
+        assert mod.CLEAR_BELOW not in out.getvalue()
+
+
+class TestShortNotes:
+    def test_keep_only_the_time_left(self, tmp_path):
+        running = mod.read_state(state(tmp_path, "a", done=1))
+        assert mod.notes(running, short=True).startswith("eta ")
+
+    def test_drop_the_times_of_finished_and_starting_jobs(self, tmp_path):
+        finished = mod.read_state(state(tmp_path, "a", done=10, total=10))
+        starting = mod.read_state(state(tmp_path, "b", done=0))
+        assert mod.notes(finished, short=True) == "done"
+        assert mod.notes(starting, short=True) == "starting"
+
+    def test_name_a_failure_in_either_form(self, tmp_path):
+        failed = mod.read_state(state(tmp_path, "a", failed=1))
+        assert mod.notes(failed, short=True) == mod.notes(failed) == "FAILED"

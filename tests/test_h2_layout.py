@@ -78,6 +78,29 @@ class TestArm:
     def test_differs_from_the_untrained_arm(self):
         assert arm(None, 0) != BASE_ARM
 
+    def test_names_a_single_format_run(self):
+        assert arm(None, 0, only="yaml") == "only_yaml_lam0"
+
+    def test_a_single_format_run_differs_from_its_held_out_fold(self):
+        """The two read alike; the leave-one-out arms must not be overwritten."""
+        assert arm(None, 0, only="json") != arm("json", 0)
+
+    def test_the_default_seed_keeps_the_published_name(self):
+        assert arm(None, 1, seed=0) == "5fmt_lam1"
+
+    def test_another_seed_is_named(self):
+        assert arm(None, 0, only="json", seed=3) == "only_json_lam0_s3"
+
+    def test_the_seed_follows_the_rank(self):
+        assert arm(None, 0.1, rank=8, seed=2) == "5fmt_lam0.1_r8_s2"
+
+    def test_every_seed_gives_a_distinct_name(self):
+        assert len({arm(None, 1, seed=s) for s in range(5)}) == 5
+
+    def test_refuses_to_withhold_and_keep_one_format(self):
+        with pytest.raises(ValueError, match="not both"):
+            arm("yaml", 0, only="json")
+
 
 class TestTrainDir:
     def test_names_the_model_and_the_arm(self):

@@ -1,0 +1,68 @@
+
+======================================================================
+TRAIN  bge-v2-m3  arm=only_inline_kv_lam0   2026-11-05 15:45:00
+======================================================================
+  identifier:  BAAI/bge-reranker-v2-m3
+  formats:     1 of 5  ['inline_kv']
+  lambda_inv:  0.0
+  batch:       2 x 8
+  steps:       500, warmup 30
+  output:      data/nq/h2/train/bge_v2_m3_only_inline_kv_lam0
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 10268.63it/s]
+  trainable:   3,409,921 / 571,165,698 (0.60%)
+
+Loading the corpus...
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (963 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (928 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1154 > 1024). Running this sequence through the model will result in indexing errors
+  train: 6,131 kept, 449 dropped
+  dev:   758 kept
+  corpus loading in 0:02:23
+
+Training bge_v2_m3 only_inline_kv_lam0
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+[transformers] `use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`.
+step     1/500  loss=0.0651  rank=0.0651  inv=0.0000  lr=6.67e-06  7.63s/step  eta 1:03:29
+step    20/500  loss=0.0122  rank=0.0122  inv=0.0000  lr=1.33e-04  7.57s/step  eta 1:00:32
+step    40/500  loss=0.0010  rank=0.0010  inv=0.0000  lr=2.00e-04  7.65s/step  eta 0:58:40
+  dev max|d|=0.0000  (pair=None)
+step    60/500  loss=0.0092  rank=0.0092  inv=0.0000  lr=1.98e-04  8.19s/step  eta 1:00:03
+step    80/500  loss=0.0430  rank=0.0430  inv=0.0000  lr=1.94e-04  7.97s/step  eta 0:55:46
+step   100/500  loss=0.0024  rank=0.0024  inv=0.0000  lr=1.89e-04  7.78s/step  eta 0:51:53
+  dev max|d|=0.0000  (pair=None)
+step   120/500  loss=0.0065  rank=0.0065  inv=0.0000  lr=1.82e-04  7.99s/step  eta 0:50:35
+step   140/500  loss=0.0261  rank=0.0261  inv=0.0000  lr=1.74e-04  7.86s/step  eta 0:47:10
+  dev max|d|=0.0000  (pair=None)
+step   160/500  loss=0.0058  rank=0.0058  inv=0.0000  lr=1.65e-04  8.00s/step  eta 0:45:20
+step   180/500  loss=0.0232  rank=0.0232  inv=0.0000  lr=1.54e-04  7.93s/step  eta 0:42:17
+step   200/500  loss=0.0031  rank=0.0031  inv=0.0000  lr=1.42e-04  7.86s/step  eta 0:39:18
+  dev max|d|=0.0000  (pair=None)
+step   220/500  loss=0.0005  rank=0.0005  inv=0.0000  lr=1.30e-04  7.98s/step  eta 0:37:14
+step   240/500  loss=0.0036  rank=0.0036  inv=0.0000  lr=1.17e-04  7.90s/step  eta 0:34:15
+  dev max|d|=0.0000  (pair=None)
+step   260/500  loss=0.0090  rank=0.0090  inv=0.0000  lr=1.03e-04  7.97s/step  eta 0:31:53
+step   280/500  loss=0.0299  rank=0.0299  inv=0.0000  lr=9.00e-05  7.92s/step  eta 0:29:03
+step   300/500  loss=0.1286  rank=0.1286  inv=0.0000  lr=7.68e-05  7.90s/step  eta 0:26:19
+  dev max|d|=0.0000  (pair=None)
+step   320/500  loss=0.0212  rank=0.0212  inv=0.0000  lr=6.41e-05  7.98s/step  eta 0:23:57
+step   340/500  loss=0.0089  rank=0.0089  inv=0.0000  lr=5.19e-05  7.95s/step  eta 0:21:11
+  dev max|d|=0.0000  (pair=None)
+step   360/500  loss=0.0926  rank=0.0926  inv=0.0000  lr=4.07e-05  8.02s/step  eta 0:18:43
+step   380/500  loss=0.0104  rank=0.0104  inv=0.0000  lr=3.05e-05  7.98s/step  eta 0:15:57
+step   400/500  loss=0.0072  rank=0.0072  inv=0.0000  lr=2.15e-05  7.95s/step  eta 0:13:14
+  dev max|d|=0.0000  (pair=None)
+step   420/500  loss=0.0122  rank=0.0122  inv=0.0000  lr=1.40e-05  7.99s/step  eta 0:10:39
+step   440/500  loss=0.0039  rank=0.0039  inv=0.0000  lr=7.94e-06  7.95s/step  eta 0:07:57
+  dev max|d|=0.0000  (pair=None)
+step   460/500  loss=0.0004  rank=0.0004  inv=0.0000  lr=3.55e-06  7.99s/step  eta 0:05:19
+step   480/500  loss=0.0005  rank=0.0005  inv=0.0000  lr=8.92e-07  7.96s/step  eta 0:02:39
+step   500/500  loss=0.0065  rank=0.0065  inv=0.0000  lr=0.00e+00  7.92s/step  eta 0:00:00
+  dev max|d|=0.0000  (pair=None)
+
+Finished at step 500 in 3997s, dev max|d|=0.0000
+Saved adapter -> data/nq/h2/train/bge_v2_m3_only_inline_kv_lam0/adapter

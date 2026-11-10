@@ -1,0 +1,31 @@
+
+======================================================================
+STANDARDISATION  jina-v2  arm=only_yaml_lam0_s1   2026-11-05 23:07:05
+======================================================================
+  identifier: jinaai/jina-reranker-v2-base-multilingual
+  adapter:    data/nq/h2/train/jina_v2_only_yaml_lam0_s1/adapter
+  queries:    767
+  candidates: 16 each
+  formats:    yaml json toml inline_kv markdown
+  batch:      16
+  device:     cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights:  41%|████      | 63/153 [00:00<00:00, 543.50it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 992.30it/s]
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  standardisation capture in 0:17:58
+
+Saved jina_v2 only_yaml_lam0_s1 scores results -> data/nq/h2/standardisation/test_scores_jina_v2_only_yaml_lam0_s1.npy  (0.2 MB)

@@ -71,15 +71,18 @@ def load_budget_tokenizers(names: list[str]) -> dict[str, Any]:
     return loaded
 
 
-def training_formats(held_out: str | None) -> list[str]:
+def training_formats(held_out: str | None, only: str | None = None) -> list[str]:
     """Return the formats a run trains on.
 
     Args:
         held_out: The format to withhold, or None to train on every format.
+        only: The one format to train on, or None to train on several.
 
     Returns:
         The format names, in the published order.
     """
+    if only is not None:
+        return [only]
     if held_out is None:
         return list(FORMAT_NAMES)
     return [name for name in FORMAT_NAMES if name != held_out]
@@ -94,6 +97,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=HELD_OUT_NONE,
         choices=[*FORMAT_NAMES, HELD_OUT_NONE],
         help="Format withheld from training. 'none' trains on every format",
+    )
+    ap.add_argument(
+        "--only-format",
+        default=None,
+        choices=FORMAT_NAMES,
+        help="The one format to train on, for a standardised corpus",
     )
     ap.add_argument("--lambda-inv", type=float, default=1.0)
     ap.add_argument("--lr", type=float, default=DEFAULT_LR)
@@ -175,9 +184,12 @@ def main() -> None:
     args = build_parser().parse_args()
     model_entry = resolve_model(args.model)
     held_out = None if args.held_out_format == HELD_OUT_NONE else args.held_out_format
-    formats = training_formats(held_out)
+    only = args.only_format
+    if held_out is not None and only is not None:
+        raise SystemExit("--held-out-format and --only-format cannot be combined.")
+    formats = training_formats(held_out, only)
 
-    arm_name = arm(held_out, args.lambda_inv, args.rank_tag)
+    arm_name = arm(held_out, args.lambda_inv, args.rank_tag, only=only, seed=args.seed)
     run_dir = train_dir(args.data_root, model_entry.slug, arm_name)
     adapter_path = run_dir / ADAPTER_NAME
     log_path = run_dir / LOG_NAME
@@ -305,6 +317,7 @@ def main() -> None:
                 model_id=model_entry.model_id,
                 arm=arm_name,
                 held_out=held_out,
+                only=only,
                 formats=formats,
                 lambda_inv=args.lambda_inv,
                 lr=args.lr,

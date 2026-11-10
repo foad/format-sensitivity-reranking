@@ -1,0 +1,18 @@
+
+======================================================================
+STANDARDISATION  mxbai-v1  arm=only_toml_lam0   2026-11-05 18:17:10
+======================================================================
+  identifier: mixedbread-ai/mxbai-rerank-base-v1
+  adapter:    data/nq/h2/train/mxbai_v1_only_toml_lam0/adapter
+  queries:    767
+  candidates: 16 each
+  formats:    yaml json toml inline_kv markdown
+  batch:      16
+  device:     cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  46%|████▌     | 92/202 [00:00<00:00, 919.65it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1013.39it/s]
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  standardisation capture in 0:24:10
+
+Saved mxbai_v1 only_toml_lam0 scores results -> data/nq/h2/standardisation/test_scores_mxbai_v1_only_toml_lam0.npy  (0.2 MB)
