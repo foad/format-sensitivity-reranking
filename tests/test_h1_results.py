@@ -459,3 +459,33 @@ class TestRescoredTable:
         path.parent.mkdir(parents=True)
         path.write_text(json.dumps({"model": "x"}))
         assert list(mod.load_rescores(tmp_path, "test")) == ["bge_base"]
+
+
+class TestFamilyTable:
+    def entries(self, tmp_path):
+        cross = cross_entry()
+        cross["scores"] = {f: [0.0, 1.0, 2.0, 3.0, 4.0, 5.0] for f in mod.FORMAT_NAMES}
+        cross["scores"]["json"] = [1.0, 1.5, 2.5, 2.0, 5.0, 4.0]
+        root = write(tmp_path, "test", "cross", "with_body", entry=cross)
+        write(tmp_path, "test", "within", "with_body", entry=bootstrap_entry())
+        return (
+            mod.load_axis(root, "test", "cross", "with_body"),
+            mod.load_axis(root, "test", "within", "with_body"),
+        )
+
+    def test_one_row_per_model(self, tmp_path):
+        frame = mod.family_table(*self.entries(tmp_path), n_boot=100)
+        assert list(frame.index) == ["MiniLM-L6", "bge-base"]
+
+    def test_adjusted_values_are_no_smaller_than_raw(self, tmp_path):
+        frame = mod.family_table(*self.entries(tmp_path), n_boot=100)
+        assert (frame["holm_threshold"] >= frame["p_above_threshold"]).all()
+        assert (frame["holm_zero"] >= frame["p_above_zero"]).all()
+
+    def test_a_claim_holds_only_below_alpha(self, tmp_path):
+        frame = mod.family_table(*self.entries(tmp_path), n_boot=100)
+        assert (frame["inconsistent"] == (frame["holm_zero"] < mod.FAMILY_ALPHA)).all()
+
+    def test_an_unreachable_threshold_holds_for_no_model(self, tmp_path):
+        frame = mod.family_table(*self.entries(tmp_path), threshold=1e9, n_boot=100)
+        assert not frame["above_threshold"].any()

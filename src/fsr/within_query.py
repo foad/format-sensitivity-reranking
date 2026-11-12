@@ -368,6 +368,36 @@ def bootstrap_tables(
     return per_model, diffs, models, order
 
 
+def bootstrap_inconsistency_replicates(
+    top1_per_fmt: Mapping[str, Any],
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    formats: Sequence[str] = FORMAT_NAMES,
+) -> np.ndarray:
+    """Return bootstrap replicates of the conditional inconsistency share.
+
+    Args:
+        top1_per_fmt: A boolean array per format, True where the gold leads.
+        n_boot: The number of bootstrap replicates.
+        seed: The seed for the resample.
+        formats: The format names to include.
+
+    Returns:
+        One share per replicate that drew an answerable query, as percentages.
+    """
+    present = _present(top1_per_fmt, formats)
+    stack = np.stack([np.asarray(top1_per_fmt[f], dtype=bool) for f in present])
+    n_leading = stack.sum(axis=0)
+    answerable = n_leading > 0
+    inconsistent = answerable & (n_leading < len(present))
+
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, len(n_leading), size=(n_boot, len(n_leading)))
+    counts = answerable[idx].sum(axis=1)
+    drawn = counts > 0
+    return 100.0 * inconsistent[idx].sum(axis=1)[drawn] / counts[drawn]
+
+
 def bootstrap_ci_of_inconsistency(
     top1_per_fmt: Mapping[str, Any],
     n_boot: int = DEFAULT_N_BOOT,
@@ -387,18 +417,7 @@ def bootstrap_ci_of_inconsistency(
     Returns:
         The lower bound and the upper bound, as percentages.
     """
-    present = _present(top1_per_fmt, formats)
-    stack = np.stack([np.asarray(top1_per_fmt[f], dtype=bool) for f in present])
-    n_leading = stack.sum(axis=0)
-    answerable = n_leading > 0
-    inconsistent = answerable & (n_leading < len(present))
-
-    rng = np.random.default_rng(seed)
-    idx = rng.integers(0, len(n_leading), size=(n_boot, len(n_leading)))
-    counts = answerable[idx].sum(axis=1)
-    shares = np.full(n_boot, np.nan)
-    drawn = counts > 0
-    shares[drawn] = 100.0 * inconsistent[idx].sum(axis=1)[drawn] / counts[drawn]
-    if not drawn.any():
+    shares = bootstrap_inconsistency_replicates(top1_per_fmt, n_boot, seed, formats)
+    if not len(shares):
         return float("nan"), float("nan")
-    return _percentile_ci(shares[drawn], ci)
+    return _percentile_ci(shares, ci)

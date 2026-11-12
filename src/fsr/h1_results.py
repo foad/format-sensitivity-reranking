@@ -15,11 +15,15 @@ from fsr.metrics import (
     DEFAULT_N_BOOT,
     DEFAULT_SEED,
     bootstrap_ci_of_max_abs_d,
+    bootstrap_max_abs_d_replicates,
+    bootstrap_p_above,
+    holm,
     pairwise_cohen_d,
 )
 from fsr.models.registry import BASE_MODELS, MODELS, by_slug
 from fsr.within_query import (
     bootstrap_ci_of_inconsistency,
+    bootstrap_inconsistency_replicates,
     bootstrap_tables,
     conditional_inconsistency,
 )
@@ -28,6 +32,10 @@ RESULTS_SUBDIR = "h1"
 AXES = ("cross", "within")
 MODES = ("with_body", "metadata_only")
 SPLITS = ("test", "nq_val", "all")
+# Cohen's conventional threshold for a medium effect
+MEDIUM_EFFECT = 0.5
+# family-wise error rate for claims made across the roster
+FAMILY_ALPHA = 0.05
 
 
 def results_dir(data_root: Path) -> Path:
@@ -482,3 +490,57 @@ def rescored_table(
             "control_max_abs_diff": record["control"]["max_abs_diff"],
         }
     return _frame(rows)
+
+
+def family_table(
+    cross_entries: dict[str, Any],
+    within_entries: dict[str, Any],
+    threshold: float = MEDIUM_EFFECT,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    alpha: float = FAMILY_ALPHA,
+) -> pd.DataFrame:
+    """Test the two claims made across the roster, with a Holm correction.
+
+    Args:
+        cross_entries: The cross-query entry of each model, by slug.
+        within_entries: The within-query entry of each model, by slug.
+        threshold: The effect size the score-axis claim must exceed.
+        n_boot: The number of bootstrap replicates.
+        seed: The seed for the resample.
+        alpha: The family-wise error rate.
+
+    Returns:
+        One row per model: each statistic, its raw and Holm-adjusted p-value,
+        and whether the claim survives the correction.
+    """
+    rows = {}
+    for slug, entry in cross_entries.items():
+        replicates = bootstrap_max_abs_d_replicates(entry["scores"], n_boot, seed)
+        rows[slug] = {
+            "max_abs_d": entry["stats"]["summary"]["max_abs_cohen_d"],
+            "p_above_threshold": bootstrap_p_above(replicates, threshold),
+        }
+    for slug, entry in within_entries.items():
+        top1 = {
+            name: np.asarray(ranks) == 1.0
+            for name, ranks in entry["reciprocal_ranks"].items()
+        }
+        replicates = bootstrap_inconsistency_replicates(top1, n_boot, seed)
+        rows.setdefault(slug, {}).update(
+            {
+                "inconsistency_pct": entry["conditional_inconsistency"][
+                    "inconsistency_pct"
+                ],
+                "p_above_zero": bootstrap_p_above(replicates, 0.0),
+            }
+        )
+    frame = _frame(rows)
+    for raw, adjusted, holds in (
+        ("p_above_threshold", "holm_threshold", "above_threshold"),
+        ("p_above_zero", "holm_zero", "inconsistent"),
+    ):
+        if raw in frame:
+            frame[adjusted] = holm(frame[raw])
+            frame[holds] = frame[adjusted] < alpha
+    return frame

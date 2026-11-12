@@ -14,7 +14,10 @@ from fsr.metrics import (
     _percentile_ci,
     bootstrap_ci_of_max_abs_d,
     bootstrap_ci_of_mean,
+    bootstrap_max_abs_d_replicates,
+    bootstrap_p_above,
     format_sensitivity_summary,
+    holm,
     pairwise_cohen_d,
     per_format_summary,
     rank_stability,
@@ -285,3 +288,45 @@ class TestBootstrapCiOfMaxAbsD:
         # deviation, so the effect size reaches the 1 / COHEN_D_EPSILON ceiling.
         _, hi = bootstrap_ci_of_max_abs_d(TWO, n_boot=500, formats=PAIR)
         assert hi == pytest.approx(1e12)
+
+
+class TestBootstrapMaxAbsDReplicates:
+    def test_one_value_per_replicate(self):
+        assert len(bootstrap_max_abs_d_replicates(TWO, 50, formats=PAIR)) == 50
+
+    def test_matches_the_interval_built_from_it(self):
+        replicates = bootstrap_max_abs_d_replicates(TWO, 200, formats=PAIR)
+        low, high = bootstrap_ci_of_max_abs_d(TWO, 200, formats=PAIR)
+        assert (low, high) == pytest.approx(_percentile_ci(replicates, 0.95))
+
+    def test_every_replicate_is_non_negative(self):
+        assert (bootstrap_max_abs_d_replicates(TWO, 50, formats=PAIR) >= 0).all()
+
+
+class TestBootstrapPAbove:
+    def test_is_small_when_every_replicate_clears_the_null(self):
+        assert bootstrap_p_above(np.full(99, 2.0), 1.0) == pytest.approx(0.01)
+
+    def test_is_one_when_no_replicate_clears_the_null(self):
+        assert bootstrap_p_above(np.full(99, 0.5), 1.0) == pytest.approx(1.0)
+
+    def test_a_replicate_at_the_null_counts_against_the_claim(self):
+        assert bootstrap_p_above(np.array([1.0, 2.0, 2.0]), 1.0) == pytest.approx(0.5)
+
+
+class TestHolm:
+    def test_leaves_one_value_alone(self):
+        assert holm([0.04]) == pytest.approx([0.04])
+
+    def test_multiplies_the_smallest_by_the_count(self):
+        assert holm([0.01, 0.5])[0] == pytest.approx(0.02)
+
+    def test_never_decreases(self):
+        adjusted = holm([0.01, 0.02, 0.03])
+        assert list(adjusted) == sorted(adjusted)
+
+    def test_caps_at_one(self):
+        assert (holm([0.6, 0.7, 0.8]) <= 1.0).all()
+
+    def test_keeps_the_order_given(self):
+        assert list(holm([0.03, 0.01])) == pytest.approx([0.03, 0.02])

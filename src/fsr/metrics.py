@@ -290,15 +290,14 @@ def bootstrap_ci_of_mean(
     return _percentile_ci(means, ci)
 
 
-def bootstrap_ci_of_max_abs_d(
+def bootstrap_max_abs_d_replicates(
     scores_per_fmt: ScoresPerFormat,
     n_boot: int = DEFAULT_N_BOOT,
     seed: int = DEFAULT_SEED,
-    ci: float = DEFAULT_CI,
     *,
     formats: Sequence[str] = FORMAT_NAMES,
-) -> tuple[float, float]:
-    """Compute a bootstrap confidence interval for the largest absolute Cohen's d.
+) -> np.ndarray:
+    """Return bootstrap replicates of the largest absolute Cohen's d.
 
     Each replicate resamples the record indices and recomputes the largest
     absolute effect size across the format pairs.
@@ -307,11 +306,10 @@ def bootstrap_ci_of_max_abs_d(
         scores_per_fmt: The per-record scores, by format name.
         n_boot: The number of bootstrap replicates.
         seed: The seed for the resample.
-        ci: The interval width.
         formats: The format names to pair. The default is FORMAT_NAMES.
 
     Returns:
-        The lower bound and the upper bound.
+        One value per replicate.
     """
     scores = {f: np.asarray(s) for f, s in scores_per_fmt.items()}
     n = len(next(iter(scores.values())))
@@ -329,4 +327,64 @@ def bootstrap_ci_of_max_abs_d(
             d = abs(diff.mean() / (diff.std() + COHEN_D_EPSILON))
             max_d = max(max_d, d)
         stats_boot[b] = max_d
-    return _percentile_ci(stats_boot, ci)
+    return stats_boot
+
+
+def bootstrap_ci_of_max_abs_d(
+    scores_per_fmt: ScoresPerFormat,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    ci: float = DEFAULT_CI,
+    *,
+    formats: Sequence[str] = FORMAT_NAMES,
+) -> tuple[float, float]:
+    """Compute a bootstrap confidence interval for the largest absolute Cohen's d.
+
+    Args:
+        scores_per_fmt: The per-record scores, by format name.
+        n_boot: The number of bootstrap replicates.
+        seed: The seed for the resample.
+        ci: The interval width.
+        formats: The format names to pair. The default is FORMAT_NAMES.
+
+    Returns:
+        The lower bound and the upper bound.
+    """
+    replicates = bootstrap_max_abs_d_replicates(
+        scores_per_fmt, n_boot, seed, formats=formats
+    )
+    return _percentile_ci(replicates, ci)
+
+
+def bootstrap_p_above(replicates: np.ndarray, null: float) -> float:
+    """Return a one-sided bootstrap p-value against a null value.
+
+    Args:
+        replicates: The bootstrap replicates of the statistic.
+        null: The value the statistic is tested against.
+
+    Returns:
+        The p-value for the statistic lying above the null.
+    """
+    values = np.asarray(replicates, dtype=float)
+    return float((1 + (values <= null).sum()) / (len(values) + 1))
+
+
+def holm(p_values: Sequence[float]) -> np.ndarray:
+    """Adjust a family of p-values with the Holm step-down procedure.
+
+    Args:
+        p_values: One p-value per member of the family.
+
+    Returns:
+        The adjusted values, in the order given.
+    """
+    values = np.asarray(p_values, dtype=float)
+    order = np.argsort(values)
+    count = len(values)
+    adjusted = np.empty(count)
+    running = 0.0
+    for rank, index in enumerate(order):
+        running = max(running, (count - rank) * values[index])
+        adjusted[index] = min(running, 1.0)
+    return adjusted

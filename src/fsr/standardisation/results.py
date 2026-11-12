@@ -21,7 +21,7 @@ from fsr.h2_layout import (
 )
 from fsr.h2_layout import DEFAULT_SEED as DEFAULT_TRAINING_SEED
 from fsr.h2_results import SWEEP, load_selection, winner_weight
-from fsr.metrics import DEFAULT_CI, DEFAULT_N_BOOT, DEFAULT_SEED
+from fsr.metrics import DEFAULT_CI, DEFAULT_N_BOOT, DEFAULT_SEED, holm
 from fsr.models.registry import BASE_MODELS, by_slug
 from fsr.standardisation.layout import standardisation_dir, tensor_path
 from fsr.standardisation.metrics import (
@@ -174,26 +174,6 @@ def _paired(
         "p": float((1 + extreme.sum()) / (n_permutations + 1)),
         "p_floor": float(1 / (n_permutations + 1)),
     }
-
-
-def holm(p_values: Sequence[float]) -> np.ndarray:
-    """Adjust p-values for the number of models tested.
-
-    Args:
-        p_values: One p-value per model.
-
-    Returns:
-        The adjusted values, in the order given.
-    """
-    values = np.asarray(p_values, dtype=float)
-    order = np.argsort(values)
-    count = len(values)
-    adjusted = np.empty(count)
-    running = 0.0
-    for rank, index in enumerate(order):
-        running = max(running, (count - rank) * values[index])
-        adjusted[index] = min(running, 1.0)
-    return adjusted
 
 
 def _policies(tensor: Any) -> dict[str, np.ndarray]:

@@ -9,6 +9,7 @@ import pytest
 
 from fsr.within_query import (
     bootstrap_ci_of_inconsistency,
+    bootstrap_inconsistency_replicates,
     bootstrap_tables,
     conditional_inconsistency,
     conditional_inconsistency_from_matrices,
@@ -347,3 +348,20 @@ class TestBootstrapCiOfInconsistency:
         assert paired == bootstrap_ci_of_inconsistency(
             self._top1(), n_boot=200, formats=["yaml", "json", "toml"]
         )
+
+
+class TestBootstrapInconsistencyReplicates:
+    def test_one_share_per_replicate_with_an_answerable_query(self):
+        top1 = {"yaml": np.array([True, False]), "json": np.array([False, False])}
+        shares = bootstrap_inconsistency_replicates(top1, n_boot=40, formats=PAIR)
+        assert 0 < len(shares) <= 40
+
+    def test_drops_replicates_with_nothing_answerable(self):
+        top1 = {f: np.array([False, False]) for f in PAIR}
+        shares = bootstrap_inconsistency_replicates(top1, n_boot=20, formats=PAIR)
+        assert len(shares) == 0
+
+    def test_shares_are_percentages(self):
+        top1 = {"yaml": np.array([True, True]), "json": np.array([True, False])}
+        shares = bootstrap_inconsistency_replicates(top1, n_boot=50, formats=PAIR)
+        assert ((shares >= 0) & (shares <= 100)).all()

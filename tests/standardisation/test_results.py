@@ -114,21 +114,6 @@ class TestHardSubset:
             mod.hard_subset(root, ["minilm_l6"])
 
 
-class TestHolm:
-    def test_leaves_one_value_alone(self):
-        assert mod.holm([0.04]) == pytest.approx([0.04])
-
-    def test_multiplies_the_smallest_by_the_count(self):
-        assert mod.holm([0.01, 0.5])[0] == pytest.approx(0.02)
-
-    def test_never_decreases(self):
-        adjusted = mod.holm([0.01, 0.02, 0.03])
-        assert list(adjusted) == sorted(adjusted)
-
-    def test_caps_at_one(self):
-        assert (mod.holm([0.6, 0.7, 0.8]) <= 1.0).all()
-
-
 class TestLevelsTable:
     def test_holds_one_row_per_model_and_condition(self, root):
         table = mod.levels_table(root, SLUGS)
