@@ -75,4 +75,23 @@ Stages 5 and 6 are descriptive only.
 
 Results land in `data/nq/h1/`, named `{split}_{axis}_{mode}_{model}.json`.
 
+### Truncation check
+
+Find the passages that exceed a model's context after budgeting. This needs
+tokenizers only, no GPU:
+
+```bash
+uv run python scripts/h1/overflow.py --split test
+```
+
+It writes `data/nq/h1/test_overflow.json`. Then score those passages again with
+a body that fits every tokenizer, one job per model:
+
+```bash
+GPUS=0 bash scripts/h1/rescore_overflow.sh test
+```
+
+Each job writes `data/nq/h1/test_rescore_{model}.json`, read by
+[`../notebooks/h1/h1_truncation.ipynb`](../notebooks/h1/h1_truncation.ipynb).
+
 See [`../data/README.md`](../data/README.md).

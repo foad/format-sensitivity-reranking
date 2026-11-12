@@ -36,6 +36,8 @@ uv run python scripts/watch.py --pattern 'all_cross_*.log'
  - `cross_query.sh`: the score axis for one split, one model per GPU.
  - `within_query.sh`: the answer axis for one split. Builds the shared candidate cache once, then scores one model per GPU.
  - `cross_query.py`: the score axis measurement.
+ - `overflow.py`: find the passages that exceed a model's context after budgeting. Tokenizers only.
+ - `rescore_overflow.sh`, `rescore_overflow.py`: score those passages again with a body that fits every tokenizer.
 
 ## `h2/`
  - `train.py`: train one adapter under the ranking and invariance objective.

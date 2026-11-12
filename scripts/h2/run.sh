@@ -11,6 +11,9 @@
 #   MODEL        registry slug, required
 #   GPUS         comma-separated GPUs to spread jobs across (default 0)
 #   STAGES       comma-separated stage numbers (default 0,1,2,3,4,5,6,7,8)
+#   SEED         training seed for Phase 2 arms (default 0, the published arms).
+#                Another seed adds _s<seed> to every arm name and runs only
+#                stages 4 to 10, at the weight Phase 1 chose under seed 0
 #   LAMBDAS      space-separated invariance weights (default the published set)
 #   FOLDS        space-separated held-out formats (default all five)
 #   FSR_RUNNER   runner to source (default scripts/runners/local.sh)
@@ -99,6 +102,18 @@ STARTED=$(date +%s)
 
 wanted() { case ",${STAGES}," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 
+# Phase 1 chooses the weight once, under seed 0, and every seed reuses it. A
+# seeded run of stages 0 to 3 would select under a different seed.
+SEED="${SEED:-0}"
+if [ "$SEED" != "0" ]; then
+    for NUMBER in 0 1 2 3; do
+        if wanted "$NUMBER"; then
+            echo "ERROR: SEED=$SEED runs Phase 2 only; set STAGES to 4 to 10." >&2
+            exit 2
+        fi
+    done
+fi
+
 stage() {
     local NUMBER="$1" TITLE="$2"
     shift 2
@@ -118,7 +133,11 @@ job_progress() { progress_for "$(job_name "$1")"; }
 arm_of() {
     local FOLD="$1" WEIGHT="$2"
     [ "$FOLD" = "none" ] && FOLD="5fmt"
-    echo "${FOLD}_lam${WEIGHT}"
+    if [ "$SEED" = "0" ]; then
+        echo "${FOLD}_lam${WEIGHT}"
+    else
+        echo "${FOLD}_lam${WEIGHT}_s${SEED}"
+    fi
 }
 
 baseline_eval() {
@@ -223,7 +242,8 @@ train_folds() {
     job_name() { echo "train_${MODEL}_$(arm_of "$1" "$WEIGHT")"; }
     job_command() {
         JOB_CMD=(scripts/h2/train.py "${COMMON[@]}" --held-out-format "$1"
-                 --lambda-inv "$WEIGHT" "${TRAIN_ARGS[@]}" "${TRAIN_BATCH_ARGS[@]}"
+                 --lambda-inv "$WEIGHT" --seed "$SEED"
+                 "${TRAIN_ARGS[@]}" "${TRAIN_BATCH_ARGS[@]}"
                  "${TRAIN_LIMIT_ARGS[@]}"
                  --progress-file "$(job_progress "$1")")
     }
@@ -246,7 +266,7 @@ eval_folds() {
     job_command() {
         set -- $1
         JOB_CMD=(scripts/h2/cross_query.py "${COMMON[@]}" --split test
-                 --held-out-format "$1" --lambda-inv "$2"
+                 --held-out-format "$1" --lambda-inv "$2" --training-seed "$SEED"
                  "${EVAL_ARGS[@]}" "${LIMIT_ARGS[@]}"
                  --progress-file "$(progress_for "test_cross_${MODEL}_$(arm_of "$1" "$2")")")
     }
@@ -286,7 +306,7 @@ compare_folds() {
             GPU="$(fsr_gpus | head -1)" fsr_run \
                 "$(log_for "compare_${MODEL}_$(arm_of "$FOLD" "$W")")" \
                 scripts/h2/compare.py "${COMMON[@]}" --split test \
-                --held-out-format "$FOLD" --lambda-inv "$W"
+                --held-out-format "$FOLD" --lambda-inv "$W" --training-seed "$SEED"
         done
     done
 }
@@ -332,6 +352,7 @@ echo "H2 pass for $MODEL"
 echo "  weights: ${LAMBDA_LIST[*]}"
 echo "  folds:   ${FOLD_LIST[*]}"
 echo "  stages:  $STAGES"
+echo "  seed:    $SEED"
 echo "  resume:  every ${CHECKPOINT:-100} steps"
 echo "  batches: train ${PHYSICAL_BATCH:-$(registry_value PHYSICAL_BATCH)}" \
      "x ${GRAD_ACCUM:-$(registry_value GRAD_ACCUM)}," \

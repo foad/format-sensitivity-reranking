@@ -39,3 +39,9 @@ notebooks/**/*.html
 .coverage
 htmlcov/
 .pytest_cache/
+
+# GPU holds for seed sweeps, and the holder test
+data/**/hold_*.flag
+data/**/hold_*.log
+data/**/hold_*.hare.log
+data/hold_gpu/

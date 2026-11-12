@@ -1,0 +1,15 @@
+Device: cuda
+Model: BAAI/bge-reranker-v2-m3
+  47 records, 294 queries overflowed
+Loading tokenizers for 6 models...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (578 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (698 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (528 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (558 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1277 > 1024). Running this sequence through the model will result in indexing errors
+  refitted 47 records and 294 queries
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights:  64%|██████▎   | 250/393 [00:00<00:00, 2490.95it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 2696.06it/s]
+  control records: largest score difference 5.96e-06
+Wrote data/nq/h1/test_rescore_bge_v2_m3.json

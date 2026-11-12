@@ -241,6 +241,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="The adapter rank the arm name carries, for a rank sweep",
     )
+    ap.add_argument(
+        "--training-seed",
+        type=int,
+        default=0,
+        help="The seed the arm was trained under, which its name carries",
+    )
     ap.add_argument("--split", default="test", choices=list(EVAL_SPLITS))
     ap.add_argument("--n-boot", type=int, default=DEFAULT_N_BOOT)
     ap.add_argument("--seed", type=int, default=0)
@@ -260,7 +266,9 @@ def main() -> None:
     """Compare one fold and write the result."""
     args = build_parser().parse_args()
     entry = resolve_model(args.model)
-    arm_name = arm(args.held_out_format, args.lambda_inv, args.rank_tag)
+    arm_name = arm(
+        args.held_out_format, args.lambda_inv, args.rank_tag, seed=args.training_seed
+    )
     out_path = comparison_path(args.data_root, entry.slug, arm_name)
 
     if out_path.exists() and not args.force:

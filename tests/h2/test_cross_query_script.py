@@ -120,6 +120,25 @@ class TestArmOf:
         )
         assert mod.arm_of(args) == "5fmt_lam0.1_r8"
 
+    def test_a_training_seed_names_its_arm(self):
+        args = mod.build_parser().parse_args(
+            [
+                *("--model", SLUG, "--held-out-format", "yaml", "--lambda-inv", "0"),
+                *("--training-seed", "3"),
+            ]
+        )
+        assert mod.arm_of(args) == "yaml_lam0_s3"
+
+    def test_the_resample_seed_leaves_the_arm_alone(self):
+        """--seed seeds the bootstrap; only --training-seed picks the arm."""
+        args = mod.build_parser().parse_args(
+            [
+                *("--model", SLUG, "--held-out-format", "yaml", "--lambda-inv", "0"),
+                *("--seed", "3"),
+            ]
+        )
+        assert mod.arm_of(args) == "yaml_lam0"
+
 
 class TestRendering:
     def test_renders_the_budgeted_positive(self):

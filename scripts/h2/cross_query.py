@@ -203,7 +203,7 @@ def arm_of(args: argparse.Namespace) -> str:
     if args.baseline:
         return BASE_ARM
     held_out = None if args.held_out_format == "none" else args.held_out_format
-    return arm(held_out, args.lambda_inv, args.rank_tag)
+    return arm(held_out, args.lambda_inv, args.rank_tag, seed=args.training_seed)
 
 
 def load_budget_tokenizers(names: list[str]) -> dict[str, Any]:
@@ -259,6 +259,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help="The adapter rank the arm name carries, for a rank sweep",
+    )
+    ap.add_argument(
+        "--training-seed",
+        type=int,
+        default=0,
+        help="The seed the arm was trained under, which its name carries",
     )
     ap.add_argument("--split", default="test", choices=list(EVAL_SPLITS))
     ap.add_argument("--batch-size", type=int, default=None)

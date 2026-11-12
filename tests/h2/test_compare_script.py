@@ -176,6 +176,12 @@ class TestRun:
         run(monkeypatch, data_root, "--rank-tag", "8")
         assert comparison_path(data_root, SLUG, f"{HELD_OUT}_lam0.1_r8").exists()
 
+    def test_covers_a_seeded_arm(self, monkeypatch, data_root):
+        write_eval(data_root, f"{HELD_OUT}_lam0.1_s2", 0.0, 2)
+        write_within(data_root, f"{HELD_OUT}_lam0.1_s2", 4)
+        run(monkeypatch, data_root, "--training-seed", "2")
+        assert comparison_path(data_root, SLUG, f"{HELD_OUT}_lam0.1_s2").exists()
+
 
 class TestPrinting:
     def test_prints_one_line_per_pair(self, monkeypatch, data_root, capsys):

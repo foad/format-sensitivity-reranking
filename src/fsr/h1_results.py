@@ -15,9 +15,14 @@ from fsr.metrics import (
     DEFAULT_N_BOOT,
     DEFAULT_SEED,
     bootstrap_ci_of_max_abs_d,
+    pairwise_cohen_d,
 )
-from fsr.models.registry import MODELS, by_slug
-from fsr.within_query import bootstrap_ci_of_inconsistency, bootstrap_tables
+from fsr.models.registry import BASE_MODELS, MODELS, by_slug
+from fsr.within_query import (
+    bootstrap_ci_of_inconsistency,
+    bootstrap_tables,
+    conditional_inconsistency,
+)
 
 RESULTS_SUBDIR = "h1"
 AXES = ("cross", "within")
@@ -317,5 +322,163 @@ def answer_intervals(
             ],
             "low": low,
             "high": high,
+        }
+    return _frame(rows)
+
+
+def overflow_path(data_root: Path, split: str) -> Path:
+    """Return the file recording which passages exceed a model's context."""
+    return results_dir(data_root) / f"{split}_overflow.json"
+
+
+def load_overflow(data_root: Path, split: str) -> dict[str, Any]:
+    """Load the overflow record of one split.
+
+    Args:
+        data_root: The corpus directory.
+        split: The split measured.
+
+    Returns:
+        The record written by `scripts/h1/overflow.py`.
+    """
+    return json.loads(overflow_path(data_root, split).read_text())
+
+
+def overflow_summary(overflow: dict[str, Any]) -> pd.DataFrame:
+    """Summarise, per model, the passages that exceeded its context.
+
+    Args:
+        overflow: The overflow record from `load_overflow`.
+
+    Returns:
+        One row per model: the share of candidate renderings over the context,
+        the median and largest excess in tokens, and the records and queries
+        holding at least one such rendering.
+    """
+    cross, within = overflow["cross"], overflow["within"]
+    rows = {}
+    for model in BASE_MODELS:
+        if model.model_id not in within["by_model"]:
+            continue
+        w = within["by_model"][model.model_id]
+        rows[model.slug] = {
+            "renderings_over_pct": 100.0 * w["renderings_over"] / w["renderings"],
+            "excess_median": w["excess_median"],
+            "excess_max": w["excess_max"],
+            "records": len(cross["by_model"][model.model_id]["ids"]),
+            "queries": len(w["ids"]),
+        }
+    return _frame(rows)
+
+
+def rescore_path(data_root: Path, split: str, slug: str) -> Path:
+    """Return the file holding one model's re-scored overflow items."""
+    return results_dir(data_root) / f"{split}_rescore_{slug}.json"
+
+
+def load_rescores(data_root: Path, split: str) -> dict[str, Any]:
+    """Load every model's re-scored overflow items for one split.
+
+    Args:
+        data_root: The corpus directory.
+        split: The split measured.
+
+    Returns:
+        The record of each model whose file exists, keyed by registry slug.
+    """
+    out = {}
+    for model in MODELS:
+        path = rescore_path(data_root, split, model.slug)
+        if path.exists():
+            out[model.slug] = json.loads(path.read_text())
+    return out
+
+
+def _splice(
+    values: dict[str, Any], ids: list[str], replaced: list[str], new: dict[str, Any]
+) -> dict[str, np.ndarray]:
+    """Return each format's values with the replaced ids taking their new values.
+
+    Raises:
+        ValueError: If a replaced id is not among the ids.
+    """
+    position = {item: n for n, item in enumerate(ids)}
+    missing = [i for i in replaced if i not in position]
+    if missing:
+        raise ValueError(f"{len(missing)} replaced ids are not in the results")
+    rows = [position[i] for i in replaced]
+    out = {}
+    for name, seq in values.items():
+        arr = np.array(seq)
+        arr[rows] = np.asarray(new[name], dtype=arr.dtype)
+        out[name] = arr
+    return out
+
+
+def rescored_table(
+    cross_entries: dict[str, Any],
+    within_entries: dict[str, Any],
+    overflow: dict[str, Any],
+    rescores: dict[str, Any],
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    ci: float = DEFAULT_CI,
+) -> pd.DataFrame:
+    """Recompute both axes with the overflowing items scored again in full.
+
+    Nothing is dropped: each overflowing record and query takes the scores it
+    receives once its passages fit the context, and every other item keeps its
+    original scores.
+
+    Args:
+        cross_entries: The cross-query entry of each model, by slug.
+        within_entries: The within-query entry of each model, by slug.
+        overflow: The overflow record from `load_overflow`.
+        rescores: The re-scored items of each model, from `load_rescores`.
+        n_boot: The number of bootstrap replicates.
+        seed: The seed for the resample.
+        ci: The interval width.
+
+    Returns:
+        One row per re-scored model: the items replaced, each axis before and
+        after with the interval of the new estimate, and the largest score
+        difference on the control records.
+    """
+    rows = {}
+    for slug, record in rescores.items():
+        cross, within = record["cross"], record["within"]
+        scores = _splice(
+            cross_entries[slug]["scores"],
+            overflow["cross"]["record_ids"],
+            cross["record_ids"],
+            cross["scores"],
+        )
+        _, max_abs_d, _ = pairwise_cohen_d(scores)
+        d_low, d_high = bootstrap_ci_of_max_abs_d(scores, n_boot, seed, ci)
+        ranks = within_entries[slug]["reciprocal_ranks"]
+        if within["query_ids"]:
+            ranks = _splice(
+                ranks,
+                overflow["within"]["query_ids"],
+                within["query_ids"],
+                within["reciprocal_ranks"],
+            )
+        top1 = {name: np.asarray(r) == 1.0 for name, r in ranks.items()}
+        ci_pct = conditional_inconsistency(top1)["inconsistency_pct"]
+        ci_low, ci_high = bootstrap_ci_of_inconsistency(top1, n_boot, seed, ci)
+        rows[slug] = {
+            "records_rescored": len(cross["record_ids"]),
+            "max_abs_d": cross_entries[slug]["stats"]["summary"]["max_abs_cohen_d"],
+            "max_abs_d_rescored": max_abs_d,
+            "max_abs_d_low": d_low,
+            "max_abs_d_high": d_high,
+            "queries_rescored": len(within["query_ids"]),
+            "inconsistency_pct": within_entries[slug]["conditional_inconsistency"][
+                "inconsistency_pct"
+            ],
+            "inconsistency_pct_rescored": ci_pct,
+            "inconsistency_low": ci_low,
+            "inconsistency_high": ci_high,
+            "control_max_abs_diff": record["control"]["max_abs_diff"],
         }
     return _frame(rows)

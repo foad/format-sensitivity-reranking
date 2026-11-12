@@ -323,3 +323,139 @@ class TestIntervals:
             mod.load_axis(root, "test", "within", "with_body"), n_boot=100
         )
         assert list(frame.index) == ["MiniLM-L6", "bge-base"]
+
+
+def overflow_record(record_ids, query_ids, dropped_records, dropped_queries):
+    """Return an overflow record dropping the same items for every model."""
+    return {
+        "cross": {
+            "record_ids": record_ids,
+            "by_model": {
+                by_slug(slug).model_id: {"ids": dropped_records} for slug in SLUGS
+            },
+        },
+        "within": {
+            "query_ids": query_ids,
+            "by_model": {
+                by_slug(slug).model_id: {"ids": dropped_queries} for slug in SLUGS
+            },
+        },
+    }
+
+
+class TestOverflowFile:
+    def test_names_the_overflow_file(self, tmp_path):
+        assert mod.overflow_path(tmp_path, "test").name == "test_overflow.json"
+
+    def test_loads_the_overflow_file(self, tmp_path):
+        path = mod.overflow_path(tmp_path, "test")
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({"split": "test"}))
+        assert mod.load_overflow(tmp_path, "test") == {"split": "test"}
+
+    def test_summarises_each_model(self):
+        record = overflow_record(["a", "b"], ["a", "b"], ["a"], ["a", "b"])
+        for model_record in record["within"]["by_model"].values():
+            model_record.update(
+                renderings_over=3, renderings=200, excess_median=4.0, excess_max=9
+            )
+        frame = mod.overflow_summary(record)
+        row = frame.loc["bge-base"]
+        assert row["renderings_over_pct"] == pytest.approx(1.5)
+        assert (row["records"], row["queries"]) == (1, 2)
+        assert list(frame.index) == ["MiniLM-L6", "bge-base"]
+
+
+class TestRescoredTable:
+    IDS = ("a", "b", "c", "d", "e", "f")
+
+    def entries(self, tmp_path):
+        cross = cross_entry()
+        cross["scores"] = {f: [0.0, 1.0, 2.0, 3.0, 4.0, 5.0] for f in mod.FORMAT_NAMES}
+        cross["scores"]["json"] = [1.0, 1.5, 2.5, 2.0, 5.0, 4.0]
+        root = write(tmp_path, "test", "cross", "with_body", entry=cross)
+        write(tmp_path, "test", "within", "with_body", entry=bootstrap_entry())
+        return (
+            mod.load_axis(root, "test", "cross", "with_body"),
+            mod.load_axis(root, "test", "within", "with_body"),
+        )
+
+    def rescore(self, record_ids, scores, query_ids, ranks):
+        return {
+            "control": {"max_abs_diff": 1e-6},
+            "cross": {"record_ids": record_ids, "scores": scores},
+            "within": {"query_ids": query_ids, "reciprocal_ranks": ranks},
+        }
+
+    def test_replacing_nothing_keeps_the_estimates(self, tmp_path):
+        cross, within = self.entries(tmp_path)
+        frame = mod.rescored_table(
+            cross,
+            within,
+            overflow_record(list(self.IDS), list(self.IDS), [], []),
+            {"bge_base": self.rescore([], {f: [] for f in mod.FORMAT_NAMES}, [], {})},
+            n_boot=50,
+        )
+        row = frame.loc["bge-base"]
+        assert row["records_rescored"] == 0
+        assert row["inconsistency_pct_rescored"] == pytest.approx(50.0)
+
+    def test_a_rescored_query_takes_its_new_ranks(self, tmp_path):
+        cross, within = self.entries(tmp_path)
+        consistent = {f: [1.0] for f in mod.FORMAT_NAMES}
+        frame = mod.rescored_table(
+            cross,
+            within,
+            overflow_record(list(self.IDS), list(self.IDS), [], ["a"]),
+            {
+                "bge_base": self.rescore(
+                    [], {f: [] for f in mod.FORMAT_NAMES}, ["a"], consistent
+                )
+            },
+            n_boot=50,
+        )
+        assert frame.loc["bge-base"]["queries_rescored"] == 1
+        assert frame.loc["bge-base"]["inconsistency_pct_rescored"] == pytest.approx(
+            25.0
+        )
+
+    def test_a_rescored_record_takes_its_new_scores(self, tmp_path):
+        cross, within = self.entries(tmp_path)
+        same = {f: [9.0] for f in mod.FORMAT_NAMES}
+        frame = mod.rescored_table(
+            cross,
+            within,
+            overflow_record(list(self.IDS), list(self.IDS), ["a"], []),
+            {"bge_base": self.rescore(["a"], same, [], {})},
+            n_boot=50,
+        )
+        before = mod.rescored_table(
+            cross,
+            within,
+            overflow_record(list(self.IDS), list(self.IDS), [], []),
+            {"bge_base": self.rescore([], {f: [] for f in mod.FORMAT_NAMES}, [], {})},
+            n_boot=50,
+        )
+        row = frame.loc["bge-base"]
+        assert row["records_rescored"] == 1
+        assert row["max_abs_d_rescored"] != pytest.approx(
+            before.loc["bge-base"]["max_abs_d_rescored"]
+        )
+
+    def test_rejects_an_id_absent_from_the_results(self, tmp_path):
+        cross, within = self.entries(tmp_path)
+        same = {f: [9.0] for f in mod.FORMAT_NAMES}
+        with pytest.raises(ValueError, match="not in the results"):
+            mod.rescored_table(
+                cross,
+                within,
+                overflow_record(list(self.IDS), list(self.IDS), [], []),
+                {"bge_base": self.rescore(["z"], same, [], {})},
+                n_boot=50,
+            )
+
+    def test_loads_only_the_models_rescored(self, tmp_path):
+        path = mod.rescore_path(tmp_path, "test", "bge_base")
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({"model": "x"}))
+        assert list(mod.load_rescores(tmp_path, "test")) == ["bge_base"]
