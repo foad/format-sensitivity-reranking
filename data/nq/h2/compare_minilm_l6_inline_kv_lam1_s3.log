@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  MiniLM-L6  inline_kv_lam1_s3  split=test   2026-11-11 22:15:20
+======================================================================
+records: 770   held out: inline_kv
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.718        0.007    -0.711 in_training
+yaml - toml                   0.903        0.108    -0.794 in_training
+yaml - inline_kv              0.733        0.188    -0.545       ood
+yaml - markdown               0.522        0.084    -0.439 in_training
+json - toml                   0.091        0.071    -0.021 in_training
+json - inline_kv              0.448        0.086    -0.362       ood
+json - markdown               0.527        0.091    -0.436 in_training
+toml - inline_kv              0.535        0.043    -0.492       ood
+toml - markdown               0.307        0.000    -0.307 in_training
+inline_kv - markdown          0.179        0.033    -0.146       ood
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.903 (large)      0.188 (trivial)    -0.715     [-0.874, -0.598]
+in_training           0.903 (large)      0.108 (trivial)    -0.794     [-0.937, -0.662]
+ood                  0.733 (medium)      0.188 (trivial)    -0.545     [-0.642, -0.454]
+
+In-training thresholds, trained max |d| = 0.108
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -2
+  relative change: -74.4%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.8904
+  trained MRR:  0.9421
+  change: +0.0517  [+0.0404, +0.0630]  pass
+
+Transfer to inline_kv
+  MRR: 0.8981 -> 0.9457
+  change: +0.0476  [+0.0348, +0.0604]
+  training formats changed by +0.0527 on average, a ratio of 0.90
+
+Metadata-only records: 228
+  in_training  max |d|: 0.899 (large) -> 0.132 (trivial)
+  ood          max |d|: 0.821 (large) -> 0.236 (small)
+
+Answer axis, held out inline_kv, 674 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          97 (14.4%)        40 (5.9%)       -57      [-11.13, -5.79]
+in_training          86 (12.8%)        36 (5.3%)       -50      [-10.09, -4.75]
+ood                   11 (1.6%)         4 (0.6%)        -7       [-2.08, -0.15]
+
+Saved inline_kv_lam1_s3 results -> data/nq/h2/comparison/minilm_l6_inline_kv_lam1_s3.json  (0.0 MB)

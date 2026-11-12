@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  MiniLM-L6  yaml_lam1_s3  split=test   2026-11-11 22:13:41
+======================================================================
+records: 770   held out: yaml
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.718        0.293    -0.425       ood
+yaml - toml                   0.903        0.584    -0.319       ood
+yaml - inline_kv              0.733        0.573    -0.160       ood
+yaml - markdown               0.522        0.472    -0.050       ood
+json - toml                   0.091        0.107    +0.016 in_training
+json - inline_kv              0.448        0.002    -0.445 in_training
+json - markdown               0.527        0.137    -0.390 in_training
+toml - inline_kv              0.535        0.141    -0.394 in_training
+toml - markdown               0.307        0.006    -0.302 in_training
+inline_kv - markdown          0.179        0.107    -0.072 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.903 (large)       0.584 (medium)    -0.319     [-0.465, -0.187]
+in_training          0.535 (medium)      0.141 (trivial)    -0.394     [-0.488, -0.307]
+ood                   0.903 (large)       0.584 (medium)    -0.319     [-0.465, -0.187]
+
+In-training thresholds, trained max |d| = 0.141
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -1
+  relative change: -35.3%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.8904
+  trained MRR:  0.9418
+  change: +0.0514  [+0.0401, +0.0627]  pass
+
+Transfer to yaml
+  MRR: 0.8996 -> 0.9453
+  change: +0.0457  [+0.0327, +0.0591]
+  training formats changed by +0.0528 on average, a ratio of 0.87
+
+Metadata-only records: 228
+  in_training  max |d|: 0.601 (medium) -> 0.135 (trivial)
+  ood          max |d|: 0.899 (large) -> 0.690 (medium)
+
+Answer axis, held out yaml, 674 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          97 (14.4%)        33 (4.9%)       -64      [-12.17, -6.82]
+in_training          91 (13.5%)        33 (4.9%)       -58      [-11.28, -6.08]
+ood                    6 (0.9%)         0 (0.0%)        -6       [-1.63, -0.30]
+
+Saved yaml_lam1_s3 results -> data/nq/h2/comparison/minilm_l6_yaml_lam1_s3.json  (0.0 MB)
