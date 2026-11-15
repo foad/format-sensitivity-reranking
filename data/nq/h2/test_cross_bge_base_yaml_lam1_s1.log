@@ -1,0 +1,48 @@
+
+======================================================================
+EVAL  bge-base  split=test  arm=yaml_lam1_s1   2026-11-11 11:15:30
+======================================================================
+  identifier:  BAAI/bge-reranker-base
+  adapter:     data/nq/h2/train/bge_base_yaml_lam1_s1/adapter
+  batch:       16
+  output:      data/nq/h2/test_cross_bge_base_yaml_lam1_s1.json
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 2993.08it/s]
+
+821 records in test
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (578 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (698 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (528 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (558 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1277 > 1024). Running this sequence through the model will result in indexing errors
+  770 kept, 51 dropped
+
+Scoring the formats...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  mean=+3.446  n=770
+  scored       json  mean=+3.491  n=770
+  scored       toml  mean=+3.501  n=770
+  scored  inline_kv  mean=+3.492  n=770
+  scored   markdown  mean=+3.474  n=770
+
+  max |d|:    0.342
+  mean |d|:   0.158
+  min rho:    0.962
+  max flip:   8.1%
+  max |d| 95% interval: [0.284, 0.429]
+  format scoring in 0:00:35
+
+Scoring the ranking guardrail...
+  MRR       yaml: 0.9575
+  MRR       json: 0.9643
+  MRR       toml: 0.9647
+  MRR  inline_kv: 0.9645
+  MRR   markdown: 0.9602
+
+  mean MRR:   0.9622
+  worst MRR:  0.9575
+  guardrail scoring in 0:11:09
+
+Saved yaml_lam1_s1 results -> data/nq/h2/test_cross_bge_base_yaml_lam1_s1.json  (0.1 MB)

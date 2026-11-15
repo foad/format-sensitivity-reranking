@@ -1,0 +1,84 @@
+
+======================================================================
+TRAIN  jina-v2  arm=json_lam0.1_s4   2026-11-13 04:07:28
+======================================================================
+  identifier:  jinaai/jina-reranker-v2-base-multilingual
+  formats:     4 of 5  ['yaml', 'toml', 'inline_kv', 'markdown']
+  held out:    json
+  lambda_inv:  0.1
+  batch:       2 x 8
+  steps:       500, warmup 30
+  output:      data/nq/h2/train/jina_v2_json_lam0.1_s4
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+flash_attn is not installed. Using PyTorch native attention implementation.
+Loading weights:   0%|          | 0/153 [00:00<?, ?it/s]Loading weights:   6%|▌         | 9/153 [00:00<00:03, 37.76it/s]Loading weights: 100%|██████████| 153/153 [00:00<00:00, 625.10it/s]
+[transformers] XLMRobertaForSequenceClassification does not expose input embeddings. Gradients cannot flow back to the token embeddings when using adapters or gradient checkpointing. Override `get_input_embeddings` to fully support those features, or set `_input_embed_layer` to the attribute name that holds the embeddings.
+[transformers] You are using an old version of the checkpointing format that is deprecated (We will also silently ignore `gradient_checkpointing_kwargs` in case you passed it).Please update to the new format on your modeling file. To use the new format, you need to completely remove the definition of the method `_set_gradient_checkpointing` in your model.
+  fused projections patched: 12
+  trainable:   1,181,185 / 279,618,818 (0.42%)
+
+Loading the corpus...
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (963 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (928 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1154 > 1024). Running this sequence through the model will result in indexing errors
+  train: 6,131 kept, 449 dropped
+  dev:   758 kept
+  corpus loading in 0:03:40
+
+Training jina_v2 json_lam0.1_s4
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+step     1/500  loss=0.1569  rank=0.1550  inv=0.0198  lr=6.67e-06  7.20s/step  eta 0:59:53
+step    20/500  loss=0.1246  rank=0.1200  inv=0.0456  lr=1.33e-04  7.94s/step  eta 1:03:32
+step    40/500  loss=0.0811  rank=0.0623  inv=0.1885  lr=2.00e-04  7.63s/step  eta 0:58:30
+  dev max|d|=0.1581  (pair=yaml - toml)
+step    60/500  loss=0.0112  rank=0.0073  inv=0.0392  lr=1.98e-04  7.89s/step  eta 0:57:52
+step    80/500  loss=0.0331  rank=0.0247  inv=0.0847  lr=1.94e-04  7.69s/step  eta 0:53:51
+step   100/500  loss=0.0170  rank=0.0124  inv=0.0461  lr=1.89e-04  7.64s/step  eta 0:50:55
+  dev max|d|=0.2044  (pair=toml - markdown)
+step   120/500  loss=0.0124  rank=0.0103  inv=0.0208  lr=1.82e-04  7.77s/step  eta 0:49:11
+step   140/500  loss=0.0232  rank=0.0181  inv=0.0515  lr=1.74e-04  7.67s/step  eta 0:46:02
+  dev max|d|=0.1459  (pair=toml - markdown)
+step   160/500  loss=0.0332  rank=0.0301  inv=0.0312  lr=1.65e-04  7.76s/step  eta 0:43:59
+step   180/500  loss=0.0386  rank=0.0342  inv=0.0435  lr=1.54e-04  7.69s/step  eta 0:41:00
+step   200/500  loss=0.0931  rank=0.0785  inv=0.1465  lr=1.42e-04  7.65s/step  eta 0:38:15
+  dev max|d|=0.1604  (pair=toml - markdown)
+step   220/500  loss=0.0176  rank=0.0124  inv=0.0516  lr=1.30e-04  7.73s/step  eta 0:36:05
+step   240/500  loss=0.0305  rank=0.0245  inv=0.0598  lr=1.17e-04  7.68s/step  eta 0:33:17
+  dev max|d|=0.2080  (pair=yaml - toml)
+step   260/500  loss=0.0544  rank=0.0486  inv=0.0584  lr=1.03e-04  7.74s/step  eta 0:30:57
+step   280/500  loss=0.0499  rank=0.0359  inv=0.1400  lr=9.00e-05  7.70s/step  eta 0:28:13
+step   300/500  loss=0.0178  rank=0.0113  inv=0.0651  lr=7.68e-05  7.66s/step  eta 0:25:32
+  dev max|d|=0.1958  (pair=yaml - toml)
+step   320/500  loss=0.0251  rank=0.0180  inv=0.0706  lr=6.41e-05  7.71s/step  eta 0:23:07
+step   340/500  loss=0.0187  rank=0.0140  inv=0.0474  lr=5.19e-05  7.67s/step  eta 0:20:27
+  dev max|d|=0.1512  (pair=toml - inline_kv)
+step   360/500  loss=0.0126  rank=0.0084  inv=0.0426  lr=4.07e-05  7.71s/step  eta 0:17:59
+step   380/500  loss=0.0900  rank=0.0619  inv=0.2810  lr=3.05e-05  7.68s/step  eta 0:15:21
+step   400/500  loss=0.0427  rank=0.0389  inv=0.0384  lr=2.15e-05  7.65s/step  eta 0:12:45
+  dev max|d|=0.1529  (pair=toml - inline_kv)
+step   420/500  loss=0.0143  rank=0.0093  inv=0.0500  lr=1.40e-05  7.71s/step  eta 0:10:17
+step   440/500  loss=0.0145  rank=0.0095  inv=0.0505  lr=7.94e-06  7.68s/step  eta 0:07:41
+  dev max|d|=0.1465  (pair=toml - inline_kv)
+step   460/500  loss=0.0238  rank=0.0155  inv=0.0828  lr=3.55e-06  7.72s/step  eta 0:05:08
+step   480/500  loss=0.0137  rank=0.0107  inv=0.0302  lr=8.92e-07  7.69s/step  eta 0:02:33
+step   500/500  loss=0.0354  rank=0.0273  inv=0.0806  lr=0.00e+00  7.67s/step  eta 0:00:00
+  dev max|d|=0.1456  (pair=toml - inline_kv)
+
+Finished at step 500 in 3859s, dev max|d|=0.1456
+Saved adapter -> data/nq/h2/train/jina_v2_json_lam0.1_s4/adapter

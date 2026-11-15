@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  MiniLM-L12  markdown_lam0.1_s1  split=test   2026-11-11 11:35:25
+======================================================================
+records: 770   held out: markdown
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.615        0.126    -0.490 in_training
+yaml - toml                   0.938        0.108    -0.829 in_training
+yaml - inline_kv              0.701        0.037    -0.664 in_training
+yaml - markdown               0.630        0.151    -0.479       ood
+json - toml                   0.114        0.066    -0.048 in_training
+json - inline_kv              0.203        0.133    -0.069 in_training
+json - markdown               0.243        0.324    +0.082       ood
+toml - inline_kv              0.452        0.125    -0.327 in_training
+toml - markdown               0.390        0.257    -0.133       ood
+inline_kv - markdown          0.049        0.115    +0.066       ood
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.938 (large)        0.324 (small)    -0.613     [-0.735, -0.493]
+in_training           0.938 (large)      0.133 (trivial)    -0.805     [-0.910, -0.680]
+ood                  0.630 (medium)        0.324 (small)    -0.306     [-0.436, -0.172]
+
+In-training thresholds, trained max |d| = 0.133
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -1
+  relative change: -48.5%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9120
+  trained MRR:  0.9590
+  change: +0.0469  [+0.0357, +0.0586]  pass
+
+Transfer to markdown
+  MRR: 0.9038 -> 0.9635
+  change: +0.0598  [+0.0460, +0.0739]
+  training formats changed by +0.0437 on average, a ratio of 1.37
+
+Metadata-only records: 228
+  in_training  max |d|: 1.016 (large) -> 0.200 (small)
+  ood          max |d|: 0.843 (large) -> 0.339 (small)
+
+Answer axis, held out markdown, 687 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          82 (11.9%)        31 (4.5%)       -51       [-9.90, -4.95]
+in_training          72 (10.5%)        28 (4.1%)       -44       [-8.88, -3.93]
+ood                   10 (1.5%)         3 (0.4%)        -7       [-2.04, -0.15]
+
+Saved markdown_lam0.1_s1 results -> data/nq/h2/comparison/minilm_l12_markdown_lam0.1_s1.json  (0.0 MB)

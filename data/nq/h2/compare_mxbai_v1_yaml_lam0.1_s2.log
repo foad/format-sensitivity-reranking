@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  mxbai-v1  yaml_lam0.1_s2  split=test   2026-11-13 10:10:04
+======================================================================
+records: 770   held out: yaml
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.645        0.077    -0.568       ood
+yaml - toml                   0.651        0.173    -0.477       ood
+yaml - inline_kv              0.154        0.178    +0.025       ood
+yaml - markdown               0.271        0.006    -0.265       ood
+json - toml                   0.297        0.052    -0.245 in_training
+json - inline_kv              0.555        0.027    -0.528 in_training
+json - markdown               0.553        0.089    -0.464 in_training
+toml - inline_kv              0.598        0.019    -0.579 in_training
+toml - markdown               0.167        0.139    -0.028 in_training
+inline_kv - markdown          0.150        0.123    -0.027 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          0.651 (medium)      0.178 (trivial)    -0.473     [-0.562, -0.400]
+in_training          0.598 (medium)      0.139 (trivial)    -0.459     [-0.558, -0.358]
+ood                  0.651 (medium)      0.178 (trivial)    -0.473     [-0.563, -0.400]
+
+In-training thresholds, trained max |d| = 0.139
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -2
+  relative change: -72.6%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9332
+  trained MRR:  0.9674
+  change: +0.0342  [+0.0235, +0.0450]  pass
+
+Transfer to yaml
+  MRR: 0.9351 -> 0.9679
+  change: +0.0328  [+0.0219, +0.0438]
+  training formats changed by +0.0345 on average, a ratio of 0.95
+
+Metadata-only records: 228
+  in_training  max |d|: 0.474 (small) -> 0.253 (small)
+  ood          max |d|: 0.649 (medium) -> 0.310 (small)
+
+Answer axis, held out yaml, 693 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           26 (3.8%)         8 (1.2%)       -18       [-4.18, -1.15]
+in_training           21 (3.0%)         8 (1.2%)       -13       [-3.32, -0.58]
+ood                    5 (0.7%)         0 (0.0%)        -5       [-1.44, -0.14]
+
+Saved yaml_lam0.1_s2 results -> data/nq/h2/comparison/mxbai_v1_yaml_lam0.1_s2.json  (0.0 MB)

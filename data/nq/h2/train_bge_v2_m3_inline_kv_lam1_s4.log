@@ -1,0 +1,69 @@
+
+======================================================================
+TRAIN  bge-v2-m3  arm=inline_kv_lam1_s4   2026-11-13 12:18:23
+======================================================================
+  identifier:  BAAI/bge-reranker-v2-m3
+  formats:     4 of 5  ['yaml', 'json', 'toml', 'markdown']
+  held out:    inline_kv
+  lambda_inv:  1.0
+  batch:       2 x 8
+  steps:       500, warmup 30
+  output:      data/nq/h2/train/bge_v2_m3_inline_kv_lam1_s4
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 7434.26it/s]
+  trainable:   3,409,921 / 571,165,698 (0.60%)
+
+Loading the corpus...
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (963 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (928 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1154 > 1024). Running this sequence through the model will result in indexing errors
+  train: 6,131 kept, 449 dropped
+  dev:   758 kept
+  corpus loading in 0:02:10
+
+Training bge_v2_m3 inline_kv_lam1_s4
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+[transformers] `use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`.
+step     1/500  loss=0.2659  rank=0.0787  inv=0.1872  lr=6.67e-06  16.83s/step  eta 2:19:57
+step    20/500  loss=0.1340  rank=0.1049  inv=0.0291  lr=1.33e-04  17.32s/step  eta 2:18:33
+step    40/500  loss=0.0855  rank=0.0495  inv=0.0360  lr=2.00e-04  17.32s/step  eta 2:12:47
+  dev max|d|=0.2848  (pair=json - markdown)
+step    60/500  loss=0.0354  rank=0.0183  inv=0.0171  lr=1.98e-04  18.82s/step  eta 2:18:02
+step    80/500  loss=0.0535  rank=0.0341  inv=0.0194  lr=1.94e-04  18.46s/step  eta 2:09:15
+step   100/500  loss=0.0375  rank=0.0254  inv=0.0122  lr=1.89e-04  18.24s/step  eta 2:01:36
+  dev max|d|=0.2430  (pair=yaml - toml)
+step   120/500  loss=0.0327  rank=0.0202  inv=0.0126  lr=1.82e-04  18.86s/step  eta 1:59:26
+step   140/500  loss=0.0370  rank=0.0240  inv=0.0130  lr=1.74e-04  18.64s/step  eta 1:51:49
+  dev max|d|=0.1294  (pair=toml - markdown)
+step   160/500  loss=0.0884  rank=0.0581  inv=0.0303  lr=1.65e-04  19.04s/step  eta 1:47:51
+step   180/500  loss=0.0800  rank=0.0497  inv=0.0303  lr=1.54e-04  18.85s/step  eta 1:40:33
+step   200/500  loss=0.0924  rank=0.0463  inv=0.0460  lr=1.42e-04  18.73s/step  eta 1:33:38
+  dev max|d|=0.1317  (pair=yaml - json)
+step   220/500  loss=0.0286  rank=0.0234  inv=0.0052  lr=1.30e-04  19.01s/step  eta 1:28:42
+step   240/500  loss=0.0419  rank=0.0335  inv=0.0084  lr=1.17e-04  18.88s/step  eta 1:21:47
+  dev max|d|=0.0960  (pair=json - markdown)
+step   260/500  loss=0.0584  rank=0.0497  inv=0.0087  lr=1.03e-04  19.12s/step  eta 1:16:27
+step   280/500  loss=0.0676  rank=0.0428  inv=0.0248  lr=9.00e-05  18.99s/step  eta 1:09:37
+step   300/500  loss=0.0329  rank=0.0235  inv=0.0094  lr=7.68e-05  18.88s/step  eta 1:02:55
+  dev max|d|=0.1122  (pair=yaml - json)
+step   320/500  loss=0.0300  rank=0.0240  inv=0.0061  lr=6.41e-05  19.06s/step  eta 0:57:11
+step   340/500  loss=0.0353  rank=0.0281  inv=0.0072  lr=5.19e-05  18.96s/step  eta 0:50:33
+  dev max|d|=0.1226  (pair=yaml - toml)
+step   360/500  loss=0.0266  rank=0.0161  inv=0.0104  lr=4.07e-05  19.12s/step  eta 0:44:36
+step   380/500  loss=0.5150  rank=0.0608  inv=0.4543  lr=3.05e-05  19.03s/step  eta 0:38:03
+step   400/500  loss=0.0516  rank=0.0447  inv=0.0068  lr=2.15e-05  18.94s/step  eta 0:31:34
+  dev max|d|=0.1172  (pair=yaml - toml)
+step   420/500  loss=0.0395  rank=0.0158  inv=0.0237  lr=1.40e-05  19.08s/step  eta 0:25:26
+step   440/500  loss=0.0371  rank=0.0268  inv=0.0103  lr=7.94e-06  19.01s/step  eta 0:19:00
+  dev max|d|=0.1140  (pair=yaml - toml)
+step   460/500  loss=0.0537  rank=0.0250  inv=0.0287  lr=3.55e-06  19.13s/step  eta 0:12:45
+step   480/500  loss=0.0300  rank=0.0195  inv=0.0105  lr=8.92e-07  19.05s/step  eta 0:06:21
+step   500/500  loss=0.0455  rank=0.0215  inv=0.0240  lr=0.00e+00  18.99s/step  eta 0:00:00
+  dev max|d|=0.1145  (pair=yaml - toml)
+
+Finished at step 500 in 9583s, dev max|d|=0.1145
+Saved adapter -> data/nq/h2/train/bge_v2_m3_inline_kv_lam1_s4/adapter

@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  jina-v2  inline_kv_lam0.1_s3  split=test   2026-11-12 21:16:54
+======================================================================
+records: 770   held out: inline_kv
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.634        0.077    -0.557 in_training
+yaml - toml                   0.876        0.011    -0.864 in_training
+yaml - inline_kv              0.896        0.003    -0.893       ood
+yaml - markdown               0.076        0.015    -0.061 in_training
+json - toml                   0.079        0.089    +0.011 in_training
+json - inline_kv              0.101        0.071    -0.030       ood
+json - markdown               0.648        0.066    -0.582 in_training
+toml - inline_kv              0.058        0.015    -0.043       ood
+toml - markdown               0.763        0.030    -0.732 in_training
+inline_kv - markdown          0.662        0.014    -0.648       ood
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.896 (large)      0.089 (trivial)    -0.807     [-0.911, -0.710]
+in_training           0.876 (large)      0.089 (trivial)    -0.786     [-0.882, -0.678]
+ood                   0.896 (large)      0.071 (trivial)    -0.825     [-0.921, -0.716]
+
+In-training thresholds, trained max |d| = 0.089
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -3
+  relative change: -92.0%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9458
+  trained MRR:  0.9724
+  change: +0.0266  [+0.0173, +0.0362]  pass
+
+Transfer to inline_kv
+  MRR: 0.9411 -> 0.9746
+  change: +0.0335  [+0.0222, +0.0449]
+  training formats changed by +0.0249 on average, a ratio of 1.34
+
+Metadata-only records: 228
+  in_training  max |d|: 0.781 (medium) -> 0.217 (small)
+  ood          max |d|: 0.762 (medium) -> 0.130 (trivial)
+
+Answer axis, held out inline_kv, 715 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           35 (4.9%)        17 (2.4%)       -18       [-4.06, -0.98]
+in_training           30 (4.2%)        17 (2.4%)       -13       [-3.36, -0.28]
+ood                    5 (0.7%)         0 (0.0%)        -5       [-1.40, -0.14]
+
+Saved inline_kv_lam0.1_s3 results -> data/nq/h2/comparison/jina_v2_inline_kv_lam0.1_s3.json  (0.0 MB)

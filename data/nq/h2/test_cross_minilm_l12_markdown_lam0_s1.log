@@ -1,0 +1,48 @@
+
+======================================================================
+EVAL  MiniLM-L12  split=test  arm=markdown_lam0_s1   2026-11-11 09:56:22
+======================================================================
+  identifier:  cross-encoder/ms-marco-MiniLM-L12-v2
+  adapter:     data/nq/h2/train/minilm_l12_markdown_lam0_s1/adapter
+  batch:       32
+  output:      data/nq/h2/test_cross_minilm_l12_markdown_lam0_s1.json
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3573.84it/s]
+
+821 records in test
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (578 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (698 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (528 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (558 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1277 > 1024). Running this sequence through the model will result in indexing errors
+  770 kept, 51 dropped
+
+Scoring the formats...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  mean=+7.149  n=770
+  scored       json  mean=+7.111  n=770
+  scored       toml  mean=+7.124  n=770
+  scored  inline_kv  mean=+7.074  n=770
+  scored   markdown  mean=+7.061  n=770
+
+  max |d|:    0.163
+  mean |d|:   0.071
+  min rho:    0.930
+  max flip:   11.2%
+  max |d| 95% interval: [0.111, 0.230]
+  format scoring in 0:00:25
+
+Scoring the ranking guardrail...
+  MRR       yaml: 0.9580
+  MRR       json: 0.9578
+  MRR       toml: 0.9631
+  MRR  inline_kv: 0.9573
+  MRR   markdown: 0.9657
+
+  mean MRR:   0.9604
+  worst MRR:  0.9573
+  guardrail scoring in 0:08:40
+
+Saved markdown_lam0_s1 results -> data/nq/h2/test_cross_minilm_l12_markdown_lam0_s1.json  (0.1 MB)

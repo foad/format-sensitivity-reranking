@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  bge-v2-m3  toml_lam1_s3  split=test   2026-11-14 04:28:21
+======================================================================
+records: 770   held out: toml
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.417        0.118    -0.298 in_training
+yaml - toml                   0.398        0.032    -0.366       ood
+yaml - inline_kv              0.452        0.029    -0.423 in_training
+yaml - markdown               0.114        0.075    -0.039 in_training
+json - toml                   0.059        0.164    +0.104       ood
+json - inline_kv              0.104        0.097    -0.007 in_training
+json - markdown               0.413        0.065    -0.348 in_training
+toml - inline_kv              0.071        0.059    -0.012       ood
+toml - markdown               0.449        0.118    -0.331       ood
+inline_kv - markdown          0.314        0.047    -0.266 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.452 (small)      0.164 (trivial)    -0.288     [-0.395, -0.210]
+in_training           0.452 (small)      0.118 (trivial)    -0.333     [-0.421, -0.258]
+ood                   0.449 (small)      0.164 (trivial)    -0.285     [-0.385, -0.182]
+
+In-training thresholds, trained max |d| = 0.118
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -1
+  relative change: -63.6%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9617
+  trained MRR:  0.9734
+  change: +0.0116  [+0.0042, +0.0191]  pass
+
+Transfer to toml
+  MRR: 0.9640 -> 0.9720
+  change: +0.0081  [-0.0009, +0.0171]
+  training formats changed by +0.0125 on average, a ratio of 0.64
+
+Metadata-only records: 228
+  in_training  max |d|: 0.422 (small) -> 0.096 (trivial)
+  ood          max |d|: 0.529 (medium) -> 0.179 (trivial)
+
+Answer axis, held out toml, 730 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           34 (4.7%)        10 (1.4%)       -24       [-5.07, -1.64]
+in_training           32 (4.4%)         9 (1.2%)       -23       [-4.93, -1.51]
+ood                    2 (0.3%)         1 (0.1%)        -1       [-0.68, +0.27]
+
+Saved toml_lam1_s3 results -> data/nq/h2/comparison/bge_v2_m3_toml_lam1_s3.json  (0.0 MB)

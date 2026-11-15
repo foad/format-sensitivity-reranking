@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  jina-v2  toml_lam0.1_s4  split=test   2026-11-13 12:31:55
+======================================================================
+records: 770   held out: toml
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.634        0.032    -0.602 in_training
+yaml - toml                   0.876        0.166    -0.709       ood
+yaml - inline_kv              0.896        0.044    -0.852 in_training
+yaml - markdown               0.076        0.026    -0.050 in_training
+json - toml                   0.079        0.097    +0.018       ood
+json - inline_kv              0.101        0.001    -0.101 in_training
+json - markdown               0.648        0.008    -0.640 in_training
+toml - inline_kv              0.058        0.123    +0.065       ood
+toml - markdown               0.763        0.130    -0.632       ood
+inline_kv - markdown          0.662        0.009    -0.653 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.896 (large)      0.166 (trivial)    -0.730     [-0.840, -0.640]
+in_training           0.896 (large)      0.044 (trivial)    -0.852     [-0.922, -0.735]
+ood                   0.876 (large)      0.166 (trivial)    -0.709     [-0.790, -0.620]
+
+In-training thresholds, trained max |d| = 0.044
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -3
+  relative change: -81.0%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9458
+  trained MRR:  0.9735
+  change: +0.0277  [+0.0180, +0.0375]  pass
+
+Transfer to toml
+  MRR: 0.9476 -> 0.9721
+  change: +0.0245  [+0.0141, +0.0352]
+  training formats changed by +0.0285 on average, a ratio of 0.86
+
+Metadata-only records: 228
+  in_training  max |d|: 0.762 (medium) -> 0.099 (trivial)
+  ood          max |d|: 0.781 (medium) -> 0.275 (small)
+
+Answer axis, held out toml, 715 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           35 (4.9%)        12 (1.7%)       -23       [-4.90, -1.68]
+in_training           34 (4.8%)        12 (1.7%)       -22       [-4.76, -1.54]
+ood                    1 (0.1%)         0 (0.0%)        -1       [-0.42, +0.00]
+
+Saved toml_lam0.1_s4 results -> data/nq/h2/comparison/jina_v2_toml_lam0.1_s4.json  (0.0 MB)

@@ -1,0 +1,48 @@
+
+======================================================================
+EVAL  mxbai-v1  split=test  arm=markdown_lam0_s2   2026-11-13 07:25:22
+======================================================================
+  identifier:  mixedbread-ai/mxbai-rerank-base-v1
+  adapter:     data/nq/h2/train/mxbai_v1_markdown_lam0_s2/adapter
+  batch:       16
+  output:      data/nq/h2/test_cross_mxbai_v1_markdown_lam0_s2.json
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 3011.93it/s]
+
+821 records in test
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (578 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (698 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (528 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (558 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1277 > 1024). Running this sequence through the model will result in indexing errors
+  770 kept, 51 dropped
+
+Scoring the formats...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  mean=+7.713  n=770
+  scored       json  mean=+7.718  n=770
+  scored       toml  mean=+7.654  n=770
+  scored  inline_kv  mean=+7.659  n=770
+  scored   markdown  mean=+7.692  n=770
+
+  max |d|:    0.172
+  mean |d|:   0.086
+  min rho:    0.977
+  max flip:   5.6%
+  max |d| 95% interval: [0.129, 0.253]
+  format scoring in 0:00:46
+
+Scoring the ranking guardrail...
+  MRR       yaml: 0.9643
+  MRR       json: 0.9656
+  MRR       toml: 0.9674
+  MRR  inline_kv: 0.9659
+  MRR   markdown: 0.9627
+
+  mean MRR:   0.9652
+  worst MRR:  0.9627
+  guardrail scoring in 0:15:01
+
+Saved markdown_lam0_s2 results -> data/nq/h2/test_cross_mxbai_v1_markdown_lam0_s2.json  (0.1 MB)

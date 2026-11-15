@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  jina-v2  yaml_lam0_s4  split=test   2026-11-13 12:30:30
+======================================================================
+records: 770   held out: yaml
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.634        0.202    -0.432       ood
+yaml - toml                   0.876        0.367    -0.509       ood
+yaml - inline_kv              0.896        0.166    -0.730       ood
+yaml - markdown               0.076        0.310    +0.235       ood
+json - toml                   0.079        0.125    +0.047 in_training
+json - inline_kv              0.101        0.065    -0.036 in_training
+json - markdown               0.648        0.114    -0.534 in_training
+toml - inline_kv              0.058        0.217    +0.159 in_training
+toml - markdown               0.763        0.012    -0.750 in_training
+inline_kv - markdown          0.662        0.204    -0.458 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.896 (large)        0.367 (small)    -0.529     [-0.636, -0.450]
+in_training          0.763 (medium)        0.217 (small)    -0.545     [-0.638, -0.439]
+ood                   0.896 (large)        0.367 (small)    -0.529     [-0.636, -0.450]
+
+In-training thresholds, trained max |d| = 0.217
+  below 0.5:  pass
+  below 0.2:  fail
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -2
+  relative change: -59.0%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9458
+  trained MRR:  0.9723
+  change: +0.0266  [+0.0171, +0.0362]  pass
+
+Transfer to yaml
+  MRR: 0.9401 -> 0.9715
+  change: +0.0314  [+0.0205, +0.0423]
+  training formats changed by +0.0253 on average, a ratio of 1.24
+
+Metadata-only records: 228
+  in_training  max |d|: 0.604 (medium) -> 0.245 (small)
+  ood          max |d|: 0.781 (medium) -> 0.444 (small)
+
+Answer axis, held out yaml, 715 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           35 (4.9%)        11 (1.5%)       -24       [-5.03, -1.68]
+in_training           33 (4.6%)        11 (1.5%)       -22       [-4.76, -1.54]
+ood                    2 (0.3%)         0 (0.0%)        -2       [-0.70, +0.00]
+
+Saved yaml_lam0_s4 results -> data/nq/h2/comparison/jina_v2_yaml_lam0_s4.json  (0.0 MB)

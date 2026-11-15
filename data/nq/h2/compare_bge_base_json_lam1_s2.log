@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  bge-base  json_lam1_s2  split=test   2026-11-12 06:49:25
+======================================================================
+records: 770   held out: json
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.275        0.065    -0.210       ood
+yaml - toml                   0.088        0.168    +0.080 in_training
+yaml - inline_kv              0.102        0.133    +0.030 in_training
+yaml - markdown               0.024        0.046    +0.022 in_training
+json - toml                   0.250        0.065    -0.186       ood
+json - inline_kv              0.383        0.017    -0.365       ood
+json - markdown               0.360        0.030    -0.330       ood
+toml - inline_kv              0.218        0.060    -0.158 in_training
+toml - markdown               0.135        0.115    -0.021 in_training
+inline_kv - markdown          0.069        0.051    -0.018 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.383 (small)      0.168 (trivial)    -0.215     [-0.304, -0.122]
+in_training           0.218 (small)      0.168 (trivial)    -0.050     [-0.146, +0.056]
+ood                   0.383 (small)      0.065 (trivial)    -0.317     [-0.367, -0.204]
+
+In-training thresholds, trained max |d| = 0.168
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: fail
+
+Held-out pairs, reported without a threshold
+  bands moved: -1
+  relative change: -82.9%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.8941
+  trained MRR:  0.9624
+  change: +0.0683  [+0.0561, +0.0810]  pass
+
+Transfer to json
+  MRR: 0.8856 -> 0.9647
+  change: +0.0792  [+0.0639, +0.0950]
+  training formats changed by +0.0656 on average, a ratio of 1.21
+
+Metadata-only records: 228
+  in_training  max |d|: 0.202 (small) -> 0.175 (trivial)
+  ood          max |d|: 0.506 (medium) -> 0.187 (trivial)
+
+Answer axis, held out json, 696 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats         123 (17.7%)        21 (3.0%)      -102     [-17.53, -11.78]
+in_training          95 (13.6%)        17 (2.4%)       -78      [-13.79, -8.62]
+ood                   28 (4.0%)         4 (0.6%)       -24       [-5.03, -1.87]
+
+Saved json_lam1_s2 results -> data/nq/h2/comparison/bge_base_json_lam1_s2.json  (0.0 MB)

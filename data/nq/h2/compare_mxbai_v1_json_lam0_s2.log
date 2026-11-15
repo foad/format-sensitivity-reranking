@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  mxbai-v1  json_lam0_s2  split=test   2026-11-13 10:10:21
+======================================================================
+records: 770   held out: json
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.645        0.001    -0.644       ood
+yaml - toml                   0.651        0.163    -0.487 in_training
+yaml - inline_kv              0.154        0.093    -0.061 in_training
+yaml - markdown               0.271        0.068    -0.202 in_training
+json - toml                   0.297        0.123    -0.174       ood
+json - inline_kv              0.555        0.051    -0.504       ood
+json - markdown               0.553        0.056    -0.498       ood
+toml - inline_kv              0.598        0.081    -0.517 in_training
+toml - markdown               0.167        0.190    +0.023 in_training
+inline_kv - markdown          0.150        0.126    -0.025 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          0.651 (medium)      0.190 (trivial)    -0.461     [-0.552, -0.393]
+in_training          0.651 (medium)      0.190 (trivial)    -0.461     [-0.538, -0.370]
+ood                  0.645 (medium)      0.123 (trivial)    -0.522     [-0.622, -0.406]
+
+In-training thresholds, trained max |d| = 0.190
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -2
+  relative change: -81.0%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9332
+  trained MRR:  0.9658
+  change: +0.0325  [+0.0216, +0.0434]  pass
+
+Transfer to json
+  MRR: 0.9371 -> 0.9657
+  change: +0.0286  [+0.0173, +0.0396]
+  training formats changed by +0.0335 on average, a ratio of 0.85
+
+Metadata-only records: 228
+  in_training  max |d|: 0.649 (medium) -> 0.245 (small)
+  ood          max |d|: 0.564 (medium) -> 0.174 (trivial)
+
+Answer axis, held out json, 693 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           26 (3.8%)         8 (1.2%)       -18       [-4.04, -1.15]
+in_training           21 (3.0%)         6 (0.9%)       -15       [-3.46, -1.01]
+ood                    5 (0.7%)         2 (0.3%)        -3       [-1.15, +0.29]
+
+Saved json_lam0_s2 results -> data/nq/h2/comparison/mxbai_v1_json_lam0_s2.json  (0.0 MB)

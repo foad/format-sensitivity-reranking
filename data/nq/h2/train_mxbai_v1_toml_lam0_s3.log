@@ -1,0 +1,68 @@
+
+======================================================================
+TRAIN  mxbai-v1  arm=toml_lam0_s3   2026-11-12 19:13:45
+======================================================================
+  identifier:  mixedbread-ai/mxbai-rerank-base-v1
+  formats:     4 of 5  ['yaml', 'json', 'inline_kv', 'markdown']
+  held out:    toml
+  lambda_inv:  0.0
+  batch:       2 x 8
+  steps:       500, warmup 30
+  output:      data/nq/h2/train/mxbai_v1_toml_lam0_s3
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 3972.51it/s]
+  trainable:   885,505 / 185,308,418 (0.48%)
+
+Loading the corpus...
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (963 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (928 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1154 > 1024). Running this sequence through the model will result in indexing errors
+  train: 6,131 kept, 449 dropped
+  dev:   758 kept
+  corpus loading in 0:02:11
+
+Training mxbai_v1 toml_lam0_s3
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+step     1/500  loss=0.0862  rank=0.0862  inv=0.1453  lr=6.67e-06  15.65s/step  eta 2:10:07
+step    20/500  loss=0.0244  rank=0.0244  inv=0.1134  lr=1.33e-04  15.49s/step  eta 2:03:52
+step    40/500  loss=0.0187  rank=0.0187  inv=0.1942  lr=2.00e-04  15.59s/step  eta 1:59:31
+  dev max|d|=0.1095  (pair=yaml - json)
+step    60/500  loss=0.0168  rank=0.0168  inv=0.1527  lr=1.98e-04  16.30s/step  eta 1:59:32
+step    80/500  loss=0.0387  rank=0.0387  inv=0.6909  lr=1.94e-04  16.15s/step  eta 1:53:03
+step   100/500  loss=0.0707  rank=0.0707  inv=0.3756  lr=1.89e-04  16.10s/step  eta 1:47:21
+  dev max|d|=0.0950  (pair=json - inline_kv)
+step   120/500  loss=0.0152  rank=0.0152  inv=0.1911  lr=1.82e-04  16.40s/step  eta 1:43:51
+step   140/500  loss=0.0260  rank=0.0260  inv=0.2829  lr=1.74e-04  16.29s/step  eta 1:37:45
+  dev max|d|=0.0876  (pair=yaml - inline_kv)
+step   160/500  loss=0.0073  rank=0.0073  inv=0.4305  lr=1.65e-04  16.59s/step  eta 1:34:02
+step   180/500  loss=0.0119  rank=0.0119  inv=0.3858  lr=1.54e-04  16.60s/step  eta 1:28:32
+step   200/500  loss=0.0048  rank=0.0048  inv=0.8591  lr=1.42e-04  16.54s/step  eta 1:22:41
+  dev max|d|=0.0867  (pair=json - inline_kv)
+step   220/500  loss=0.0008  rank=0.0008  inv=0.2739  lr=1.30e-04  16.66s/step  eta 1:17:45
+step   240/500  loss=0.0105  rank=0.0105  inv=0.3780  lr=1.17e-04  16.58s/step  eta 1:11:51
+  dev max|d|=0.1737  (pair=json - inline_kv)
+step   260/500  loss=0.0243  rank=0.0243  inv=0.5039  lr=1.03e-04  16.68s/step  eta 1:06:43
+step   280/500  loss=0.0276  rank=0.0276  inv=0.5730  lr=9.00e-05  16.61s/step  eta 1:00:55
+step   300/500  loss=0.0488  rank=0.0488  inv=0.4287  lr=7.68e-05  16.55s/step  eta 0:55:10
+  dev max|d|=0.2605  (pair=json - inline_kv)
+step   320/500  loss=0.0242  rank=0.0242  inv=0.3203  lr=6.41e-05  16.63s/step  eta 0:49:52
+step   340/500  loss=0.0079  rank=0.0079  inv=0.4463  lr=5.19e-05  16.57s/step  eta 0:44:11
+  dev max|d|=0.2559  (pair=json - inline_kv)
+step   360/500  loss=0.0053  rank=0.0053  inv=0.5108  lr=4.07e-05  16.64s/step  eta 0:38:49
+step   380/500  loss=0.0415  rank=0.0415  inv=0.4035  lr=3.05e-05  16.59s/step  eta 0:33:10
+step   400/500  loss=0.0028  rank=0.0028  inv=0.3061  lr=2.15e-05  16.55s/step  eta 0:27:34
+  dev max|d|=0.2345  (pair=json - inline_kv)
+step   420/500  loss=0.0396  rank=0.0396  inv=0.4400  lr=1.40e-05  16.60s/step  eta 0:22:08
+step   440/500  loss=0.0102  rank=0.0102  inv=0.5397  lr=7.94e-06  16.56s/step  eta 0:16:33
+  dev max|d|=0.2328  (pair=json - inline_kv)
+step   460/500  loss=0.0194  rank=0.0194  inv=0.5305  lr=3.55e-06  16.62s/step  eta 0:11:04
+step   480/500  loss=0.0379  rank=0.0379  inv=0.6737  lr=8.92e-07  16.58s/step  eta 0:05:31
+step   500/500  loss=0.0663  rank=0.0663  inv=0.3787  lr=0.00e+00  16.54s/step  eta 0:00:00
+  dev max|d|=0.2307  (pair=json - inline_kv)
+
+Finished at step 500 in 8314s, dev max|d|=0.2307
+Saved adapter -> data/nq/h2/train/mxbai_v1_toml_lam0_s3/adapter

@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  bge-base  yaml_lam0_s2  split=test   2026-11-12 06:48:31
+======================================================================
+records: 770   held out: yaml
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.275        0.251    -0.024       ood
+yaml - toml                   0.088        0.395    +0.307       ood
+yaml - inline_kv              0.102        0.509    +0.407       ood
+yaml - markdown               0.024        0.313    +0.288       ood
+json - toml                   0.250        0.092    -0.158 in_training
+json - inline_kv              0.383        0.085    -0.297 in_training
+json - markdown               0.360        0.024    -0.335 in_training
+toml - inline_kv              0.218        0.000    -0.218 in_training
+toml - markdown               0.135        0.086    -0.050 in_training
+inline_kv - markdown          0.069        0.076    +0.006 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.383 (small)       0.509 (medium)    +0.126     [+0.027, +0.229]
+in_training           0.383 (small)      0.092 (trivial)    -0.291     [-0.340, -0.201]
+ood                   0.275 (small)       0.509 (medium)    +0.234     [+0.114, +0.359]
+
+In-training thresholds, trained max |d| = 0.092
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: 1
+  relative change: +84.9%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.8941
+  trained MRR:  0.9582
+  change: +0.0641  [+0.0525, +0.0763]  pass
+
+Transfer to yaml
+  MRR: 0.9151 -> 0.9509
+  change: +0.0358  [+0.0246, +0.0475]
+  training formats changed by +0.0711 on average, a ratio of 0.50
+
+Metadata-only records: 228
+  in_training  max |d|: 0.506 (medium) -> 0.159 (trivial)
+  ood          max |d|: 0.466 (small) -> 0.511 (medium)
+
+Answer axis, held out yaml, 696 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats         123 (17.7%)        32 (4.6%)       -91     [-15.95, -10.34]
+in_training         105 (15.1%)        19 (2.7%)       -86      [-15.09, -9.63]
+ood                   18 (2.6%)        13 (1.9%)        -5       [-2.16, +0.72]
+
+Saved yaml_lam0_s2 results -> data/nq/h2/comparison/bge_base_yaml_lam0_s2.json  (0.0 MB)
