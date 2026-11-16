@@ -26,11 +26,15 @@ from fsr.h2_layout import (
     result_path,
     selection_path,
 )
+from fsr.h2_layout import DEFAULT_SEED as DEFAULT_TRAINING_SEED
 from fsr.metrics import (
+    COHEN_D_EPSILON,
     DEFAULT_CI,
     DEFAULT_N_BOOT,
     DEFAULT_SEED,
     bootstrap_ci_of_mean,
+    bootstrap_p_above,
+    holm,
 )
 from fsr.models.registry import BASE_MODELS, by_slug
 
@@ -38,6 +42,9 @@ CONTROL_WEIGHT = 0.0
 SPLIT = "test"
 SWEEP = "lambda"
 AXES = ("score", "answer")
+TRAINING_SEEDS = (0, 1, 2, 3, 4)
+# family-wise error rate for claims made across the roster
+FAMILY_ALPHA = 0.05
 
 PROSE_SPLIT = "prose"
 MRR_AXIS = "mrr"
@@ -65,7 +72,11 @@ def winner_weight(selection: dict[str, Any]) -> float:
 
 
 def load_comparison(
-    data_root: Path, model: str, held_out: str, weight: float
+    data_root: Path,
+    model: str,
+    held_out: str,
+    weight: float,
+    training_seed: int = DEFAULT_TRAINING_SEED,
 ) -> dict[str, Any]:
     """Load one arm's comparison against the untrained model.
 
@@ -74,11 +85,12 @@ def load_comparison(
         model: The registry slug.
         held_out: The format withheld from training.
         weight: The weight of the invariance term.
+        training_seed: The training seed of the arm.
 
     Returns:
         The comparison.
     """
-    path = comparison_path(data_root, model, arm(held_out, weight))
+    path = comparison_path(data_root, model, arm(held_out, weight, seed=training_seed))
     return json.loads(path.read_text())
 
 
@@ -220,7 +232,11 @@ def selection_counts(data_root: Path, slugs: Sequence[str]) -> dict[str, Any]:
 
 
 def fold_max_d(
-    data_root: Path, model: str, weight: float, subset: str = OOD
+    data_root: Path,
+    model: str,
+    weight: float,
+    subset: str = OOD,
+    training_seed: int = DEFAULT_TRAINING_SEED,
 ) -> dict[str, float]:
     """Return the trained score axis of every fold of one arm.
 
@@ -229,39 +245,50 @@ def fold_max_d(
         model: The registry slug.
         weight: The weight of the invariance term.
         subset: The format pairs to report, one of the comparison subsets.
+        training_seed: The training seed of the arm.
 
     Returns:
         The maximum absolute Cohen's d, by held-out format.
     """
     values = {}
     for fold in FORMAT_NAMES:
-        comparison = load_comparison(data_root, model, fold, weight)
+        comparison = load_comparison(data_root, model, fold, weight, training_seed)
         section = comparison["score_axis"]["point_estimates_max_d"][subset]
         values[fold] = section["trained"]
     return values
 
 
-def fold_mean_mrr(data_root: Path, model: str, weight: float) -> dict[str, float]:
+def fold_mean_mrr(
+    data_root: Path,
+    model: str,
+    weight: float,
+    training_seed: int = DEFAULT_TRAINING_SEED,
+) -> dict[str, float]:
     """Return the trained ranking quality of every fold of one arm.
 
     Args:
         data_root: The corpus directory.
         model: The registry slug.
         weight: The weight of the invariance term.
+        training_seed: The training seed of the arm.
 
     Returns:
         The mean reciprocal rank, by held-out format.
     """
     values = {}
     for fold in FORMAT_NAMES:
-        comparison = load_comparison(data_root, model, fold, weight)
+        comparison = load_comparison(data_root, model, fold, weight, training_seed)
         values[fold] = comparison["score_axis"]["mrr_non_inferiority"][
             "trained_mean_mrr"
         ]
     return values
 
 
-def guardrail_frame(data_root: Path, slugs: Sequence[str]) -> pd.DataFrame:
+def guardrail_frame(
+    data_root: Path,
+    slugs: Sequence[str],
+    training_seed: int = DEFAULT_TRAINING_SEED,
+) -> pd.DataFrame:
     """Tabulate the ranking-quality guardrail of every fold of every model.
 
     The guardrail compares the treatment arm against the untrained model. The
@@ -270,6 +297,7 @@ def guardrail_frame(data_root: Path, slugs: Sequence[str]) -> pd.DataFrame:
     Args:
         data_root: The corpus directory.
         slugs: The registry slugs to report.
+        training_seed: The training seed of the arms.
 
     Returns:
         One row per model and held-out format, holding the change in mean
@@ -279,9 +307,9 @@ def guardrail_frame(data_root: Path, slugs: Sequence[str]) -> pd.DataFrame:
     for slug in slugs:
         weight = winner_weight(load_selection(data_root, slug))
         for fold in FORMAT_NAMES:
-            section = load_comparison(data_root, slug, fold, weight)["score_axis"][
-                "mrr_non_inferiority"
-            ]
+            section = load_comparison(data_root, slug, fold, weight, training_seed)[
+                "score_axis"
+            ]["mrr_non_inferiority"]
             low, high = section["delta_mrr_bootstrap"]["delta_ci"]
             rows.append(
                 {
@@ -297,7 +325,11 @@ def guardrail_frame(data_root: Path, slugs: Sequence[str]) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index(["model", "held_out"])
 
 
-def transfer_frame(data_root: Path, slugs: Sequence[str]) -> pd.DataFrame:
+def transfer_frame(
+    data_root: Path,
+    slugs: Sequence[str],
+    training_seed: int = DEFAULT_TRAINING_SEED,
+) -> pd.DataFrame:
     """Tabulate the ranking quality of the held-out format of every fold.
 
     The quantities are descriptive, so no threshold is applied to them.
@@ -305,6 +337,7 @@ def transfer_frame(data_root: Path, slugs: Sequence[str]) -> pd.DataFrame:
     Args:
         data_root: The corpus directory.
         slugs: The registry slugs to report.
+        training_seed: The training seed of the arms.
 
     Returns:
         One row per model and held-out format, holding the change in mean
@@ -315,9 +348,9 @@ def transfer_frame(data_root: Path, slugs: Sequence[str]) -> pd.DataFrame:
     for slug in slugs:
         weight = winner_weight(load_selection(data_root, slug))
         for fold in FORMAT_NAMES:
-            section = load_comparison(data_root, slug, fold, weight)["score_axis"][
-                "heldout_transfer"
-            ]
+            section = load_comparison(data_root, slug, fold, weight, training_seed)[
+                "score_axis"
+            ]["heldout_transfer"]
             low, high = section["delta_mrr_ci"]
             rows.append(
                 {
@@ -356,7 +389,10 @@ def load_scores(data_root: Path, model: str, arm_name: str) -> dict[str, np.ndar
 
 
 def fold_scores(
-    data_root: Path, model: str, weight: float
+    data_root: Path,
+    model: str,
+    weight: float,
+    training_seed: int = DEFAULT_TRAINING_SEED,
 ) -> list[tuple[dict[str, np.ndarray], list[tuple[str, str]]]]:
     """Load the scores and the format pairs of every fold of one arm.
 
@@ -364,12 +400,16 @@ def fold_scores(
         data_root: The corpus directory.
         model: The registry slug.
         weight: The weight of the invariance term.
+        training_seed: The training seed of the arm.
 
     Returns:
         The scores and the pair split of each held-out format.
     """
     return [
-        (load_scores(data_root, model, arm(fold, weight)), pair_subsets(fold))
+        (
+            load_scores(data_root, model, arm(fold, weight, seed=training_seed)),
+            pair_subsets(fold),
+        )
         for fold in FORMAT_NAMES
     ]
 
@@ -399,6 +439,50 @@ def mean_max_d(
     )
 
 
+def max_d_replicates(
+    scores: dict[str, np.ndarray],
+    pairs: Sequence[tuple[str, str]],
+    indices: np.ndarray,
+) -> np.ndarray:
+    """Return the largest absolute effect size over the pairs, per resample.
+
+    Args:
+        scores: The per-record scores, by format name.
+        pairs: The format pairs to compare.
+        indices: One row of record indices per resample.
+
+    Returns:
+        One value per resample.
+    """
+    largest = np.zeros(len(indices))
+    for f1, f2 in pairs:
+        diff = (scores[f1] - scores[f2])[indices]
+        size = np.abs(diff.mean(axis=1) / (diff.std(axis=1) + COHEN_D_EPSILON))
+        largest = np.maximum(largest, size)
+    return largest
+
+
+def mean_max_d_replicates(
+    folds: Sequence[tuple[dict[str, np.ndarray], dict[str, list[tuple[str, str]]]]],
+    subset: str,
+    indices: np.ndarray,
+) -> np.ndarray:
+    """Average the largest absolute effect size over the folds, per resample.
+
+    Args:
+        folds: The scores and the pair split of each fold.
+        subset: The format pairs to measure, one of the comparison subsets.
+        indices: One row of record indices per resample.
+
+    Returns:
+        One mean per resample.
+    """
+    return np.mean(
+        [max_d_replicates(scores, pairs[subset], indices) for scores, pairs in folds],
+        axis=0,
+    )
+
+
 def bootstrap_delta_max_d(
     control: Sequence[tuple[dict[str, np.ndarray], dict[str, list[tuple[str, str]]]]],
     treatment: Sequence[tuple[dict[str, np.ndarray], dict[str, list[tuple[str, str]]]]],
@@ -425,12 +509,10 @@ def bootstrap_delta_max_d(
     """
     rng = np.random.default_rng(seed)
     size = len(next(iter(control[0][0].values())))
-    deltas = np.empty(n_boot)
-    for i in range(n_boot):
-        index = rng.integers(0, size, size)
-        deltas[i] = mean_max_d(treatment, subset, index) - mean_max_d(
-            control, subset, index
-        )
+    indices = rng.integers(0, size, (n_boot, size))
+    deltas = mean_max_d_replicates(treatment, subset, indices) - mean_max_d_replicates(
+        control, subset, indices
+    )
     tail = (1.0 - ci) / 2.0 * 100.0
     return float(np.percentile(deltas, tail)), float(np.percentile(deltas, 100 - tail))
 
@@ -442,8 +524,9 @@ def score_table(
     n_boot: int = DEFAULT_N_BOOT,
     seed: int = DEFAULT_SEED,
     ci: float = DEFAULT_CI,
+    training_seed: int = DEFAULT_TRAINING_SEED,
 ) -> pd.DataFrame:
-    """Summarise the score axis of every model.
+    """Summarise the score axis of every model, under one training seed.
 
     Args:
         data_root: The corpus directory.
@@ -452,6 +535,7 @@ def score_table(
         n_boot: The number of replicates.
         seed: The seed for the resample.
         ci: The interval width.
+        training_seed: The training seed of the arms.
 
     Returns:
         The untrained maximum absolute Cohen's d, the fold mean of the control
@@ -462,13 +546,13 @@ def score_table(
     rows = {}
     for slug in slugs:
         weight = winner_weight(load_selection(data_root, slug))
-        control = fold_max_d(data_root, slug, CONTROL_WEIGHT, subset)
-        treated = fold_max_d(data_root, slug, weight, subset)
+        control = fold_max_d(data_root, slug, CONTROL_WEIGHT, subset, training_seed)
+        treated = fold_max_d(data_root, slug, weight, subset, training_seed)
         deltas = np.array([treated[f] - control[f] for f in FORMAT_NAMES])
         control_mean = float(np.mean(list(control.values())))
         low, high = bootstrap_delta_max_d(
-            fold_scores(data_root, slug, CONTROL_WEIGHT),
-            fold_scores(data_root, slug, weight),
+            fold_scores(data_root, slug, CONTROL_WEIGHT, training_seed),
+            fold_scores(data_root, slug, weight, training_seed),
             subset=subset,
             n_boot=n_boot,
             seed=seed,
@@ -486,7 +570,9 @@ def score_table(
             "delta_pct": 100.0 * float(deltas.mean()) / control_mean,
             "folds_improved": int((deltas < 0).sum()),
             "mean_mrr": float(
-                np.mean(list(fold_mean_mrr(data_root, slug, weight).values()))
+                np.mean(
+                    list(fold_mean_mrr(data_root, slug, weight, training_seed).values())
+                )
             ),
         }
     return _frame(rows)
@@ -506,7 +592,11 @@ def baseline_pool(data_root: Path, model: str) -> np.ndarray:
 
 
 def inconsistent_matrix(
-    data_root: Path, model: str, weight: float, subset: str = OOD
+    data_root: Path,
+    model: str,
+    weight: float,
+    subset: str = OOD,
+    training_seed: int = DEFAULT_TRAINING_SEED,
 ) -> np.ndarray:
     """Stack the inconsistent queries of every fold of one arm.
 
@@ -515,13 +605,14 @@ def inconsistent_matrix(
         model: The registry slug.
         weight: The weight of the invariance term.
         subset: The formats to report, one of the comparison subsets.
+        training_seed: The training seed of the arm.
 
     Returns:
         One row per held-out format, one column per query.
     """
     rows = []
     for fold in FORMAT_NAMES:
-        entry = load_within(data_root, model, arm(fold, weight))
+        entry = load_within(data_root, model, arm(fold, weight, seed=training_seed))
         rows.append(answer_subsets(leads_per_format(entry), fold)[subset])
     return np.stack(rows)
 
@@ -588,8 +679,9 @@ def answer_table(
     n_boot: int = DEFAULT_N_BOOT,
     seed: int = DEFAULT_SEED,
     ci: float = DEFAULT_CI,
+    training_seed: int = DEFAULT_TRAINING_SEED,
 ) -> pd.DataFrame:
-    """Summarise the answer axis of every model.
+    """Summarise the answer axis of every model, under one training seed.
 
     Args:
         data_root: The corpus directory.
@@ -598,6 +690,7 @@ def answer_table(
         n_boot: The number of replicates.
         seed: The seed for the resample.
         ci: The interval width.
+        training_seed: The training seed of the arms.
 
     Returns:
         A DataFrame of the answer axis summary for each model.
@@ -606,8 +699,10 @@ def answer_table(
     for slug in slugs:
         weight = winner_weight(load_selection(data_root, slug))
         pool = baseline_pool(data_root, slug)
-        control = inconsistent_matrix(data_root, slug, CONTROL_WEIGHT, subset)
-        treated = inconsistent_matrix(data_root, slug, weight, subset)
+        control = inconsistent_matrix(
+            data_root, slug, CONTROL_WEIGHT, subset, training_seed
+        )
+        treated = inconsistent_matrix(data_root, slug, weight, subset, training_seed)
         before = pooled_inconsistency(control, pool)
         after = pooled_inconsistency(treated, pool)
         low, high = bootstrap_pooled_delta(
@@ -627,7 +722,11 @@ def answer_table(
 
 
 def per_fold_matrix(
-    data_root: Path, slugs: Sequence[str], axis: str, subset: str = OOD
+    data_root: Path,
+    slugs: Sequence[str],
+    axis: str,
+    subset: str = OOD,
+    training_seed: int = DEFAULT_TRAINING_SEED,
 ) -> pd.DataFrame:
     """Tabulate the change of every model against every held-out format.
 
@@ -637,6 +736,7 @@ def per_fold_matrix(
         axis: `score` for the maximum absolute Cohen's d, `answer` for the
             inconsistency in percentage points.
         subset: The formats to report, one of the comparison subsets.
+        training_seed: The training seed of the arms.
 
     Returns:
         One row per model, one column per held-out format.
@@ -650,19 +750,323 @@ def per_fold_matrix(
     for slug in slugs:
         weight = winner_weight(load_selection(data_root, slug))
         if axis == "score":
-            control = fold_max_d(data_root, slug, CONTROL_WEIGHT, subset)
-            treated = fold_max_d(data_root, slug, weight, subset)
+            control = fold_max_d(data_root, slug, CONTROL_WEIGHT, subset, training_seed)
+            treated = fold_max_d(data_root, slug, weight, subset, training_seed)
             rows[slug] = {f: treated[f] - control[f] for f in FORMAT_NAMES}
             continue
         pool = baseline_pool(data_root, slug)
-        before = inconsistent_matrix(data_root, slug, CONTROL_WEIGHT, subset)
-        after = inconsistent_matrix(data_root, slug, weight, subset)
+        before = inconsistent_matrix(
+            data_root, slug, CONTROL_WEIGHT, subset, training_seed
+        )
+        after = inconsistent_matrix(data_root, slug, weight, subset, training_seed)
         rows[slug] = {
             fold: pooled_inconsistency(after[[i]], pool)
             - pooled_inconsistency(before[[i]], pool)
             for i, fold in enumerate(FORMAT_NAMES)
         }
     return _frame(rows)
+
+
+def resample_seeds(per_seed: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    """Average each replicate over a resample of the training seeds.
+
+    Args:
+        per_seed: One row per replicate, one column per training seed.
+        rng: The source of the resample.
+
+    Returns:
+        One mean per replicate.
+    """
+    count = per_seed.shape[1]
+    picks = rng.integers(0, count, size=per_seed.shape)
+    return np.take_along_axis(per_seed, picks, axis=1).mean(axis=1)
+
+
+def seed_score_replicates(
+    control: Sequence[Sequence[tuple[dict[str, np.ndarray], dict[str, Any]]]],
+    treatment: Sequence[Sequence[tuple[dict[str, np.ndarray], dict[str, Any]]]],
+    subset: str = OOD,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+) -> np.ndarray:
+    """Return replicates of the seed-mean change in the score axis.
+
+    Each replicate resamples the records, once for every seed since all seeds
+    score the same records, and then the seeds.
+
+    Args:
+        control: The folds of the control arm, one entry per training seed.
+        treatment: The folds of the treatment arm, one entry per training seed.
+        subset: The format pairs to measure, one of the comparison subsets.
+        n_boot: The number of replicates.
+        seed: The seed for the resample.
+
+    Returns:
+        One change per replicate.
+    """
+    rng = np.random.default_rng(seed)
+    size = len(next(iter(control[0][0][0].values())))
+    indices = rng.integers(0, size, (n_boot, size))
+    per_seed = np.column_stack(
+        [
+            mean_max_d_replicates(after, subset, indices)
+            - mean_max_d_replicates(before, subset, indices)
+            for before, after in zip(control, treatment, strict=True)
+        ]
+    )
+    return resample_seeds(per_seed, rng)
+
+
+def seed_answer_replicates(
+    control: Sequence[np.ndarray],
+    treatment: Sequence[np.ndarray],
+    pool: np.ndarray,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+) -> np.ndarray:
+    """Return replicates of the seed-mean change in pooled inconsistency.
+
+    Each replicate resamples the queries, once for every seed since all seeds
+    rank the same queries, and then the seeds.
+
+    Args:
+        control: The inconsistent queries of the control arm, one per seed.
+        treatment: The inconsistent queries of the treatment arm, one per seed.
+        pool: The queries to count over.
+        n_boot: The number of replicates.
+        seed: The seed for the resample.
+
+    Returns:
+        One change per replicate, in percentage points.
+    """
+    rng = np.random.default_rng(seed)
+    size = len(pool)
+    per_seed = np.empty((n_boot, len(control)))
+    for i in range(n_boot):
+        index = rng.integers(0, size, size)
+        for j, (before, after) in enumerate(zip(control, treatment, strict=True)):
+            per_seed[i, j] = pooled_inconsistency(
+                after, pool, index
+            ) - pooled_inconsistency(before, pool, index)
+    return resample_seeds(per_seed, rng)
+
+
+def _interval(replicates: np.ndarray | None, tail: float) -> dict[str, float]:
+    """Return the interval and the p-value of a reduction, or nothing."""
+    if replicates is None:
+        return {}
+    return {
+        "ci_lo": float(np.percentile(replicates, tail)),
+        "ci_hi": float(np.percentile(replicates, 100 - tail)),
+        "p_reduction": bootstrap_p_above(-replicates, 0.0),
+    }
+
+
+def _family(frame: pd.DataFrame, alpha: float) -> pd.DataFrame:
+    """Add the Holm-adjusted p-value and whether the reduction survives it."""
+    frame["holm_p"] = holm(frame["p_reduction"])
+    frame["reduces"] = frame["holm_p"] < alpha
+    return frame
+
+
+def seed_score_table(
+    data_root: Path,
+    slugs: Sequence[str],
+    subset: str = OOD,
+    training_seeds: Sequence[int] = TRAINING_SEEDS,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    ci: float = DEFAULT_CI,
+    alpha: float = FAMILY_ALPHA,
+) -> pd.DataFrame:
+    """Summarise the score axis of every model over the training seeds.
+
+    The interval and the p-value come from resampling both the records and the
+    seeds, and the p-value tests for a reduction, corrected with Holm across
+    the models.
+
+    Args:
+        data_root: The corpus directory.
+        slugs: The registry slugs to report.
+        subset: The format pairs to report, one of the comparison subsets.
+        training_seeds: The training seeds to pool.
+        n_boot: The number of replicates. 0 reports the point estimates only,
+            with no interval, p-value or correction.
+        seed: The seed for the resample.
+        ci: The interval width.
+        alpha: The family-wise error rate.
+
+    Returns:
+        One row per model: the seed means of the control, the treatment and the
+        change, the change under each seed, the interval, the raw and adjusted
+        p-values, whether the reduction survives, the seeds that reduce, and
+        the seed mean of the ranking quality.
+    """
+    tail = (1.0 - ci) / 2.0 * 100.0
+    rows = {}
+    for slug in slugs:
+        weight = winner_weight(load_selection(data_root, slug))
+        control, treated, mrr = [], [], []
+        for training_seed in training_seeds:
+            before = fold_max_d(data_root, slug, CONTROL_WEIGHT, subset, training_seed)
+            after = fold_max_d(data_root, slug, weight, subset, training_seed)
+            control.append(float(np.mean(list(before.values()))))
+            treated.append(float(np.mean(list(after.values()))))
+            mrr.append(
+                np.mean(
+                    list(fold_mean_mrr(data_root, slug, weight, training_seed).values())
+                )
+            )
+        deltas = np.array(treated) - np.array(control)
+        replicates = (
+            seed_score_replicates(
+                [
+                    fold_scores(data_root, slug, CONTROL_WEIGHT, t)
+                    for t in training_seeds
+                ],
+                [fold_scores(data_root, slug, weight, t) for t in training_seeds],
+                subset=subset,
+                n_boot=n_boot,
+                seed=seed,
+            )
+            if n_boot
+            else None
+        )
+        rows[slug] = {
+            "weight": weight,
+            "baseline_max_d": baseline_max_d(data_root, slug),
+            "control_max_d": float(np.mean(control)),
+            "trained_max_d": float(np.mean(treated)),
+            "delta": float(deltas.mean()),
+            **{
+                f"seed {t}": float(d)
+                for t, d in zip(training_seeds, deltas, strict=True)
+            },
+            **_interval(replicates, tail),
+            "seeds_reduced": int((deltas < 0).sum()),
+            "mean_mrr": float(np.mean(mrr)),
+        }
+    frame = _frame(rows)
+    return _family(frame, alpha) if n_boot else frame
+
+
+def seed_answer_table(
+    data_root: Path,
+    slugs: Sequence[str],
+    subset: str = OOD,
+    training_seeds: Sequence[int] = TRAINING_SEEDS,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    ci: float = DEFAULT_CI,
+    alpha: float = FAMILY_ALPHA,
+) -> pd.DataFrame:
+    """Summarise the answer axis of every model over the training seeds.
+
+    The interval and the p-value come from resampling both the queries and the
+    seeds, and the p-value tests for a reduction, corrected with Holm across
+    the models.
+
+    Args:
+        data_root: The corpus directory.
+        slugs: The registry slugs to report.
+        subset: The formats to report, one of the comparison subsets.
+        training_seeds: The training seeds to pool.
+        n_boot: The number of replicates. 0 reports the point estimates only,
+            with no interval, p-value or correction.
+        seed: The seed for the resample.
+        ci: The interval width.
+        alpha: The family-wise error rate.
+
+    Returns:
+        One row per model: the pool size, the seed means of the control, the
+        treatment and the change, the change under each seed, the interval, the
+        raw and adjusted p-values, whether the reduction survives, and the
+        seeds that reduce.
+    """
+    tail = (1.0 - ci) / 2.0 * 100.0
+    rows = {}
+    for slug in slugs:
+        weight = winner_weight(load_selection(data_root, slug))
+        pool = baseline_pool(data_root, slug)
+        control = [
+            inconsistent_matrix(data_root, slug, CONTROL_WEIGHT, subset, t)
+            for t in training_seeds
+        ]
+        treated = [
+            inconsistent_matrix(data_root, slug, weight, subset, t)
+            for t in training_seeds
+        ]
+        before = np.array([pooled_inconsistency(c, pool) for c in control])
+        after = np.array([pooled_inconsistency(t, pool) for t in treated])
+        deltas = after - before
+        replicates = (
+            seed_answer_replicates(control, treated, pool, n_boot=n_boot, seed=seed)
+            if n_boot
+            else None
+        )
+        rows[slug] = {
+            "weight": weight,
+            "n_pool": int(pool.sum()),
+            "control_pct": float(before.mean()),
+            "trained_pct": float(after.mean()),
+            "delta_pp": float(deltas.mean()),
+            **{
+                f"seed {t}": float(d)
+                for t, d in zip(training_seeds, deltas, strict=True)
+            },
+            **_interval(replicates, tail),
+            "seeds_reduced": int((deltas < 0).sum()),
+        }
+    frame = _frame(rows)
+    return _family(frame, alpha) if n_boot else frame
+
+
+def seed_frame(
+    build: Any,
+    data_root: Path,
+    slugs: Sequence[str],
+    training_seeds: Sequence[int] = TRAINING_SEEDS,
+) -> pd.DataFrame:
+    """Stack one per-fold table under every training seed.
+
+    Args:
+        build: A table builder that takes the data root, the slugs and a
+            training seed, such as `guardrail_frame` or `transfer_frame`.
+        data_root: The corpus directory.
+        slugs: The registry slugs to report.
+        training_seeds: The training seeds to stack.
+
+    Returns:
+        The tables, with the training seed added to the index.
+    """
+    return pd.concat(
+        {t: build(data_root, slugs, t) for t in training_seeds}, names=["seed"]
+    )
+
+
+def seed_fold_matrix(
+    data_root: Path,
+    slugs: Sequence[str],
+    axis: str,
+    subset: str = OOD,
+    training_seeds: Sequence[int] = TRAINING_SEEDS,
+) -> pd.DataFrame:
+    """Average the change of every model against every held-out format over seeds.
+
+    Args:
+        data_root: The corpus directory.
+        slugs: The registry slugs to report.
+        axis: `score` or `answer`, as for `per_fold_matrix`.
+        subset: The formats to report, one of the comparison subsets.
+        training_seeds: The training seeds to average.
+
+    Returns:
+        One row per model, one column per held-out format.
+    """
+    frames = [
+        per_fold_matrix(data_root, slugs, axis, subset, t) for t in training_seeds
+    ]
+    return sum(frames[1:], frames[0]) / len(frames)
 
 
 def both_axes(score: pd.DataFrame, answer: pd.DataFrame) -> pd.DataFrame:

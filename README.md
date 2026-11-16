@@ -5,7 +5,7 @@ Companion code and artefacts for the MSc dissertation *Evaluating and Mitigating
 The study runs in two phases:
 
 - **H1 (characterisation).** Does a pointwise cross-encoder reranker score the same passage differently when its metadata is serialised as YAML, JSON, TOML, inline key-value, or Markdown? Measured across six models on a refined Natural Questions corpus.
-- **H2 (mitigation).** Can a LoRA adapter trained with a composite ranking-plus-invariance objective (`L_total = L_rank + lambda*L_inv`) reduce that sensitivity without harming ranking quality? Evaluated on six model variants with a five-fold hold-one-out design over the five formats, under a fixed training budget.
+- **H2 (mitigation).** Can a LoRA adapter trained with a composite ranking-plus-invariance objective (`L_total = L_rank + lambda*L_inv`) reduce that sensitivity without harming ranking quality? Evaluated on six models with a five-fold hold-one-out design over the five formats, under a fixed training budget, and repeated under five training seeds.
 
 ## Results
 
@@ -26,9 +26,11 @@ Figures and intervals are in [`notebooks/h1/h1_analysis.ipynb`](notebooks/h1/h1_
 
 ### H2: mitigation
 
-- The invariance term reduces out-of-distribution sensitivity on all six models, by up to **0.218** in maximum pairwise |d| on the held-out format, with every interval excluding zero. The reduction is measured against a rank-only control, so it is the contribution of the invariance term rather than of LoRA fine-tuning.
-- The answer axis responds on **three of the six**. MiniLM-L6, bge-base and MiniLM-L12 reduce conditional inconsistency with intervals excluding zero; bge-v2-m3, mxbai-v1 and jina-v2 do not move. The two axes disagree about which models respond, so the near-independence H1 found in the untrained models survives the intervention.
-- Ranking quality is preserved on every arm, well inside the pre-registered non-inferiority margin. Capability transfers to the unseen format in full, while invariance transfers only partly and unevenly across models, which is the clearest limit on the intervention.
+Results are means over five training seeds, with intervals that resample both the seeds and the test records, and claims across the six models are Holm-corrected.
+
+- The invariance term reduces out-of-distribution sensitivity on **five of the six** models, by **0.051** (mxbai-v1) to **0.213** (bge-v2-m3) in maximum pairwise |d| on the held-out format, and every seed reduces on all five. MiniLM-L6 does not: its mean change is -0.021 and its interval spans zero. The reduction is measured against a rank-only control, so it is the contribution of the invariance term rather than of LoRA fine-tuning.
+- The answer axis moves less. Conditional inconsistency falls on average on all six models, but only MiniLM-L12 (-0.37 pp) survives the correction, with MiniLM-L6 at the boundary (adjusted p = 0.052).
+- Ranking quality is preserved on all 150 arms (six models, five folds, five seeds), well inside the pre-registered non-inferiority margin. Capability transfers to the unseen format in full, while invariance transfers only partly and unevenly across models, which is the clearest limit on the intervention.
 
 Figures and intervals are in [`notebooks/h2/h2_analysis.ipynb`](notebooks/h2/h2_analysis.ipynb).
 

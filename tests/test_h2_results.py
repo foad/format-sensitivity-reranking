@@ -716,3 +716,160 @@ class TestProseMatrix:
     def test_refuses_an_unknown_arm(self, prose_root):
         with pytest.raises(ValueError, match="unknown arm"):
             mod.prose_matrix(prose_root, SLUGS, condition="winner_lam3")
+
+
+SEEDS = (0, 1, 2)
+SEED_SPREAD = {1: 0.3, 2: 0.6}
+
+
+@pytest.fixture
+def seeded(root):
+    """Add two further training seeds, each a weaker treatment than the last."""
+    for slug in SLUGS:
+        for seed, spread in SEED_SPREAD.items():
+            for weight, lead_map, arm_spread in (
+                (0.0, CONTROL_LEADS, 1.0),
+                (1.0, TREATED_LEADS, spread),
+            ):
+                for fold in FORMAT_NAMES:
+                    name = arm(fold, weight, seed=seed)
+                    out = comparison_path(root, slug, name)
+                    out.write_text(
+                        json.dumps(comparison(fold, arm_spread, trained_mrr=0.9))
+                    )
+                    write_within(root, slug, name, lead_map)
+                    write_cross(root, slug, name, arm_spread)
+    return root
+
+
+class TestTrainingSeed:
+    def test_load_comparison_reads_the_seeded_arm(self, seeded):
+        found = mod.load_comparison(seeded, "bge_base", "yaml", 1.0, training_seed=1)
+        assert found["score_axis"]["mrr_non_inferiority"]["trained_mean_mrr"] == 0.9
+
+    def test_score_table_reads_one_seed(self, seeded):
+        first = mod.score_table(seeded, SLUGS, n_boot=BOOT)
+        later = mod.score_table(seeded, SLUGS, n_boot=BOOT, training_seed=2)
+        assert (later["delta"] > first["delta"]).all()
+
+    def test_guardrail_frame_reads_one_seed(self, seeded):
+        frame = mod.guardrail_frame(seeded, SLUGS, training_seed=1)
+        assert frame["delta_mrr"].round(6).unique().tolist() == [0.02]
+
+
+class TestResampleSeeds:
+    def test_one_mean_per_replicate(self):
+        per_seed = np.arange(12.0).reshape(4, 3)
+        means = mod.resample_seeds(per_seed, np.random.default_rng(0))
+        assert means.shape == (4,)
+
+    def test_draws_only_from_the_replicate_row(self):
+        per_seed = np.array([[1.0, 2.0, 3.0], [10.0, 20.0, 30.0]])
+        means = mod.resample_seeds(per_seed, np.random.default_rng(0))
+        assert 1.0 <= means[0] <= 3.0
+        assert 10.0 <= means[1] <= 30.0
+
+    def test_identical_seeds_give_their_value(self):
+        per_seed = np.full((5, 3), 2.5)
+        assert (mod.resample_seeds(per_seed, np.random.default_rng(0)) == 2.5).all()
+
+
+class TestSeedScoreTable:
+    def table(self, root):
+        return mod.seed_score_table(root, SLUGS, training_seeds=SEEDS, n_boot=BOOT)
+
+    def test_each_seed_matches_its_own_table(self, seeded):
+        table = self.table(seeded)
+        for seed in SEEDS:
+            single = mod.score_table(seeded, SLUGS, n_boot=BOOT, training_seed=seed)
+            assert table[f"seed {seed}"].tolist() == pytest.approx(
+                single["delta"].tolist()
+            )
+
+    def test_delta_is_the_seed_mean(self, seeded):
+        table = self.table(seeded)
+        mean = table[[f"seed {s}" for s in SEEDS]].mean(axis=1)
+        assert table["delta"].tolist() == pytest.approx(mean.tolist())
+
+    def test_counts_the_seeds_that_reduce(self, seeded):
+        assert self.table(seeded)["seeds_reduced"].unique().tolist() == [3]
+
+    def test_holm_never_lowers_the_p_value(self, seeded):
+        table = self.table(seeded)
+        assert (table["holm_p"] >= table["p_reduction"]).all()
+
+    def test_a_reduction_holds_only_below_alpha(self, seeded):
+        table = self.table(seeded)
+        assert (table["reduces"] == (table["holm_p"] < mod.FAMILY_ALPHA)).all()
+
+    def test_interval_is_ordered(self, seeded):
+        table = self.table(seeded)
+        assert (table["ci_lo"] <= table["ci_hi"]).all()
+
+
+class TestSeedAnswerTable:
+    def table(self, root):
+        return mod.seed_answer_table(root, SLUGS, training_seeds=SEEDS, n_boot=BOOT)
+
+    def test_reports_a_reduction(self, seeded):
+        assert (self.table(seeded)["delta_pp"] < 0).all()
+
+    def test_pool_is_shared_by_every_seed(self, seeded):
+        assert self.table(seeded)["n_pool"].unique().tolist() == [6]
+
+    def test_holm_never_lowers_the_p_value(self, seeded):
+        table = self.table(seeded)
+        assert (table["holm_p"] >= table["p_reduction"]).all()
+
+
+class TestSeedFrames:
+    def test_seed_frame_indexes_every_seed(self, seeded):
+        frame = mod.seed_frame(mod.guardrail_frame, seeded, SLUGS, training_seeds=SEEDS)
+        assert sorted(frame.index.get_level_values("seed").unique()) == list(SEEDS)
+
+    def test_seed_fold_matrix_is_the_mean_over_seeds(self, seeded):
+        mean = mod.seed_fold_matrix(seeded, SLUGS, "score", training_seeds=SEEDS)
+        each = [
+            mod.per_fold_matrix(seeded, SLUGS, "score", training_seed=s) for s in SEEDS
+        ]
+        expected = sum(each[1:], each[0]) / len(each)
+        assert mean.to_numpy() == pytest.approx(expected.to_numpy())
+
+
+class TestVectorisedBootstrap:
+    def test_max_d_replicates_matches_one_resample_at_a_time(self, root):
+        scores, pairs = mod.fold_scores(root, "bge_base", 1.0)[0]
+        indices = np.random.default_rng(5).integers(0, N_RECORDS, (20, N_RECORDS))
+        vectorised = mod.max_d_replicates(scores, pairs["ood"], indices)
+        looped = [max_abs_d_over_pairs(scores, pairs["ood"], i)[0] for i in indices]
+        assert vectorised.tolist() == pytest.approx(looped)
+
+    def test_bootstrap_delta_matches_the_resample_loop(self, root):
+        control = mod.fold_scores(root, "bge_base", 0.0)
+        treated = mod.fold_scores(root, "bge_base", 1.0)
+        rng = np.random.default_rng(DELTA_SEED)
+        looped = [
+            mod.mean_max_d(treated, "ood", index)
+            - mod.mean_max_d(control, "ood", index)
+            for index in (rng.integers(0, N_RECORDS, N_RECORDS) for _ in range(BOOT))
+        ]
+        low, high = mod.bootstrap_delta_max_d(
+            control, treated, n_boot=BOOT, seed=DELTA_SEED
+        )
+        assert (low, high) == pytest.approx(
+            (np.percentile(looped, 2.5), np.percentile(looped, 97.5))
+        )
+
+
+DELTA_SEED = 7
+
+
+class TestPointOnly:
+    def test_score_table_skips_the_interval(self, seeded):
+        table = mod.seed_score_table(seeded, SLUGS, training_seeds=SEEDS, n_boot=0)
+        assert not {"ci_lo", "p_reduction", "holm_p", "reduces"} & set(table)
+
+    def test_answer_table_keeps_the_point_estimates(self, seeded):
+        table = mod.seed_answer_table(seeded, SLUGS, training_seeds=SEEDS, n_boot=0)
+        assert (table["delta_pp"] < 0).all()
+        assert "ci_lo" not in table
