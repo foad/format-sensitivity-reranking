@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  MiniLM-L6-pooler  yaml_lam1_s4  split=test   2026-11-17 04:13:35
+======================================================================
+records: 770   held out: yaml
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.718        0.324    -0.394       ood
+yaml - toml                   0.903        0.687    -0.216       ood
+yaml - inline_kv              0.733        0.772    +0.039       ood
+yaml - markdown               0.522        0.543    +0.020       ood
+json - toml                   0.091        0.178    +0.087 in_training
+json - inline_kv              0.448        0.090    -0.358 in_training
+json - markdown               0.527        0.178    -0.349 in_training
+toml - inline_kv              0.535        0.092    -0.443 in_training
+toml - markdown               0.307        0.044    -0.263 in_training
+inline_kv - markdown          0.179        0.037    -0.143 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.903 (large)       0.772 (medium)    -0.131     [-0.290, -0.008]
+in_training          0.535 (medium)      0.178 (trivial)    -0.357     [-0.472, -0.263]
+ood                   0.903 (large)       0.772 (medium)    -0.131     [-0.290, -0.008]
+
+In-training thresholds, trained max |d| = 0.178
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -1
+  relative change: -14.5%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.8903
+  trained MRR:  0.9386
+  change: +0.0483  [+0.0373, +0.0591]  pass
+
+Transfer to yaml
+  MRR: 0.8996 -> 0.9430
+  change: +0.0434  [+0.0304, +0.0563]
+  training formats changed by +0.0495 on average, a ratio of 0.88
+
+Metadata-only records: 228
+  in_training  max |d|: 0.601 (medium) -> 0.125 (trivial)
+  ood          max |d|: 0.899 (large) -> 0.888 (large)
+
+Answer axis, held out yaml, 674 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          97 (14.4%)        40 (5.9%)       -57      [-11.13, -5.79]
+in_training          91 (13.5%)        38 (5.6%)       -53      [-10.53, -5.19]
+ood                    6 (0.9%)         2 (0.3%)        -4       [-1.48, +0.15]
+
+Saved yaml_lam1_s4 results -> data/nq/h2/comparison/minilm_l6_pooler_yaml_lam1_s4.json  (0.0 MB)

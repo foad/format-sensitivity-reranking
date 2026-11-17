@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  MiniLM-L6-pooler  markdown_lam1_s4  split=test   2026-11-17 04:14:45
+======================================================================
+records: 770   held out: markdown
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.718        0.018    -0.700 in_training
+yaml - toml                   0.903        0.048    -0.854 in_training
+yaml - inline_kv              0.733        0.151    -0.583 in_training
+yaml - markdown               0.522        0.603    +0.081       ood
+json - toml                   0.091        0.059    -0.032 in_training
+json - inline_kv              0.448        0.093    -0.354 in_training
+json - markdown               0.527        0.730    +0.203       ood
+toml - inline_kv              0.535        0.063    -0.472 in_training
+toml - markdown               0.307        0.634    +0.327       ood
+inline_kv - markdown          0.179        0.521    +0.341       ood
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.903 (large)       0.730 (medium)    -0.173     [-0.345, -0.034]
+in_training           0.903 (large)      0.151 (trivial)    -0.752     [-0.915, -0.632]
+ood                  0.527 (medium)       0.730 (medium)    +0.203     [+0.051, +0.301]
+
+In-training thresholds, trained max |d| = 0.151
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: 0
+  relative change: +38.6%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.8903
+  trained MRR:  0.9400
+  change: +0.0497  [+0.0386, +0.0607]  pass
+
+Transfer to markdown
+  MRR: 0.8827 -> 0.9353
+  change: +0.0527  [+0.0392, +0.0662]
+  training formats changed by +0.0489 on average, a ratio of 1.08
+
+Metadata-only records: 228
+  in_training  max |d|: 0.899 (large) -> 0.237 (small)
+  ood          max |d|: 0.699 (medium) -> 0.722 (medium)
+
+Answer axis, held out markdown, 674 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          97 (14.4%)        37 (5.5%)       -60      [-11.57, -6.23]
+in_training          90 (13.4%)        34 (5.0%)       -56      [-10.83, -5.79]
+ood                    7 (1.0%)         3 (0.4%)        -4       [-1.48, +0.30]
+
+Saved markdown_lam1_s4 results -> data/nq/h2/comparison/minilm_l6_pooler_markdown_lam1_s4.json  (0.0 MB)

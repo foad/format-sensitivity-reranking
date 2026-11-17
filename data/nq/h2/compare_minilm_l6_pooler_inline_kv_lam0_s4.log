@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  MiniLM-L6-pooler  inline_kv_lam0_s4  split=test   2026-11-17 04:14:19
+======================================================================
+records: 770   held out: inline_kv
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.718        0.110    -0.608 in_training
+yaml - toml                   0.903        0.302    -0.600 in_training
+yaml - inline_kv              0.733        0.325    -0.409       ood
+yaml - markdown               0.522        0.285    -0.237 in_training
+json - toml                   0.091        0.064    -0.027 in_training
+json - inline_kv              0.448        0.033    -0.415       ood
+json - markdown               0.527        0.158    -0.369 in_training
+toml - inline_kv              0.535        0.036    -0.499       ood
+toml - markdown               0.307        0.076    -0.231 in_training
+inline_kv - markdown          0.179        0.088    -0.091       ood
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.903 (large)        0.325 (small)    -0.578     [-0.729, -0.455]
+in_training           0.903 (large)        0.302 (small)    -0.600     [-0.756, -0.477]
+ood                  0.733 (medium)        0.325 (small)    -0.409     [-0.497, -0.324]
+
+In-training thresholds, trained max |d| = 0.302
+  below 0.5:  pass
+  below 0.2:  fail
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -1
+  relative change: -55.7%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.8903
+  trained MRR:  0.9509
+  change: +0.0606  [+0.0485, +0.0727]  pass
+
+Transfer to inline_kv
+  MRR: 0.8975 -> 0.9550
+  change: +0.0575  [+0.0438, +0.0714]
+  training formats changed by +0.0614 on average, a ratio of 0.94
+
+Metadata-only records: 228
+  in_training  max |d|: 0.899 (large) -> 0.253 (small)
+  ood          max |d|: 0.821 (large) -> 0.401 (small)
+
+Answer axis, held out inline_kv, 674 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          97 (14.4%)        53 (7.9%)       -44       [-9.35, -3.86]
+in_training          86 (12.8%)        50 (7.4%)       -36       [-8.16, -2.67]
+ood                   11 (1.6%)         3 (0.4%)        -8       [-2.37, -0.15]
+
+Saved inline_kv_lam0_s4 results -> data/nq/h2/comparison/minilm_l6_pooler_inline_kv_lam0_s4.json  (0.0 MB)

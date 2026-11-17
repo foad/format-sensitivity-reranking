@@ -1,0 +1,286 @@
+{
+  "model": "minilm_l6_pooler",
+  "base": "minilm_l6",
+  "weight": 1.0,
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "per_seed": {
+    "held_out": {
+      "minilm_l6": [
+        {
+          "score_control": 0.4688901244098219,
+          "score_trained": 0.392839136017193,
+          "score_pct": -16.219362369457468,
+          "answer_control": 0.9495548961424333,
+          "answer_trained": 0.3560830860534125,
+          "answer_pct": -62.50000000000001,
+          "mrr_control": 0.9519811229174866,
+          "mrr_trained": 0.9424884881352413
+        },
+        {
+          "score_control": 0.36122236075763164,
+          "score_trained": 0.3793093705204484,
+          "score_pct": 5.007167807906711,
+          "answer_control": 0.712166172106825,
+          "answer_trained": 0.5044510385756676,
+          "answer_pct": -29.16666666666667,
+          "mrr_control": 0.9497802386646544,
+          "mrr_trained": 0.9432544859181224
+        },
+        {
+          "score_control": 0.3991146318834763,
+          "score_trained": 0.40971172475048545,
+          "score_pct": 2.6551501800372734,
+          "answer_control": 1.0385756676557865,
+          "answer_trained": 0.771513353115727,
+          "answer_pct": -25.714285714285722,
+          "mrr_control": 0.9476412908880443,
+          "mrr_trained": 0.9402407102277233
+        },
+        {
+          "score_control": 0.4528255438122226,
+          "score_trained": 0.4081475013872507,
+          "score_pct": -9.866502240319512,
+          "answer_control": 1.3056379821958457,
+          "answer_trained": 0.5044510385756676,
+          "answer_pct": -61.36363636363637,
+          "mrr_control": 0.9493167538089615,
+          "mrr_trained": 0.941852775651477
+        },
+        {
+          "score_control": 0.4112080761958081,
+          "score_trained": 0.39585467450525824,
+          "score_pct": -3.733730580534362,
+          "answer_control": 0.8902077151335311,
+          "answer_trained": 0.6528189910979229,
+          "answer_pct": -26.666666666666664,
+          "mrr_control": 0.9479847004366485,
+          "mrr_trained": 0.9399698409815294
+        }
+      ],
+      "minilm_l6_pooler": [
+        {
+          "score_control": 0.4792738905243916,
+          "score_trained": 0.46182121977527063,
+          "score_pct": -3.641481644248409,
+          "answer_control": 0.8011869436201781,
+          "answer_trained": 0.3857566765578635,
+          "answer_pct": -51.851851851851855,
+          "mrr_control": 0.9503568598789378,
+          "mrr_trained": 0.9420080942145876
+        },
+        {
+          "score_control": 0.34929674203513456,
+          "score_trained": 0.4208378331269502,
+          "score_pct": 20.481465322290234,
+          "answer_control": 0.7418397626112759,
+          "answer_trained": 0.5934718100890207,
+          "answer_pct": -20.000000000000004,
+          "mrr_control": 0.9501367837069136,
+          "mrr_trained": 0.9417421934486869
+        },
+        {
+          "score_control": 0.3896981220390336,
+          "score_trained": 0.42940467333956817,
+          "score_pct": 10.189053797020213,
+          "answer_control": 1.0682492581602374,
+          "answer_trained": 0.8605341246290801,
+          "answer_pct": -19.44444444444445,
+          "mrr_control": 0.9477214475279411,
+          "mrr_trained": 0.9381579625280925
+        },
+        {
+          "score_control": 0.4349424124892681,
+          "score_trained": 0.42255192937070457,
+          "score_pct": -2.8487640576714925,
+          "answer_control": 1.1275964391691395,
+          "answer_trained": 0.712166172106825,
+          "answer_pct": -36.8421052631579,
+          "mrr_control": 0.9496899926912914,
+          "mrr_trained": 0.940622062785699
+        },
+        {
+          "score_control": 0.41857192043127467,
+          "score_trained": 0.416042937234126,
+          "score_pct": -0.6041932279028694,
+          "answer_control": 0.712166172106825,
+          "answer_trained": 0.771513353115727,
+          "answer_pct": 8.333333333333323,
+          "mrr_control": 0.9481350593129815,
+          "mrr_trained": 0.939567476390853
+        }
+      ]
+    },
+    "training": {
+      "minilm_l6": [
+        {
+          "score_control": 0.39317077681266516,
+          "score_trained": 0.16592602757437674,
+          "score_pct": -57.797975495662065,
+          "answer_control": 6.58753709198813,
+          "answer_trained": 5.816023738872404,
+          "answer_pct": -11.711711711711706,
+          "mrr_control": 0.9519811229174866,
+          "mrr_trained": 0.9424884881352413
+        },
+        {
+          "score_control": 0.2784673578733464,
+          "score_trained": 0.15017281320812736,
+          "score_pct": -46.071663711324625,
+          "answer_control": 6.706231454005935,
+          "answer_trained": 5.816023738872404,
+          "answer_pct": -13.274336283185841,
+          "mrr_control": 0.9497802386646544,
+          "mrr_trained": 0.9432544859181224
+        },
+        {
+          "score_control": 0.3193037403871202,
+          "score_trained": 0.16841148930829744,
+          "score_pct": -47.25665001477362,
+          "answer_control": 7.4777448071216615,
+          "answer_trained": 6.053412462908012,
+          "answer_pct": -19.047619047619044,
+          "mrr_control": 0.9476412908880443,
+          "mrr_trained": 0.9402407102277233
+        },
+        {
+          "score_control": 0.35101798321976313,
+          "score_trained": 0.10931176136309631,
+          "score_pct": -68.8586435485674,
+          "answer_control": 7.1513353115727005,
+          "answer_trained": 5.489614243323442,
+          "answer_pct": -23.236514522821583,
+          "mrr_control": 0.9493167538089615,
+          "mrr_trained": 0.941852775651477
+        },
+        {
+          "score_control": 0.3410685865457244,
+          "score_trained": 0.13061061070737698,
+          "score_pct": -61.705470436261635,
+          "answer_control": 7.4777448071216615,
+          "answer_trained": 6.439169139465875,
+          "answer_pct": -13.88888888888889,
+          "mrr_control": 0.9479847004366485,
+          "mrr_trained": 0.9399698409815294
+        }
+      ],
+      "minilm_l6_pooler": [
+        {
+          "score_control": 0.39671245978206454,
+          "score_trained": 0.16052225815930918,
+          "score_pct": -59.53687508391022,
+          "answer_control": 7.181008902077151,
+          "answer_trained": 5.281899109792285,
+          "answer_pct": -26.446280991735538,
+          "mrr_control": 0.9503568598789378,
+          "mrr_trained": 0.9420080942145876
+        },
+        {
+          "score_control": 0.27298097440468005,
+          "score_trained": 0.14917219883089614,
+          "score_pct": -45.35436062670209,
+          "answer_control": 6.913946587537092,
+          "answer_trained": 5.370919881305638,
+          "answer_pct": -22.317596566523605,
+          "mrr_control": 0.9501367837069136,
+          "mrr_trained": 0.9417421934486869
+        },
+        {
+          "score_control": 0.3105722251450139,
+          "score_trained": 0.18982927354038545,
+          "score_pct": -38.87757559397032,
+          "answer_control": 7.655786350148368,
+          "answer_trained": 5.756676557863502,
+          "answer_pct": -24.806201550387595,
+          "mrr_control": 0.9477214475279411,
+          "mrr_trained": 0.9381579625280925
+        },
+        {
+          "score_control": 0.34255705925577845,
+          "score_trained": 0.14247428466222697,
+          "score_pct": -58.40859768829195,
+          "answer_control": 7.537091988130563,
+          "answer_trained": 5.222551928783383,
+          "answer_pct": -30.70866141732283,
+          "mrr_control": 0.9496899926912914,
+          "mrr_trained": 0.940622062785699
+        },
+        {
+          "score_control": 0.30807301261154063,
+          "score_trained": 0.15521998959780056,
+          "score_pct": -49.61584324378242,
+          "answer_control": 7.507418397626113,
+          "answer_trained": 5.548961424332345,
+          "answer_pct": -26.086956521739125,
+          "mrr_control": 0.9481350593129815,
+          "mrr_trained": 0.939567476390853
+        }
+      ]
+    }
+  },
+  "summary": {
+    "held_out": {
+      "score_pct": {
+        "base_mean": -4.4314554404734725,
+        "base_sd": 8.779078703209695,
+        "variant_mean": 4.715216037897536,
+        "variant_sd": 10.414915053480291,
+        "variant_lower": 0,
+        "untied": 5,
+        "sign_p": 0.0625
+      },
+      "answer_pct": {
+        "base_mean": -41.08225108225109,
+        "base_sd": 19.078909449929707,
+        "variant_mean": -23.961013645224174,
+        "variant_sd": 22.48797039726148,
+        "variant_lower": 0,
+        "untied": 5,
+        "sign_p": 0.0625
+      },
+      "mrr_trained": {
+        "base_mean": 0.9415612601828187,
+        "base_sd": 0.001421989239854751,
+        "variant_mean": 0.9404195578735838,
+        "variant_sd": 0.0015933202103320108,
+        "variant_lower": 5,
+        "untied": 5,
+        "sign_p": 0.0625
+      }
+    },
+    "training": {
+      "score_pct": {
+        "base_mean": -56.338080641317866,
+        "base_sd": 9.689896290933508,
+        "variant_mean": -50.3586504473314,
+        "variant_sd": 8.75287405657035,
+        "variant_lower": 1,
+        "untied": 5,
+        "sign_p": 0.375
+      },
+      "answer_pct": {
+        "base_mean": -16.23181409084541,
+        "base_sd": 4.787010672093028,
+        "variant_mean": -26.07313940954174,
+        "variant_sd": 3.0551891685408457,
+        "variant_lower": 5,
+        "untied": 5,
+        "sign_p": 0.0625
+      },
+      "mrr_trained": {
+        "base_mean": 0.9415612601828187,
+        "base_sd": 0.001421989239854751,
+        "variant_mean": 0.9404195578735838,
+        "variant_sd": 0.0015933202103320108,
+        "variant_lower": 5,
+        "untied": 5,
+        "sign_p": 0.0625
+      }
+    }
+  }
+}
