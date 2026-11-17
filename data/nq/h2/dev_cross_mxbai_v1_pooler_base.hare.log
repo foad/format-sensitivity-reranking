@@ -1,0 +1,3 @@
+docker: Error response from daemon: Conflict. The container name "/fsr_dev_cross_mxbai_v1_pooler_base" is already in use by container "aab0c303ba116f21ca63476090a7197ea60955b5e83d6ecd3f456155d4ec75ed". You have to remove (or rename) that container to be able to reuse that name.
+
+Run 'docker run --help' for more information

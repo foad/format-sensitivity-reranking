@@ -1,0 +1,48 @@
+
+======================================================================
+EVAL  mxbai-v1-pooler  split=test  arm=json_lam0.1_s3   2026-11-17 18:35:52
+======================================================================
+  identifier:  mixedbread-ai/mxbai-rerank-base-v1
+  adapter:     data/nq/h2/train/mxbai_v1_pooler_json_lam0.1_s3/adapter
+  batch:       16
+  output:      data/nq/h2/test_cross_mxbai_v1_pooler_json_lam0.1_s3.json
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 2466.93it/s]
+
+821 records in test
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (578 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (698 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (528 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (558 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1277 > 1024). Running this sequence through the model will result in indexing errors
+  770 kept, 51 dropped
+
+Scoring the formats...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+  scored       yaml  mean=+2.208  n=770
+  scored       json  mean=+2.226  n=770
+  scored       toml  mean=+2.202  n=770
+  scored  inline_kv  mean=+2.201  n=770
+  scored   markdown  mean=+2.214  n=770
+
+  max |d|:    0.150
+  mean |d|:   0.072
+  min rho:    0.981
+  max flip:   5.1%
+  max |d| 95% interval: [0.083, 0.228]
+  format scoring in 0:00:46
+
+Scoring the ranking guardrail...
+  MRR       yaml: 0.9676
+  MRR       json: 0.9650
+  MRR       toml: 0.9671
+  MRR  inline_kv: 0.9683
+  MRR   markdown: 0.9708
+
+  mean MRR:   0.9678
+  worst MRR:  0.9650
+  guardrail scoring in 0:15:11
+
+Saved json_lam0.1_s3 results -> data/nq/h2/test_cross_mxbai_v1_pooler_json_lam0.1_s3.json  (0.1 MB)

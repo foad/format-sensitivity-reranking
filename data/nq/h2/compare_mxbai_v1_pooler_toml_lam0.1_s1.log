@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  mxbai-v1-pooler  toml_lam0.1_s1  split=test   2026-11-17 19:07:41
+======================================================================
+records: 770   held out: toml
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.645        0.006    -0.638 in_training
+yaml - toml                   0.651        0.106    -0.545       ood
+yaml - inline_kv              0.154        0.096    -0.057 in_training
+yaml - markdown               0.271        0.002    -0.269 in_training
+json - toml                   0.297        0.092    -0.205       ood
+json - inline_kv              0.555        0.063    -0.492 in_training
+json - markdown               0.553        0.009    -0.544 in_training
+toml - inline_kv              0.598        0.017    -0.581       ood
+toml - markdown               0.167        0.084    -0.083       ood
+inline_kv - markdown          0.150        0.070    -0.080 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          0.651 (medium)      0.106 (trivial)    -0.545     [-0.626, -0.464]
+in_training          0.645 (medium)      0.096 (trivial)    -0.549     [-0.647, -0.441]
+ood                  0.651 (medium)      0.106 (trivial)    -0.545     [-0.612, -0.455]
+
+In-training thresholds, trained max |d| = 0.096
+  below 0.5:  pass
+  below 0.2:  pass
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -2
+  relative change: -83.7%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9332
+  trained MRR:  0.9697
+  change: +0.0365  [+0.0262, +0.0470]  pass
+
+Transfer to toml
+  MRR: 0.9328 -> 0.9702
+  change: +0.0374  [+0.0268, +0.0483]
+  training formats changed by +0.0363 on average, a ratio of 1.03
+
+Metadata-only records: 228
+  in_training  max |d|: 0.564 (medium) -> 0.166 (trivial)
+  ood          max |d|: 0.649 (medium) -> 0.129 (trivial)
+
+Answer axis, held out toml, 693 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           26 (3.8%)         5 (0.7%)       -21       [-4.47, -1.73]
+in_training           26 (3.8%)         5 (0.7%)       -21       [-4.47, -1.73]
+ood                    0 (0.0%)         0 (0.0%)        +0       [+0.00, +0.00]
+
+Saved toml_lam0.1_s1 results -> data/nq/h2/comparison/mxbai_v1_pooler_toml_lam0.1_s1.json  (0.0 MB)

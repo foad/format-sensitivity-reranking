@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  mxbai-v1-pooler  markdown_lam0_s4  split=test   2026-11-17 11:02:48
+======================================================================
+records: 770   held out: markdown
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.645        0.033    -0.612 in_training
+yaml - toml                   0.651        0.265    -0.385 in_training
+yaml - inline_kv              0.154        0.270    +0.116 in_training
+yaml - markdown               0.271        0.002    -0.269       ood
+json - toml                   0.297        0.149    -0.148 in_training
+json - inline_kv              0.555        0.116    -0.440 in_training
+json - markdown               0.553        0.036    -0.518       ood
+toml - inline_kv              0.598        0.012    -0.587 in_training
+toml - markdown               0.167        0.189    +0.022       ood
+inline_kv - markdown          0.150        0.176    +0.026       ood
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          0.651 (medium)        0.270 (small)    -0.381     [-0.476, -0.309]
+in_training          0.651 (medium)        0.270 (small)    -0.381     [-0.477, -0.309]
+ood                  0.553 (medium)      0.189 (trivial)    -0.364     [-0.470, -0.247]
+
+In-training thresholds, trained max |d| = 0.270
+  below 0.5:  pass
+  below 0.2:  fail
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -2
+  relative change: -65.9%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9332
+  trained MRR:  0.9661
+  change: +0.0329  [+0.0226, +0.0432]  pass
+
+Transfer to markdown
+  MRR: 0.9304 -> 0.9653
+  change: +0.0349  [+0.0235, +0.0464]
+  training formats changed by +0.0324 on average, a ratio of 1.08
+
+Metadata-only records: 228
+  in_training  max |d|: 0.649 (medium) -> 0.449 (small)
+  ood          max |d|: 0.474 (small) -> 0.269 (small)
+
+Answer axis, held out markdown, 693 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           26 (3.8%)         6 (0.9%)       -20       [-4.47, -1.44]
+in_training           26 (3.8%)         6 (0.9%)       -20       [-4.47, -1.44]
+ood                    0 (0.0%)         0 (0.0%)        +0       [+0.00, +0.00]
+
+Saved markdown_lam0_s4 results -> data/nq/h2/comparison/mxbai_v1_pooler_markdown_lam0_s4.json  (0.0 MB)
