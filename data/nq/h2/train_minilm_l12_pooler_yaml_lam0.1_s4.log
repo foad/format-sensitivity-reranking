@@ -1,0 +1,70 @@
+
+======================================================================
+TRAIN  MiniLM-L12-pooler  arm=yaml_lam0.1_s4   2026-11-17 13:18:27
+======================================================================
+  identifier:  cross-encoder/ms-marco-MiniLM-L12-v2
+  formats:     4 of 5  ['json', 'toml', 'inline_kv', 'markdown']
+  held out:    yaml
+  lambda_inv:  0.1
+  batch:       4 x 4
+  head trained in full: classifier, pooler
+  steps:       500, warmup 30
+  output:      data/nq/h2/train/minilm_l12_pooler_yaml_lam0.1_s4
+  device:      cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 3833.45it/s]
+  trainable:   590,593 / 33,950,978 (1.74%)
+
+Loading the corpus...
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (963 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (928 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1154 > 1024). Running this sequence through the model will result in indexing errors
+  train: 6,131 kept, 449 dropped
+  dev:   758 kept
+  corpus loading in 0:02:12
+
+Training minilm_l12_pooler yaml_lam0.1_s4
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+[transformers] `use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`.
+step     1/500  loss=0.1124  rank=0.0383  inv=0.7401  lr=6.67e-06  3.72s/step  eta 0:30:53
+step    20/500  loss=0.1929  rank=0.1600  inv=0.3294  lr=1.33e-04  3.33s/step  eta 0:26:38
+step    40/500  loss=0.1346  rank=0.1148  inv=0.1981  lr=2.00e-04  3.33s/step  eta 0:25:33
+  dev max|d|=0.1917  (pair=json - toml)
+step    60/500  loss=0.0801  rank=0.0688  inv=0.1138  lr=1.98e-04  3.53s/step  eta 0:25:52
+step    80/500  loss=0.0993  rank=0.0791  inv=0.2020  lr=1.94e-04  3.47s/step  eta 0:24:18
+step   100/500  loss=0.1140  rank=0.1018  inv=0.1221  lr=1.89e-04  3.46s/step  eta 0:23:05
+  dev max|d|=0.1962  (pair=json - markdown)
+step   120/500  loss=0.0788  rank=0.0634  inv=0.1543  lr=1.82e-04  3.55s/step  eta 0:22:29
+step   140/500  loss=0.0244  rank=0.0139  inv=0.1049  lr=1.74e-04  3.51s/step  eta 0:21:04
+  dev max|d|=0.3360  (pair=json - markdown)
+step   160/500  loss=0.0611  rank=0.0507  inv=0.1042  lr=1.65e-04  3.57s/step  eta 0:20:12
+step   180/500  loss=0.0769  rank=0.0577  inv=0.1925  lr=1.54e-04  3.54s/step  eta 0:18:52
+step   200/500  loss=0.0391  rank=0.0245  inv=0.1464  lr=1.42e-04  3.52s/step  eta 0:17:35
+  dev max|d|=0.2733  (pair=json - markdown)
+step   220/500  loss=0.0640  rank=0.0517  inv=0.1228  lr=1.30e-04  3.56s/step  eta 0:16:36
+step   240/500  loss=0.2362  rank=0.2288  inv=0.0740  lr=1.17e-04  3.54s/step  eta 0:15:21
+  dev max|d|=0.3083  (pair=json - markdown)
+step   260/500  loss=0.0309  rank=0.0240  inv=0.0690  lr=1.03e-04  3.57s/step  eta 0:14:17
+step   280/500  loss=0.0315  rank=0.0119  inv=0.1958  lr=9.00e-05  3.56s/step  eta 0:13:02
+step   300/500  loss=0.0531  rank=0.0351  inv=0.1804  lr=7.68e-05  3.54s/step  eta 0:11:48
+  dev max|d|=0.2103  (pair=json - markdown)
+step   320/500  loss=0.0916  rank=0.0750  inv=0.1663  lr=6.41e-05  3.57s/step  eta 0:10:42
+step   340/500  loss=0.0828  rank=0.0690  inv=0.1378  lr=5.19e-05  3.55s/step  eta 0:09:28
+  dev max|d|=0.2349  (pair=json - markdown)
+step   360/500  loss=0.0658  rank=0.0462  inv=0.1956  lr=4.07e-05  3.58s/step  eta 0:08:21
+step   380/500  loss=0.0573  rank=0.0488  inv=0.0851  lr=3.05e-05  3.56s/step  eta 0:07:07
+step   400/500  loss=0.1132  rank=0.0979  inv=0.1527  lr=2.15e-05  3.55s/step  eta 0:05:55
+  dev max|d|=0.2152  (pair=toml - inline_kv)
+step   420/500  loss=0.0362  rank=0.0189  inv=0.1732  lr=1.40e-05  3.57s/step  eta 0:04:45
+step   440/500  loss=0.0345  rank=0.0195  inv=0.1498  lr=7.94e-06  3.56s/step  eta 0:03:33
+  dev max|d|=0.2229  (pair=toml - inline_kv)
+step   460/500  loss=0.0190  rank=0.0137  inv=0.0532  lr=3.55e-06  3.58s/step  eta 0:02:23
+step   480/500  loss=0.0275  rank=0.0188  inv=0.0872  lr=8.92e-07  3.56s/step  eta 0:01:11
+step   500/500  loss=0.1064  rank=0.0936  inv=0.1281  lr=0.00e+00  3.55s/step  eta 0:00:00
+  dev max|d|=0.2234  (pair=toml - inline_kv)
+
+Finished at step 500 in 1789s, dev max|d|=0.2234
+Saved adapter -> data/nq/h2/train/minilm_l12_pooler_yaml_lam0.1_s4/adapter

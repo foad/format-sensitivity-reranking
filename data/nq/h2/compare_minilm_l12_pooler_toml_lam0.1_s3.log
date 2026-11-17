@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  MiniLM-L12-pooler  toml_lam0.1_s3  split=test   2026-11-17 10:32:19
+======================================================================
+records: 770   held out: toml
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.615        0.067    -0.549 in_training
+yaml - toml                   0.938        0.018    -0.920       ood
+yaml - inline_kv              0.701        0.013    -0.688 in_training
+yaml - markdown               0.630        0.113    -0.517 in_training
+json - toml                   0.114        0.086    -0.028       ood
+json - inline_kv              0.203        0.069    -0.134 in_training
+json - markdown               0.243        0.200    -0.043 in_training
+toml - inline_kv              0.452        0.005    -0.446       ood
+toml - markdown               0.390        0.107    -0.283       ood
+inline_kv - markdown          0.049        0.098    +0.049 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.938 (large)        0.200 (small)    -0.738     [-0.860, -0.619]
+in_training          0.701 (medium)        0.200 (small)    -0.501     [-0.649, -0.363]
+ood                   0.938 (large)      0.107 (trivial)    -0.831     [-0.926, -0.707]
+
+In-training thresholds, trained max |d| = 0.200
+  below 0.5:  pass
+  below 0.2:  fail
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -3
+  relative change: -88.6%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9120
+  trained MRR:  0.9573
+  change: +0.0453  [+0.0346, +0.0564]  pass
+
+Transfer to toml
+  MRR: 0.9130 -> 0.9584
+  change: +0.0454  [+0.0327, +0.0583]
+  training formats changed by +0.0453 on average, a ratio of 1.00
+
+Metadata-only records: 228
+  in_training  max |d|: 0.857 (large) -> 0.260 (small)
+  ood          max |d|: 1.016 (large) -> 0.188 (trivial)
+
+Answer axis, held out toml, 687 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          82 (11.9%)        22 (3.2%)       -60      [-11.21, -6.26]
+in_training          76 (11.1%)        20 (2.9%)       -56      [-10.63, -5.82]
+ood                    6 (0.9%)         2 (0.3%)        -4       [-1.46, +0.15]
+
+Saved toml_lam0.1_s3 results -> data/nq/h2/comparison/minilm_l12_pooler_toml_lam0.1_s3.json  (0.0 MB)

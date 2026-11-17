@@ -1,0 +1,56 @@
+
+======================================================================
+COMPARE  MiniLM-L12-pooler  json_lam0_s3  split=test   2026-11-17 10:31:53
+======================================================================
+records: 770   held out: json
+
+pair                       |d| base  |d| trained    change    subset
+----------------------------------------------------------------------------------------------------
+yaml - json                   0.615        0.367    -0.249       ood
+yaml - toml                   0.938        0.174    -0.763 in_training
+yaml - inline_kv              0.701        0.144    -0.557 in_training
+yaml - markdown               0.630        0.215    -0.415 in_training
+json - toml                   0.114        0.346    +0.232       ood
+json - inline_kv              0.203        0.315    +0.112       ood
+json - markdown               0.243        0.329    +0.087       ood
+toml - inline_kv              0.452        0.041    -0.410 in_training
+toml - markdown               0.390        0.151    -0.239 in_training
+inline_kv - markdown          0.049        0.139    +0.090 in_training
+
+subset                     baseline              trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats           0.938 (large)        0.367 (small)    -0.571     [-0.684, -0.470]
+in_training           0.938 (large)        0.215 (small)    -0.722     [-0.832, -0.621]
+ood                  0.615 (medium)        0.367 (small)    -0.249     [-0.368, -0.139]
+
+In-training thresholds, trained max |d| = 0.215
+  below 0.5:  pass
+  below 0.2:  fail
+  interval upper below zero: pass
+
+Held-out pairs, reported without a threshold
+  bands moved: -1
+  relative change: -40.4%
+
+Ranking guardrail, margin 0.03
+  baseline MRR: 0.9120
+  trained MRR:  0.9573
+  change: +0.0453  [+0.0341, +0.0571]  pass
+
+Transfer to json
+  MRR: 0.9051 -> 0.9338
+  change: +0.0287  [+0.0138, +0.0435]
+  training formats changed by +0.0495 on average, a ratio of 0.58
+
+Metadata-only records: 228
+  in_training  max |d|: 1.016 (large) -> 0.208 (small)
+  ood          max |d|: 0.747 (medium) -> 0.326 (small)
+
+Answer axis, held out json, 687 of 767 queries answerable under the untrained model
+subset                 baseline          trained    change             interval
+----------------------------------------------------------------------------------------------------
+all_formats          82 (11.9%)        47 (6.8%)       -35       [-7.71, -2.47]
+in_training           63 (9.2%)        30 (4.4%)       -33       [-7.42, -2.33]
+ood                   19 (2.8%)        17 (2.5%)        -2       [-1.75, +1.16]
+
+Saved json_lam0_s3 results -> data/nq/h2/comparison/minilm_l12_pooler_json_lam0_s3.json  (0.0 MB)
