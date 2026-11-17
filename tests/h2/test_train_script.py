@@ -277,6 +277,26 @@ class TestRun:
         run(monkeypatch, data_root, model="mxbai_v1_tanh")
         assert fake_model["tanh_head"] is True
 
+    def test_trains_no_extra_head_module_by_default(
+        self, monkeypatch, data_root, fake_model
+    ):
+        run(monkeypatch, data_root)
+        assert list(fake_model["head_modules"]) == []
+
+    def test_the_pooler_variant_trains_its_pooler(
+        self, monkeypatch, data_root, fake_model
+    ):
+        run(monkeypatch, data_root, model="mxbai_v1_pooler")
+        assert list(fake_model["head_modules"]) == ["pooler"]
+
+    @pytest.mark.usefixtures("fake_model")
+    def test_the_run_record_names_the_trained_head_modules(
+        self, monkeypatch, data_root
+    ):
+        run(monkeypatch, data_root, model="mxbai_v1_pooler")
+        records = log_of(data_root, slug="mxbai_v1_pooler")
+        assert records[0]["head_modules"] == ["pooler"]
+
     def test_keeps_activations_on_request(self, monkeypatch, data_root, fake_model):
         run(monkeypatch, data_root, "--no-grad-checkpoint")
         assert fake_model["gradient_checkpointing"] is False

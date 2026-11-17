@@ -207,6 +207,7 @@ def main() -> None:
     physical_batch = args.physical_batch or model_entry.physical_batch
     grad_accum = args.grad_accum or model_entry.grad_accum
     tanh_head = model_entry.tanh_head if args.tanh_head is None else args.tanh_head
+    head_modules = model_entry.head_modules
 
     heading(f"TRAIN  {model_entry.label}  arm={arm_name}", width=70)
     print(f"  identifier:  {model_entry.model_id}")
@@ -215,6 +216,8 @@ def main() -> None:
         print(f"  held out:    {held_out}")
     print(f"  lambda_inv:  {args.lambda_inv}")
     print(f"  batch:       {physical_batch} x {grad_accum}")
+    if head_modules:
+        print(f"  head trained in full: classifier, {', '.join(head_modules)}")
     print(f"  steps:       {args.max_steps}, warmup {args.warmup_steps}")
     print(f"  output:      {run_dir}")
 
@@ -234,6 +237,7 @@ def main() -> None:
         device,
         lora_targets=targets,
         tanh_head=tanh_head,
+        head_modules=head_modules,
         eager_attn=args.eager_attn,
         gradient_checkpointing=args.grad_checkpoint,
         **adapter_kwargs,
@@ -330,6 +334,7 @@ def main() -> None:
                 neg_k=args.neg_k,
                 seed=args.seed,
                 tanh_head=tanh_head,
+                head_modules=list(head_modules),
                 train_records=len(records),
                 dev_records=len(dev_records),
             )

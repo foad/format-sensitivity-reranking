@@ -1,19 +1,14 @@
 #!/usr/bin/env bash
 # Run Phase 2 of H2 under further training seeds, one model on one GPU.
 #
-# Each seed retrains the five held-out folds at weight 0 and at the weight
-# Phase 1 chose, then scores and compares them (stages 4 to 8 of run.sh).
-# Seeds run one after another. A block of GPU memory is held for the whole
-# sweep, so the GPU stays visibly claimed between jobs and during light ones;
-# it is released when the sweep ends, however it ends.
-#
 # Usage:
 #   MODEL=jina_v2 GPU=2 bash scripts/h2/seed_sweep.sh
 #
 # Environment:
 #   MODEL       registry slug, required
 #   GPU         the one GPU the sweep runs on (default 0)
-#   SEEDS       space-separated training seeds (default 1 2 3 4)
+#   SEEDS       space-separated training seeds (default 1 2 3 4); seed 0 only
+#               for a variant that reuses another model's weight
 #   STAGES      run.sh stages per seed (default 4,5,6,7,8)
 #   HOLD_GB     memory to hold, in GiB, or 0 for no hold (default 3)
 #   HOLD_HOURS  release the hold after this long whatever happens (default 168)
@@ -34,9 +29,11 @@ if [ -z "${MODEL:-}" ]; then
     exit 2
 fi
 GPU="${GPU:-0}"
+WEIGHT_FROM="$(PYTHONPATH="$REPO_ROOT/src" python3 -m fsr.models.registry \
+    --config "$MODEL" | sed -n "s/^WEIGHT_FROM=//p" | tr -d "'")"
 read -ra SEED_LIST <<< "${SEEDS:-1 2 3 4}"
 for SEED in "${SEED_LIST[@]}"; do
-    if [ "$SEED" = "0" ]; then
+    if [ "$SEED" = "0" ] && [ -z "$WEIGHT_FROM" ]; then
         echo "ERROR: seed 0 is the published run; name further seeds only." >&2
         exit 2
     fi
@@ -76,6 +73,11 @@ echo "  stages: $STAGES"
 
 STARTED=$(date +%s)
 FAILED=()
+if [ -n "$WEIGHT_FROM" ]; then
+    echo
+    echo "################ baseline ################"
+    SEED=0 STAGES=0 GPUS="$GPU" MODEL="$MODEL" bash scripts/h2/run.sh
+fi
 for SEED in "${SEED_LIST[@]}"; do
     echo
     echo "################ seed $SEED ################"

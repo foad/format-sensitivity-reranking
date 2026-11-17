@@ -24,6 +24,8 @@ class Model:
         eval_batch: Candidates scored at one time during evaluation.
         tanh_head: Whether the classifier head is replaced before an adapter
             attaches.
+        head_modules: Head modules trained in full beside the adapter.
+        weight_from: The model whose weights are reused for this variant.
     """
 
     slug: str
@@ -34,6 +36,8 @@ class Model:
     grad_accum: int
     eval_batch: int
     tanh_head: bool = False
+    head_modules: tuple[str, ...] = ()
+    weight_from: str | None = None
 
     @property
     def effective_batch(self) -> int:
@@ -106,9 +110,42 @@ MODELS = (
         eval_batch=16,
         tanh_head=True,
     ),
+    Model(
+        "minilm_l6_pooler",
+        "cross-encoder/ms-marco-MiniLM-L6-v2",
+        "MiniLM-L6-pooler",
+        ("query", "key", "value"),
+        physical_batch=4,
+        grad_accum=4,
+        eval_batch=32,
+        head_modules=("pooler",),
+        weight_from="minilm_l6",
+    ),
+    Model(
+        "minilm_l12_pooler",
+        "cross-encoder/ms-marco-MiniLM-L12-v2",
+        "MiniLM-L12-pooler",
+        ("query", "key", "value"),
+        physical_batch=4,
+        grad_accum=4,
+        eval_batch=32,
+        head_modules=("pooler",),
+        weight_from="minilm_l12",
+    ),
+    Model(
+        "mxbai_v1_pooler",
+        "mixedbread-ai/mxbai-rerank-base-v1",
+        "mxbai-v1-pooler",
+        ("query_proj", "key_proj", "value_proj"),
+        physical_batch=2,
+        grad_accum=8,
+        eval_batch=16,
+        head_modules=("pooler",),
+        weight_from="mxbai_v1",
+    ),
 )
 
-BASE_MODELS = tuple(m for m in MODELS if not m.tanh_head)
+BASE_MODELS = tuple(m for m in MODELS if not m.tanh_head and not m.head_modules)
 BASE_MODEL_IDS = tuple(m.model_id for m in BASE_MODELS)
 _BY_SLUG = {m.slug: m for m in MODELS}
 
@@ -165,6 +202,7 @@ def config_lines(model: Model) -> list[str]:
         "GRAD_ACCUM": str(model.grad_accum),
         "EVAL_BATCH": str(model.eval_batch),
         "TANH_HEAD": "1" if model.tanh_head else "0",
+        "WEIGHT_FROM": model.weight_from or "",
     }
     lines = [f"{name}={shlex.quote(value)}" for name, value in settings.items()]
     lines.insert(1, f"LORA_TARGETS=({targets})")

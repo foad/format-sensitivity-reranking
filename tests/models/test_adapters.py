@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 import torch
+from peft import get_peft_model_state_dict
 from torch import nn
 
 from fsr.models import adapters
@@ -45,6 +46,25 @@ class Base(nn.Module):
         self.checkpointing = True
 
 
+class PooledBase(Base):
+    """A model whose head pools before the classifier, as BERT and DeBERTa do."""
+
+    def __init__(self, width: int = 8, nested: bool = False):
+        """Add a pooler at the top level, or inside an encoder as BERT has it."""
+        super().__init__(width)
+        pooler = nn.Linear(width, width)
+        if nested:
+            self.encoder = nn.Module()
+            self.encoder.pooler = pooler
+        else:
+            self.pooler = pooler
+        self._pooler = pooler
+
+    def forward(self, x):
+        """Score the pooled input."""
+        return self.classifier(torch.tanh(self._pooler(self.query(x))))
+
+
 class TestLoraConfig:
     def test_uses_the_published_defaults(self):
         config = lora_config()
@@ -66,6 +86,12 @@ class TestLoraConfig:
 
     def test_takes_an_overridden_rank(self):
         assert lora_config(rank=8, alpha=16).r == 8
+
+    def test_saves_no_extra_module_by_default(self):
+        assert lora_config().modules_to_save is None
+
+    def test_takes_extra_modules_to_save(self):
+        assert lora_config(modules_to_save=("pooler",)).modules_to_save == ["pooler"]
 
 
 class TestRequireFp32:
@@ -142,6 +168,30 @@ class TestAdapt:
         assert config.modules_to_save == ["classifier", "score"]
 
 
+class TestTrainedPooler:
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_the_pooler_trains_in_full(self, nested):
+        result = adapt(
+            PooledBase(nested=nested), lora_config(modules_to_save=("pooler",))
+        )
+        names = [n for n, p in result.model.named_parameters() if p.requires_grad]
+        assert any("pooler" in n and "lora_" not in n for n in names)
+
+    def test_the_pooler_stays_frozen_by_default(self):
+        result = adapt(PooledBase(), lora_config())
+        names = [n for n, p in result.model.named_parameters() if p.requires_grad]
+        assert not any("pooler" in n for n in names)
+
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_the_saved_adapter_holds_the_pooler(self, nested):
+        result = adapt(
+            PooledBase(nested=nested), lora_config(modules_to_save=("pooler",))
+        )
+        saved = get_peft_model_state_dict(result.model)
+        assert any("pooler" in k for k in saved)
+        assert any("classifier" in k for k in saved)
+
+
 class TestAdaptedModel:
     def test_reports_the_trainable_fraction(self):
         assert AdaptedModel(None, 0, 25, 100, True).trainable_fraction == 0.25
@@ -190,6 +240,11 @@ class TestBuildAdaptedModel:
     def test_applies_the_given_targets(self):
         result = build_adapted_model("m", "cpu", lora_targets=("query",))
         assert set(result.model.peft_config["default"].target_modules) == {"query"}
+
+    @pytest.mark.usefixtures("loaded")
+    def test_passes_the_head_modules_through(self):
+        result = build_adapted_model("m", "cpu", head_modules=("pooler",))
+        assert "pooler" in result.model.peft_config["default"].modules_to_save
 
     @pytest.mark.usefixtures("loaded")
     def test_returns_an_adapted_model(self):

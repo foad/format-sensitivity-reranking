@@ -47,6 +47,7 @@ def lora_config(
     rank: int = DEFAULT_LORA_RANK,
     alpha: int = DEFAULT_LORA_ALPHA,
     dropout: float = DEFAULT_LORA_DROPOUT,
+    modules_to_save: tuple[str, ...] | list[str] = (),
 ) -> LoraConfig:
     """Return the adapter configuration for a sequence-classification model.
 
@@ -55,6 +56,7 @@ def lora_config(
         rank: The adapter rank.
         alpha: The adapter scaling factor.
         dropout: The adapter dropout probability.
+        modules_to_save: Modules trained in full beside the adapter.
 
     Returns:
         The configuration for the LoRA adapter.
@@ -66,6 +68,7 @@ def lora_config(
         target_modules=list(targets),
         bias="none",
         task_type=TASK_TYPE,
+        modules_to_save=list(modules_to_save) or None,
     )
 
 
@@ -151,6 +154,7 @@ def build_adapted_model(
     alpha: int = DEFAULT_LORA_ALPHA,
     dropout: float = DEFAULT_LORA_DROPOUT,
     tanh_head: bool = False,
+    head_modules: tuple[str, ...] | list[str] = (),
     eager_attn: bool = False,
     gradient_checkpointing: bool = True,
 ) -> AdaptedModel:
@@ -165,6 +169,7 @@ def build_adapted_model(
         dropout: The adapter dropout probability.
         tanh_head: Whether to replace the classifier head before the adapter
             attaches.
+        head_modules: Head modules trained in full beside the adapter.
         eager_attn: Whether to request the eager attention kernel.
         gradient_checkpointing: Whether the model should use gradient checkpointing.
 
@@ -177,5 +182,5 @@ def build_adapted_model(
         eager_attn=eager_attn,
         tanh_head=tanh_head,
     )
-    config = lora_config(lora_targets, rank, alpha, dropout)
+    config = lora_config(lora_targets, rank, alpha, dropout, head_modules)
     return adapt(base, config, gradient_checkpointing=gradient_checkpointing)

@@ -64,6 +64,7 @@ REGISTRY_CONFIG="$(PYTHONPATH="$REPO_ROOT/src" python3 -m fsr.models.registry \
     --config "$MODEL")"
 registry_value() { sed -n "s/^$1=//p" <<< "$REGISTRY_CONFIG" | tr -d "'"; }
 EFFECTIVE_BATCH=$(( $(registry_value PHYSICAL_BATCH) * $(registry_value GRAD_ACCUM) ))
+WEIGHT_FROM="$(registry_value WEIGHT_FROM)"
 
 EVAL_ARGS=()
 [ -n "${EVAL_BATCH:-}" ] && EVAL_ARGS+=(--batch-size "$EVAL_BATCH")
@@ -105,6 +106,15 @@ wanted() { case ",${STAGES}," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 # Phase 1 chooses the weight once, under seed 0, and every seed reuses it. A
 # seeded run of stages 0 to 3 would select under a different seed.
 SEED="${SEED:-0}"
+if [ -n "$WEIGHT_FROM" ]; then
+    for NUMBER in 1 2 3; do
+        if wanted "$NUMBER"; then
+            echo "ERROR: $MODEL reuses the weight $WEIGHT_FROM chose and has no" \
+                 "Phase 1; set STAGES to 0 and 4 to 10." >&2
+            exit 2
+        fi
+    done
+fi
 if [ "$SEED" != "0" ]; then
     for NUMBER in 0 1 2 3; do
         if wanted "$NUMBER"; then
@@ -226,7 +236,7 @@ select_weight() {
 }
 
 winner_weight() {
-    local OUT="$OUT_DIR/selection/${MODEL}_lambda.json"
+    local OUT="$OUT_DIR/selection/${WEIGHT_FROM:-$MODEL}_lambda.json"
     [ -f "$OUT" ] || { echo "ERROR: $OUT missing; run stages 0 to 3." >&2; exit 2; }
     python3 -c "
 import json, sys
@@ -353,6 +363,7 @@ echo "  weights: ${LAMBDA_LIST[*]}"
 echo "  folds:   ${FOLD_LIST[*]}"
 echo "  stages:  $STAGES"
 echo "  seed:    $SEED"
+[ -n "$WEIGHT_FROM" ] && echo "  weight:  the one $WEIGHT_FROM chose"
 echo "  resume:  every ${CHECKPOINT:-100} steps"
 echo "  batches: train ${PHYSICAL_BATCH:-$(registry_value PHYSICAL_BATCH)}" \
      "x ${GRAD_ACCUM:-$(registry_value GRAD_ACCUM)}," \

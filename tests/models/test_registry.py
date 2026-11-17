@@ -20,7 +20,7 @@ from fsr.models.registry import (
 
 class TestRoster:
     def test_holds_every_variant(self):
-        assert len(MODELS) == 7
+        assert len(MODELS) == 10
 
     def test_slugs_are_unique(self):
         assert len({m.slug for m in MODELS}) == len(MODELS)
@@ -35,6 +35,26 @@ class TestRoster:
     def test_base_models_exclude_the_patched_head(self):
         assert len(BASE_MODELS) == 6
         assert all(not m.tanh_head for m in BASE_MODELS)
+
+    def test_base_models_exclude_the_trained_poolers(self):
+        assert all(not m.head_modules for m in BASE_MODELS)
+
+    @pytest.mark.parametrize("base", ["minilm_l6", "minilm_l12", "mxbai_v1"])
+    def test_a_pooler_variant_matches_its_base(self, base):
+        variant = by_slug(f"{base}_pooler")
+        original = by_slug(base)
+        assert variant.model_id == original.model_id
+        assert variant.lora_targets == original.lora_targets
+        assert variant.effective_batch == original.effective_batch
+
+    @pytest.mark.parametrize("base", ["minilm_l6", "minilm_l12", "mxbai_v1"])
+    def test_a_pooler_variant_trains_the_pooler_at_its_bases_weight(self, base):
+        variant = by_slug(f"{base}_pooler")
+        assert variant.head_modules == ("pooler",)
+        assert variant.weight_from == base
+
+    def test_the_published_roster_reuses_no_weight(self):
+        assert all(m.weight_from is None for m in BASE_MODELS)
 
     def test_base_model_ids_keep_the_published_order(self):
         assert BASE_MODEL_IDS[0] == "cross-encoder/ms-marco-MiniLM-L6-v2"
@@ -123,6 +143,7 @@ class TestConfigLines:
             "GRAD_ACCUM",
             "EVAL_BATCH",
             "TANH_HEAD",
+            "WEIGHT_FROM",
         ]
 
     def test_a_shell_recovers_every_scalar(self):
@@ -133,6 +154,7 @@ class TestConfigLines:
                 "GRAD_ACCUM": str(model.grad_accum),
                 "EVAL_BATCH": str(model.eval_batch),
                 "TANH_HEAD": "1" if model.tanh_head else "0",
+                "WEIGHT_FROM": model.weight_from or "",
             }
             for line in config_lines(model):
                 name, quoted = line.split("=", 1)
@@ -155,6 +177,11 @@ class TestConfigLines:
     def test_reports_an_unpatched_head_as_zero(self):
         lines = dict(ln.split("=", 1) for ln in config_lines(by_slug("mxbai_v1")))
         assert shlex.split(lines["TANH_HEAD"]) == ["0"]
+
+    def test_reports_the_weight_source(self):
+        model = by_slug("mxbai_v1_pooler")
+        lines = dict(ln.split("=", 1) for ln in config_lines(model))
+        assert shlex.split(lines["WEIGHT_FROM"]) == ["mxbai_v1"]
 
 
 class TestMain:

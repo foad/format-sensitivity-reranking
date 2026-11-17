@@ -63,7 +63,8 @@ def load_selection(data_root: Path, model: str) -> dict[str, Any]:
     Returns:
         The selection.
     """
-    return json.loads(selection_path(data_root, model, SWEEP).read_text())
+    source = by_slug(model).weight_from or model
+    return json.loads(selection_path(data_root, source, SWEEP).read_text())
 
 
 def winner_weight(selection: dict[str, Any]) -> float:

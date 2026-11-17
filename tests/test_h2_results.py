@@ -169,6 +169,10 @@ class TestLoaders:
     def test_load_selection_reads_the_winner(self, root):
         assert mod.winner_weight(mod.load_selection(root, "bge_base")) == 1.0
 
+    def test_load_selection_reads_the_reused_weight(self, root):
+        weight = mod.winner_weight(mod.load_selection(root, "minilm_l6_pooler"))
+        assert weight == mod.winner_weight(mod.load_selection(root, "minilm_l6"))
+
     def test_load_comparison_reads_the_named_fold(self, root):
         got = mod.load_comparison(root, "bge_base", "toml", 1.0)
         assert got["held_out_format"] == "toml"
