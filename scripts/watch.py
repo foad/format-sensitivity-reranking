@@ -5,6 +5,7 @@ Usage:
     uv run python scripts/watch.py --pattern 'test_cross_*.progress'
     uv run python scripts/watch.py --pattern '*_jina_v2_*' --pattern '*_mxbai_v1_*'
     uv run python scripts/watch.py --pattern '*' --max-age-hours 12
+    python3 scripts/watch.py
 
 Only progress files are read, whatever the pattern names, so a pattern may
 match a job's logs as well.
@@ -20,6 +21,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TextIO
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from fsr.cli import DEFAULT_DATA_ROOT
 from fsr.models.registry import MODELS
