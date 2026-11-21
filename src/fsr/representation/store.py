@@ -117,13 +117,23 @@ class FeatureStore:
         return self.scores[:, GOLD_COLUMN, self.format_columns(format_names)]
 
 
-def load_store(data_root: Path, split: str, model: str) -> FeatureStore:
+def load_store(
+    data_root: Path,
+    split: str,
+    model: str,
+    arm_name: str | None = None,
+    directory: Path | None = None,
+) -> FeatureStore:
     """Read one model's cached representations from the corpus directory.
 
     Args:
         data_root: The corpus directory.
         split: The split the representations cover.
         model: The registry slug.
+        arm_name: The trained arm they come from, or None for the untrained
+            model.
+        directory: The directory they are kept in, in place of the capture
+            directory.
 
     Returns:
         The store, with the representations memory mapped.
@@ -131,8 +141,8 @@ def load_store(data_root: Path, split: str, model: str) -> FeatureStore:
     Raises:
         SystemExit: If the cache is absent.
     """
-    path = feature_path(data_root, split, model)
-    meta_path = feature_meta_path(data_root, split, model)
+    path = feature_path(data_root, split, model, arm_name, directory)
+    meta_path = feature_meta_path(data_root, split, model, arm_name, directory)
     if not path.exists() or not meta_path.exists():
         raise SystemExit(
             f"no cached representations at {path}; run capture_features.py first."
@@ -140,7 +150,9 @@ def load_store(data_root: Path, split: str, model: str) -> FeatureStore:
     meta = json.loads(meta_path.read_text())
     return FeatureStore(
         features=np.load(path, mmap_mode="r"),
-        scores=np.load(feature_score_path(data_root, split, model)),
+        scores=np.load(
+            feature_score_path(data_root, split, model, arm_name, directory)
+        ),
         record_ids=list(meta["record_ids"]),
         formats=list(meta["formats"]),
         model=meta["model"],

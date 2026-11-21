@@ -8,7 +8,7 @@ H2_SUBDIR = "h2"
 TRAIN_SUBDIR = "train"
 SELECTION_SUBDIR = "selection"
 COMPARISON_SUBDIR = "comparison"
-HEAD_PROBE_SUBDIR = "head_probe"
+FEATURE_SUBDIR = "head_probe"
 ADAPTER_NAME = "adapter"
 ADAPTER_CONFIG_NAME = "adapter_config.json"
 
@@ -17,7 +17,7 @@ PHASE1_FOLD = "5fmt"
 ONLY_PREFIX = "only"
 DEFAULT_SEED = 0
 SPLITS = ("dev", "test", "prose")
-HEAD_PROBE_SPLITS = ("train", "dev")
+FEATURE_SPLITS = ("train", "dev")
 AXES = ("cross", "within", "mrr")
 SWEEPS = ("lambda", "rank")
 
@@ -176,70 +176,88 @@ def adapter_config_path(data_root: Path, model: str, arm_name: str) -> Path:
     return adapter_dir(data_root, model, arm_name) / ADAPTER_CONFIG_NAME
 
 
-def head_probe_dir(data_root: Path) -> Path:
-    """Return the directory that holds the head-probe artefacts."""
-    return h2_dir(data_root) / HEAD_PROBE_SUBDIR
+def feature_dir(data_root: Path) -> Path:
+    """Return the directory that holds the captured representations."""
+    return h2_dir(data_root) / FEATURE_SUBDIR
 
 
-def feature_path(data_root: Path, split: str, model: str) -> Path:
+def feature_path(
+    data_root: Path,
+    split: str,
+    model: str,
+    arm_name: str | None = None,
+    directory: Path | None = None,
+) -> Path:
     """Return the file holding the cached representations of one model.
 
     Args:
         data_root: The corpus directory.
         split: The split the representations cover.
         model: The registry slug.
+        arm_name: The trained arm the representations come from, or None for
+            the untrained model.
+        directory: The directory to keep them in, in place of the capture
+            directory.
 
     Returns:
         The file.
 
     Raises:
-        ValueError: If the split is not one the head probe covers.
+        ValueError: If the split is not one the captures cover.
     """
-    if split not in HEAD_PROBE_SPLITS:
+    if split not in FEATURE_SPLITS:
         raise ValueError(
-            f"unknown head-probe split {split!r}, expected one of: {HEAD_PROBE_SPLITS}"
+            f"unknown capture split {split!r}, expected one of: {FEATURE_SPLITS}"
         )
-    return head_probe_dir(data_root) / f"{split}_features_{model}.npy"
+    suffix = f"_{arm_name}" if arm_name else ""
+    folder = directory if directory is not None else feature_dir(data_root)
+    return folder / f"{split}_features_{model}{suffix}.npy"
 
 
-def feature_score_path(data_root: Path, split: str, model: str) -> Path:
+def feature_score_path(
+    data_root: Path,
+    split: str,
+    model: str,
+    arm_name: str | None = None,
+    directory: Path | None = None,
+) -> Path:
     """Return the file holding the score of every cached representation.
 
     Args:
         data_root: The corpus directory.
         split: The split the scores cover.
         model: The registry slug.
+        arm_name: The trained arm, or None for the untrained model.
+        directory: The directory to keep them in, in place of the capture
+            directory.
 
     Returns:
         The file.
     """
-    return feature_path(data_root, split, model).with_name(
-        f"{split}_scores_{model}.npy"
-    )
+    path = feature_path(data_root, split, model, arm_name, directory)
+    return path.with_name(path.name.replace("_features_", "_scores_", 1))
 
 
-def feature_meta_path(data_root: Path, split: str, model: str) -> Path:
+def feature_meta_path(
+    data_root: Path,
+    split: str,
+    model: str,
+    arm_name: str | None = None,
+    directory: Path | None = None,
+) -> Path:
     """Return the file describing one model's cached representations.
 
     Args:
         data_root: The corpus directory.
         split: The split the representations cover.
         model: The registry slug.
+        arm_name: The trained arm, or None for the untrained model.
+        directory: The directory to keep them in, in place of the capture
+            directory.
 
     Returns:
         The file.
     """
-    return feature_path(data_root, split, model).with_suffix(".json")
-
-
-def frontier_path(data_root: Path, model: str) -> Path:
-    """Return the file holding one model's head-probe frontier.
-
-    Args:
-        data_root: The corpus directory.
-        model: The registry slug.
-
-    Returns:
-        The file.
-    """
-    return head_probe_dir(data_root) / f"frontier_{model}.json"
+    return feature_path(data_root, split, model, arm_name, directory).with_suffix(
+        ".json"
+    )

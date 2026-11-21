@@ -36,7 +36,7 @@ Figures and intervals are in [`notebooks/h2/h2_analysis.ipynb`](notebooks/h2/h2_
 
 **Supporting studies**
 
- - Head-probe study: determining whether mxbai-v1's low responsiveness to the intervention is due to a difference in head shape. [Notebook](notebooks/h2/h2_head_probe.ipynb)
+ - Representation study: determining whether the models represent the metadata formats as distinct directions in their final representation, and whether that is what format sensitivity and the invariance term act on. [Notebook](notebooks/h2/h2_representation.ipynb)
 
  - Prose (nonbox) study: determining whether the LoRA training on infobox content has a negative effect on non-infobox, prose-only content. [Notebook](notebooks/h2/h2_ablation_nonbox.ipynb)
 

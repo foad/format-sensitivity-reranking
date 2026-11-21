@@ -19,7 +19,7 @@ def encoder_module(model: Any) -> nn.Module:
     """Return the module whose output holds the representation a head reads.
 
     Args:
-        model: The loaded cross-encoder.
+        model: The loaded cross-encoder, bare or wrapped by an adapter.
 
     Returns:
         The base transformer, below every pooling and classification layer.
@@ -27,6 +27,9 @@ def encoder_module(model: Any) -> nn.Module:
     Raises:
         RuntimeError: If the model exposes no base transformer.
     """
+    unwrap = getattr(model, "get_base_model", None)
+    if callable(unwrap):
+        model = unwrap()
     base = getattr(model, "base_model", None)
     if base is None or base is model:
         raise RuntimeError(

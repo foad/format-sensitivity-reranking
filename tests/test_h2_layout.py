@@ -236,6 +236,19 @@ class TestProbePaths:
         path = feature_meta_path(tmp_path, "dev", "minilm_l6")
         assert path.name == "dev_features_minilm_l6.json"
 
-    def test_refuses_a_split_the_head_probe_does_not_cover(self, tmp_path):
-        with pytest.raises(ValueError, match="unknown head-probe split"):
+    def test_names_a_trained_arm(self, tmp_path):
+        path = feature_path(tmp_path, "dev", "minilm_l6", "json_lam0")
+        assert path.name == "dev_features_minilm_l6_json_lam0.npy"
+        scores = feature_score_path(tmp_path, "dev", "minilm_l6", "json_lam0")
+        assert scores.name == "dev_scores_minilm_l6_json_lam0.npy"
+        meta = feature_meta_path(tmp_path, "dev", "minilm_l6", "json_lam0")
+        assert meta.name == "dev_features_minilm_l6_json_lam0.json"
+
+    def test_keeps_the_files_in_a_named_directory(self, tmp_path):
+        folder = tmp_path / "scratch"
+        for build in (feature_path, feature_score_path, feature_meta_path):
+            assert build(tmp_path, "dev", "minilm_l6", "x", folder).parent == folder
+
+    def test_refuses_a_split_the_capture_does_not_cover(self, tmp_path):
+        with pytest.raises(ValueError, match="unknown capture split"):
             feature_path(tmp_path, "test", "minilm_l6")

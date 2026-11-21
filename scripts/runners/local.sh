@@ -5,6 +5,9 @@
 #   GPU=<n> fsr_run <log> <script> [args...]
 #
 # GPU specifies the device, falling back to CUDA_VISIBLE_DEVICES, then 0.
+# fsr_hold does nothing here; the Hex runner holds memory on shared nodes.
+
+fsr_hold() { :; }
 
 fsr_run() {
     local LOG="$1"

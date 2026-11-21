@@ -10,7 +10,7 @@
 #   SEEDS       space-separated training seeds (default 1 2 3 4); seed 0 only
 #               for a variant that reuses another model's weight
 #   STAGES      run.sh stages per seed (default 4,5,6,7,8)
-#   HOLD_GB     memory to hold, in GiB, or 0 for no hold (default 3)
+#   HOLD_GB     memory to hold on Hex, in GiB, or 0 for no hold (default 3)
 #   HOLD_HOURS  release the hold after this long whatever happens (default 168)
 #   FSR_RUNNER  runner to source (default scripts/runners/local.sh)
 #   DATA_ROOT   corpus directory (default data/nq)
@@ -39,33 +39,10 @@ for SEED in "${SEED_LIST[@]}"; do
     fi
 done
 STAGES="${STAGES:-4,5,6,7,8}"
-HOLD_GB="${HOLD_GB:-3}"
 OUT_DIR="${DATA_ROOT:-data/nq}/h2"
 mkdir -p "$OUT_DIR"
 
-HOLD_NAME="hold_${MODEL}_gpu${GPU}"
-HOLD_FLAG="$OUT_DIR/${HOLD_NAME}.flag"
-HOLD_PID=""
-
-release() {
-    rm -f "$HOLD_FLAG"
-    if [ -n "$HOLD_PID" ]; then
-        wait "$HOLD_PID" 2>/dev/null || true
-        HOLD_PID=""
-        echo "released the hold on GPU $GPU"
-    fi
-}
-trap release EXIT
-trap 'exit 130' INT TERM
-
-if [ "$HOLD_GB" != "0" ]; then
-    touch "$HOLD_FLAG"
-    GPU="$GPU" fsr_run "$OUT_DIR/${HOLD_NAME}.log" scripts/hold_gpu.py \
-        --gb "$HOLD_GB" --minutes "$(( ${HOLD_HOURS:-168} * 60 ))" \
-        --until-gone "$HOLD_FLAG" > /dev/null &
-    HOLD_PID=$!
-    echo "holding ${HOLD_GB} GiB on GPU $GPU until the sweep ends"
-fi
+fsr_hold "$GPU" "hold_${MODEL}_gpu${GPU}" "$OUT_DIR"
 
 echo "H2 seed sweep for $MODEL on GPU $GPU"
 echo "  seeds:  ${SEED_LIST[*]}"

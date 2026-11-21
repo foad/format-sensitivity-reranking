@@ -1,4 +1,4 @@
-"""Tests for fsr.head_probe.store."""
+"""Tests for fsr.representation.store."""
 
 from __future__ import annotations
 
@@ -9,25 +9,31 @@ import pytest
 import torch
 
 from fsr.h2_layout import feature_meta_path, feature_path, feature_score_path
-from fsr.head_probe.store import FeatureStore, load_store
+from fsr.representation.store import FeatureStore, load_store
 
 MODEL = "minilm_l6"
 FORMATS = ["yaml", "json", "toml"]
 N, C, D = 4, 4, 3
 
 
-def write_cache(root, split="train", formats=None, n_records=N, n_candidates=C):
+def write_cache(
+    root,
+    split="train",
+    formats=None,
+    n_records=N,
+    n_candidates=C,
+    arm_name=None,
+    directory=None,
+):
     names = formats or FORMATS
     shape = (n_records, n_candidates, len(names), D)
     features = np.arange(np.prod(shape), dtype=np.float32).reshape(shape)
-    path = feature_path(root, split, MODEL)
+    where = (root, split, MODEL, arm_name, directory)
+    path = feature_path(*where)
     path.parent.mkdir(parents=True, exist_ok=True)
     np.save(path, features)
-    np.save(
-        feature_score_path(root, split, MODEL),
-        features.sum(axis=-1).astype(np.float32),
-    )
-    feature_meta_path(root, split, MODEL).write_text(
+    np.save(feature_score_path(*where), features.sum(axis=-1).astype(np.float32))
+    feature_meta_path(*where).write_text(
         json.dumps(
             {
                 "model": MODEL,
@@ -58,6 +64,17 @@ class TestLoadStore:
     def test_memory_maps_the_representations(self, tmp_path):
         write_cache(tmp_path)
         assert isinstance(load_store(tmp_path, "train", MODEL).features, np.memmap)
+
+    def test_reads_a_trained_arm_from_a_named_directory(self, tmp_path):
+        folder = tmp_path / "scratch"
+        written = write_cache(tmp_path, arm_name="json_lam0", directory=folder)
+        loaded = load_store(tmp_path, "train", MODEL, "json_lam0", folder)
+        assert np.array_equal(np.asarray(loaded.features), written)
+
+    def test_does_not_mistake_the_untrained_cache_for_an_arm(self, tmp_path):
+        write_cache(tmp_path)
+        with pytest.raises(SystemExit, match="no cached representations"):
+            load_store(tmp_path, "train", MODEL, "json_lam0")
 
     def test_refuses_a_cache_that_is_not_there(self, tmp_path):
         with pytest.raises(SystemExit, match="no cached representations"):

@@ -1,10 +1,12 @@
-"""Cache the encoder representation a frozen model's head reads, per format.
+"""Cache the encoder representation a model's head reads, per format.
 
 Scores the gold passage and its mined negatives in every format, and keeps
-the first-position encoder output for each one. Cuts at the CLS token.
+the first-position encoder output for each one. Cuts at the CLS token. The
+model is the untrained one, or a trained arm's adapter on top of it.
 
-Writes `h2/head_probe/{split}_features_{model}.npy`, the matching `_scores_`
-file, and a JSON description.
+Writes `h2/head_probe/{split}_features_{model}.npy`, or
+`{split}_features_{model}_{arm}.npy` for an arm, in the capture directory
+or the one named, with the matching `_scores_` file and a JSON description.
 """
 
 from __future__ import annotations
@@ -27,7 +29,9 @@ from fsr.corpus.splitting import load_records
 from fsr.features import features_and_scores
 from fsr.formats import FORMAT_NAMES
 from fsr.h2_layout import (
-    HEAD_PROBE_SPLITS,
+    BASE_ARM,
+    FEATURE_SPLITS,
+    adapter_dir,
     feature_meta_path,
     feature_path,
     feature_score_path,
@@ -42,7 +46,7 @@ from fsr.training.data import (
     prepare_train_records,
 )
 
-HEAD_PROBE_NEGATIVES = 15
+CAPTURE_NEGATIVES = 15
 
 
 def load_budget_tokenizers(names: list[str]) -> dict[str, Any]:
@@ -98,14 +102,14 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument(
         "--split",
         default="train",
-        choices=list(HEAD_PROBE_SPLITS),
+        choices=list(FEATURE_SPLITS),
         help="Split to cache",
     )
     ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument(
         "--negatives",
         type=int,
-        default=HEAD_PROBE_NEGATIVES,
+        default=CAPTURE_NEGATIVES,
         help="Negatives cached for each record",
     )
     ap.add_argument(
@@ -125,6 +129,17 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Replace the classifier head. The default is the registry entry",
     )
+    ap.add_argument(
+        "--arm",
+        default=None,
+        help="The trained arm whose adapter to load. The default is untrained",
+    )
+    ap.add_argument(
+        "--feature-dir",
+        type=Path,
+        default=None,
+        help="Directory to write to, in place of the capture directory",
+    )
     ap.add_argument("--progress-file", type=Path, default=None)
     ap.add_argument("--limit", type=int, default=0, help="Cap records for a check")
     ap.add_argument("--force", action="store_true", help="Rebuild a present cache")
@@ -136,13 +151,21 @@ def main() -> None:
     """Cache one model's representations and write them with their scores."""
     args = build_parser().parse_args()
     entry = resolve_model(args.model)
-    out_path = feature_path(args.data_root, args.split, entry.slug)
-    score_path = feature_score_path(args.data_root, args.split, entry.slug)
-    meta_path = feature_meta_path(args.data_root, args.split, entry.slug)
+    arm_name = None if args.arm in (None, BASE_ARM) else args.arm
+    where = (args.data_root, args.split, entry.slug, arm_name, args.feature_dir)
+    out_path = feature_path(*where)
+    score_path = feature_score_path(*where)
+    meta_path = feature_meta_path(*where)
 
     if meta_path.exists() and not args.force:
         print(f"Skipping {entry.slug} {args.split}: {out_path} is present.")
         return
+
+    adapter = None
+    if arm_name is not None:
+        adapter = adapter_dir(args.data_root, entry.slug, arm_name)
+        if not adapter.exists():
+            raise SystemExit(f"no adapter at {adapter}; train the arm first.")
 
     batch_size = args.batch_size or entry.eval_batch
     tanh_head = entry.tanh_head if args.tanh_head is None else args.tanh_head
@@ -150,6 +173,7 @@ def main() -> None:
 
     heading(f"FEATURES  {entry.label}  split={args.split}", width=70)
     print(f"  identifier:  {entry.model_id}")
+    print(f"  adapter:     {adapter or 'none, untrained'}")
     print(f"  device:      {device}")
     print(f"  batch:       {batch_size}")
     print(f"  output:      {out_path}")
@@ -175,7 +199,11 @@ def main() -> None:
 
     tokenizer = load_tokenizer(entry.model_id)
     model = load_model(
-        entry.model_id, device, eager_attn=args.eager_attn, tanh_head=tanh_head
+        entry.model_id,
+        device,
+        lora_adapter_path=str(adapter) if adapter else None,
+        eager_attn=args.eager_attn,
+        tanh_head=tanh_head,
     )
 
     n_candidates = 1 + args.negatives
@@ -217,6 +245,7 @@ def main() -> None:
                 "model": entry.slug,
                 "model_id": entry.model_id,
                 "split": args.split,
+                "arm": arm_name or BASE_ARM,
                 "tanh_head": tanh_head,
                 "formats": list(FORMAT_NAMES),
                 "n_records": len(prepared),

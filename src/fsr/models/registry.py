@@ -210,7 +210,7 @@ def config_lines(model: Model) -> list[str]:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Print the roster, or one model's settings.
+    """Print the roster, the base models, or one model's settings.
 
     Args:
         argv: Command-line arguments. Defaults to the process arguments.
@@ -224,14 +224,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--list", action="store_true", help="Print the slug of every model."
     )
     what.add_argument(
+        "--base", action="store_true", help="Print the slug of every base model."
+    )
+    what.add_argument(
         "--config",
         metavar="SLUG",
         help="Print one model's settings as shell assignments.",
     )
     args = ap.parse_args(argv)
 
-    if args.list:
-        for model in MODELS:
+    if args.list or args.base:
+        for model in MODELS if args.list else BASE_MODELS:
             print(model.slug)
         return 0
 

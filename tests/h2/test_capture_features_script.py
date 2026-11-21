@@ -10,7 +10,12 @@ from scripts.h2 import capture_features as mod
 
 from fsr.corpus.layout import NEGATIVES_NAME, split_dir
 from fsr.formats import FORMAT_NAMES
-from fsr.h2_layout import feature_meta_path, feature_path, feature_score_path
+from fsr.h2_layout import (
+    adapter_dir,
+    feature_meta_path,
+    feature_path,
+    feature_score_path,
+)
 from fsr.reporting import parse_progress
 from tests.fakes import HashingPairTokenizer, ScoringModel
 
@@ -127,6 +132,44 @@ class TestCandidatePairs:
 
         pairs = mod.candidate_pairs([Rec("a"), Rec("b")], "yaml")
         assert [p[0] for p in pairs] == ["a", "a", "b", "b"]
+
+
+class TestArm:
+    def test_loads_the_arms_adapter(self, monkeypatch, data_root, fake_model):
+        adapter = adapter_dir(data_root, SLUG, "json_lam0")
+        adapter.mkdir(parents=True)
+        run(monkeypatch, data_root, "--arm", "json_lam0")
+        assert fake_model["lora_adapter_path"] == str(adapter)
+
+    @pytest.mark.usefixtures("fake_model")
+    def test_names_the_files_after_the_arm(self, monkeypatch, data_root):
+        adapter_dir(data_root, SLUG, "json_lam0").mkdir(parents=True)
+        run(monkeypatch, data_root, "--arm", "json_lam0")
+        path = feature_meta_path(data_root, "train", SLUG, "json_lam0")
+        assert json.loads(path.read_text())["arm"] == "json_lam0"
+        assert not feature_meta_path(data_root, "train", SLUG).exists()
+
+    @pytest.mark.usefixtures("fake_model")
+    def test_writes_to_the_named_directory(self, monkeypatch, data_root):
+        adapter_dir(data_root, SLUG, "json_lam0").mkdir(parents=True)
+        folder = data_root.parent / "scratch"
+        run(monkeypatch, data_root, "--arm", "json_lam0", "--feature-dir", str(folder))
+        assert feature_path(data_root, "train", SLUG, "json_lam0", folder).exists()
+        assert feature_score_path(
+            data_root, "train", SLUG, "json_lam0", folder
+        ).exists()
+
+    @pytest.mark.usefixtures("fake_model")
+    def test_refuses_an_arm_with_no_adapter(self, monkeypatch, data_root):
+        with pytest.raises(SystemExit, match="no adapter"):
+            run(monkeypatch, data_root, "--arm", "json_lam0")
+
+    def test_the_untrained_model_loads_no_adapter(
+        self, monkeypatch, data_root, fake_model
+    ):
+        run(monkeypatch, data_root)
+        assert fake_model["lora_adapter_path"] is None
+        assert meta(data_root)["arm"] == "base"
 
 
 class TestRun:

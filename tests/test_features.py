@@ -49,6 +49,19 @@ class TestEncoderModule:
         model = PooledModel(4)
         assert encoder_module(model) is model.encoder
 
+    def test_unwraps_an_adapter_wrapper(self):
+        inner = PooledModel(4)
+
+        class Wrapped(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.base_model = nn.Linear(4, 1)
+
+            def get_base_model(self):
+                return inner
+
+        assert encoder_module(Wrapped()) is inner.encoder
+
     def test_refuses_a_model_with_no_base_transformer(self):
         with pytest.raises(RuntimeError, match="no base transformer"):
             encoder_module(nn.Linear(4, 1))

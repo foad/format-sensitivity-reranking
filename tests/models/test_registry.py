@@ -190,6 +190,11 @@ class TestMain:
         printed = capsys.readouterr().out.split()
         assert printed == [m.slug for m in MODELS]
 
+    def test_base_prints_every_base_slug(self, capsys):
+        assert main(["--base"]) == 0
+        printed = capsys.readouterr().out.split()
+        assert printed == [m.slug for m in BASE_MODELS]
+
     def test_config_prints_the_settings(self, capsys):
         assert main(["--config", "jina_v2"]) == 0
         assert capsys.readouterr().out.splitlines() == config_lines(by_slug("jina_v2"))
