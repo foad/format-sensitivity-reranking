@@ -1,0 +1,12 @@
+
+Saved results -> data/nq/h2/format_geometry/trained/minilm_l12.json  (0.0 MB)
+
+====================================================================================================
+Format geometry of the trained arms, dev split, mean over folds   2026-11-18 20:31:01
+====================================================================================================
+model          weight  seen size  held size  raw held  white held  white cont  white score  score r2
+----------------------------------------------------------------------------------------------------
+MiniLM-L12      0 (0)      0.007      0.013     0.736       0.032       0.014       -0.006     1.000
+MiniLM-L12   winner (0.1)      0.005      0.010     0.718       0.037       0.014        0.003     1.000
+
+Saved results -> data/nq/h2/format_geometry/trained/summary.json  (0.0 MB)

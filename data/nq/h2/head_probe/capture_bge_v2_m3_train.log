@@ -1,0 +1,31 @@
+
+======================================================================
+FEATURES  bge-v2-m3  split=train   2026-11-18 12:29:53
+======================================================================
+  identifier:  BAAI/bge-reranker-v2-m3
+  device:      cuda
+  batch:       16
+  output:      data/nq/h2/head_probe/train_features_bge_v2_m3.npy
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (970 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (963 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (928 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1154 > 1024). Running this sequence through the model will result in indexing errors
+
+6,131 records kept, 449 dropped
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights:  77%|███████▋  | 302/393 [00:00<00:00, 2963.80it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 2973.13it/s]
+
+Scoring yaml...
+
+Scoring json...
+
+Scoring toml...
+
+Scoring inline_kv...
+
+Scoring markdown...
+  feature capture in 3:52:34
+
+Saved bge_v2_m3 train results -> data/nq/h2/head_probe/train_features_bge_v2_m3.npy  (2009.0 MB)

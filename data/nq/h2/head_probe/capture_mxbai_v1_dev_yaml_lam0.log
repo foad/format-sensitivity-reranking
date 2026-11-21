@@ -1,0 +1,32 @@
+
+======================================================================
+FEATURES  mxbai-v1  split=dev   2026-11-18 20:15:04
+======================================================================
+  identifier:  mixedbread-ai/mxbai-rerank-base-v1
+  adapter:     data/nq/h2/train/mxbai_v1_yaml_lam0/adapter
+  device:      cuda
+  batch:       16
+  output:      /mnt/faster1/ddf33/head_probe/dev_features_mxbai_v1_yaml_lam0.npy
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (711 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (640 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (776 > 512). Running this sequence through the model will result in indexing errors
+
+758 records kept, 29 dropped
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  75%|███████▍  | 151/202 [00:00<00:00, 1505.72it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1558.72it/s]
+
+Scoring yaml...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+
+Scoring json...
+
+Scoring toml...
+
+Scoring inline_kv...
+
+Scoring markdown...
+  feature capture in 0:15:13
+
+Saved mxbai_v1 dev results -> /mnt/faster1/ddf33/head_probe/dev_features_mxbai_v1_yaml_lam0.npy  (186.3 MB)

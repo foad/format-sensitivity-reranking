@@ -1,0 +1,321 @@
+{
+  "model": "minilm_l12",
+  "split": "dev",
+  "rows": [
+    {
+      "kind": "vs untrained",
+      "source": "yaml_lam0",
+      "reference": "untrained",
+      "identity": 0.6926703138450485,
+      "rotation": 0.7394609482849153,
+      "rotation_distance": 0.32497752251102696,
+      "cka": 0.7624540093840442
+    },
+    {
+      "kind": "vs untrained",
+      "source": "json_lam0",
+      "reference": "untrained",
+      "identity": 0.6583113675279307,
+      "rotation": 0.7124707870391357,
+      "rotation_distance": 0.34608838207454795,
+      "cka": 0.7355908284604252
+    },
+    {
+      "kind": "vs untrained",
+      "source": "toml_lam0",
+      "reference": "untrained",
+      "identity": 0.6879668095071808,
+      "rotation": 0.7410767110884935,
+      "rotation_distance": 0.3018174098561994,
+      "cka": 0.7631191802506654
+    },
+    {
+      "kind": "vs untrained",
+      "source": "inline_kv_lam0",
+      "reference": "untrained",
+      "identity": 0.677014686588831,
+      "rotation": 0.7337398349450963,
+      "rotation_distance": 0.3402099212565302,
+      "cka": 0.755996683932355
+    },
+    {
+      "kind": "vs untrained",
+      "source": "markdown_lam0",
+      "reference": "untrained",
+      "identity": 0.6573550876179637,
+      "rotation": 0.7190390839804383,
+      "rotation_distance": 0.3398771502351986,
+      "cka": 0.7429831307440182
+    },
+    {
+      "kind": "vs untrained",
+      "source": "yaml_lam0.1",
+      "reference": "untrained",
+      "identity": 0.6135591025928002,
+      "rotation": 0.7404672227843357,
+      "rotation_distance": 0.3913936849915565,
+      "cka": 0.7633188527231863
+    },
+    {
+      "kind": "vs untrained",
+      "source": "json_lam0.1",
+      "reference": "untrained",
+      "identity": 0.5829005446793215,
+      "rotation": 0.7100457300283108,
+      "rotation_distance": 0.4034479139824246,
+      "cka": 0.7322838236326836
+    },
+    {
+      "kind": "vs untrained",
+      "source": "toml_lam0.1",
+      "reference": "untrained",
+      "identity": 0.5863132496754497,
+      "rotation": 0.7383339023182791,
+      "rotation_distance": 0.40872744666959787,
+      "cka": 0.7610101943844699
+    },
+    {
+      "kind": "vs untrained",
+      "source": "inline_kv_lam0.1",
+      "reference": "untrained",
+      "identity": 0.5747498165260642,
+      "rotation": 0.7279179491604283,
+      "rotation_distance": 0.42126804289445247,
+      "cka": 0.7491793948841943
+    },
+    {
+      "kind": "vs untrained",
+      "source": "markdown_lam0.1",
+      "reference": "untrained",
+      "identity": 0.5812919376013357,
+      "rotation": 0.7278322037392796,
+      "rotation_distance": 0.3985769589820687,
+      "cka": 0.7508531072995722
+    },
+    {
+      "kind": "lambda 0 vs winner",
+      "source": "yaml_lam0.1",
+      "reference": "yaml_lam0",
+      "identity": 0.9205549726908668,
+      "rotation": 0.9757868099449255,
+      "rotation_distance": 0.1317129182662533,
+      "cka": 0.9824784660701686
+    },
+    {
+      "kind": "lambda 0 vs winner",
+      "source": "json_lam0.1",
+      "reference": "json_lam0",
+      "identity": 0.9390311739974812,
+      "rotation": 0.9829054026700723,
+      "rotation_distance": 0.05492044937659363,
+      "cka": 0.9860989037958021
+    },
+    {
+      "kind": "lambda 0 vs winner",
+      "source": "toml_lam0.1",
+      "reference": "toml_lam0",
+      "identity": 0.9059467216095922,
+      "rotation": 0.9740050184073,
+      "rotation_distance": 0.13417707929883033,
+      "cka": 0.9809694100656949
+    },
+    {
+      "kind": "lambda 0 vs winner",
+      "source": "inline_kv_lam0.1",
+      "reference": "inline_kv_lam0",
+      "identity": 0.9115475915311019,
+      "rotation": 0.9744232689575292,
+      "rotation_distance": 0.13121829927844614,
+      "cka": 0.9807913263654068
+    },
+    {
+      "kind": "lambda 0 vs winner",
+      "source": "markdown_lam0.1",
+      "reference": "markdown_lam0",
+      "identity": 0.9198021171085629,
+      "rotation": 0.9753387841252709,
+      "rotation_distance": 0.15825481668873143,
+      "cka": 0.9836173192481453
+    },
+    {
+      "kind": "fold vs fold, lambda 0",
+      "source": "yaml_lam0",
+      "reference": "json_lam0",
+      "identity": 0.9850538550668126,
+      "rotation": 0.9899788473644054,
+      "rotation_distance": 0.03334707723826508,
+      "cka": 0.992067873698196
+    },
+    {
+      "kind": "fold vs fold, lambda 0",
+      "source": "yaml_lam0",
+      "reference": "toml_lam0",
+      "identity": 0.9938883205192264,
+      "rotation": 0.9962973314373811,
+      "rotation_distance": 0.014655337885053799,
+      "cka": 0.9973532605795532
+    },
+    {
+      "kind": "fold vs fold, lambda 0",
+      "source": "yaml_lam0",
+      "reference": "inline_kv_lam0",
+      "identity": 0.9920837748146729,
+      "rotation": 0.9958267064332695,
+      "rotation_distance": 0.017779994029017032,
+      "cka": 0.996775005337473
+    },
+    {
+      "kind": "fold vs fold, lambda 0",
+      "source": "yaml_lam0",
+      "reference": "markdown_lam0",
+      "identity": 0.9892510054263907,
+      "rotation": 0.9948023187484927,
+      "rotation_distance": 0.016575130471957578,
+      "cka": 0.9958452228563298
+    },
+    {
+      "kind": "fold vs fold, lambda 0",
+      "source": "json_lam0",
+      "reference": "toml_lam0",
+      "identity": 0.9872470977456986,
+      "rotation": 0.9909646853180076,
+      "rotation_distance": 0.024098124129639575,
+      "cka": 0.9921911999007818
+    },
+    {
+      "kind": "fold vs fold, lambda 0",
+      "source": "json_lam0",
+      "reference": "inline_kv_lam0",
+      "identity": 0.9876318693763417,
+      "rotation": 0.9900498976283195,
+      "rotation_distance": 0.019753502415003232,
+      "cka": 0.9913526457473091
+    },
+    {
+      "kind": "fold vs fold, lambda 0",
+      "source": "json_lam0",
+      "reference": "markdown_lam0",
+      "identity": 0.9840175583831297,
+      "rotation": 0.9898367806089452,
+      "rotation_distance": 0.032039865690589475,
+      "cka": 0.9917030156020286
+    },
+    {
+      "kind": "fold vs fold, lambda 0",
+      "source": "toml_lam0",
+      "reference": "inline_kv_lam0",
+      "identity": 0.9926461152746285,
+      "rotation": 0.9952956197594836,
+      "rotation_distance": 0.016770219888608606,
+      "cka": 0.9962575976232335
+    },
+    {
+      "kind": "fold vs fold, lambda 0",
+      "source": "toml_lam0",
+      "reference": "markdown_lam0",
+      "identity": 0.9919865983406495,
+      "rotation": 0.995880785937904,
+      "rotation_distance": 0.015529016222335601,
+      "cka": 0.9969690958559728
+    },
+    {
+      "kind": "fold vs fold, lambda 0",
+      "source": "inline_kv_lam0",
+      "reference": "markdown_lam0",
+      "identity": 0.9913986213392532,
+      "rotation": 0.9952543479457269,
+      "rotation_distance": 0.023243337801001462,
+      "cka": 0.9964708893951822
+    },
+    {
+      "kind": "fold vs fold, lambda 0.1",
+      "source": "yaml_lam0.1",
+      "reference": "json_lam0.1",
+      "identity": 0.9742355154514322,
+      "rotation": 0.9838471842979319,
+      "rotation_distance": 0.04522502045864252,
+      "cka": 0.9874506254253513
+    },
+    {
+      "kind": "fold vs fold, lambda 0.1",
+      "source": "yaml_lam0.1",
+      "reference": "toml_lam0.1",
+      "identity": 0.9869482950595155,
+      "rotation": 0.9958553888615954,
+      "rotation_distance": 0.017527186756790214,
+      "cka": 0.9978438318792175
+    },
+    {
+      "kind": "fold vs fold, lambda 0.1",
+      "source": "yaml_lam0.1",
+      "reference": "inline_kv_lam0.1",
+      "identity": 0.9767670262786883,
+      "rotation": 0.9929793027867633,
+      "rotation_distance": 0.03338055722707983,
+      "cka": 0.9961313855623244
+    },
+    {
+      "kind": "fold vs fold, lambda 0.1",
+      "source": "yaml_lam0.1",
+      "reference": "markdown_lam0.1",
+      "identity": 0.9857691110095519,
+      "rotation": 0.9949860796151394,
+      "rotation_distance": 0.020028364457302494,
+      "cka": 0.9969464904719482
+    },
+    {
+      "kind": "fold vs fold, lambda 0.1",
+      "source": "json_lam0.1",
+      "reference": "toml_lam0.1",
+      "identity": 0.9672360979054526,
+      "rotation": 0.9811218796048184,
+      "rotation_distance": 0.049697076702863885,
+      "cka": 0.9858756630978238
+    },
+    {
+      "kind": "fold vs fold, lambda 0.1",
+      "source": "json_lam0.1",
+      "reference": "inline_kv_lam0.1",
+      "identity": 0.9647917064115317,
+      "rotation": 0.9808250245184001,
+      "rotation_distance": 0.055473137508408876,
+      "cka": 0.9853296655472642
+    },
+    {
+      "kind": "fold vs fold, lambda 0.1",
+      "source": "json_lam0.1",
+      "reference": "markdown_lam0.1",
+      "identity": 0.9658977601414691,
+      "rotation": 0.9800433291991091,
+      "rotation_distance": 0.054820051938262004,
+      "cka": 0.9848630648917271
+    },
+    {
+      "kind": "fold vs fold, lambda 0.1",
+      "source": "toml_lam0.1",
+      "reference": "inline_kv_lam0.1",
+      "identity": 0.9874556838734316,
+      "rotation": 0.9959358754426674,
+      "rotation_distance": 0.020996132398984235,
+      "cka": 0.9975021707399183
+    },
+    {
+      "kind": "fold vs fold, lambda 0.1",
+      "source": "toml_lam0.1",
+      "reference": "markdown_lam0.1",
+      "identity": 0.9919885292410919,
+      "rotation": 0.9969348697499455,
+      "rotation_distance": 0.016718423708614205,
+      "cka": 0.9980395284281538
+    },
+    {
+      "kind": "fold vs fold, lambda 0.1",
+      "source": "inline_kv_lam0.1",
+      "reference": "markdown_lam0.1",
+      "identity": 0.9858596005200531,
+      "rotation": 0.9955142066359246,
+      "rotation_distance": 0.02024547672676641,
+      "cka": 0.9973431300525565
+    }
+  ]
+}

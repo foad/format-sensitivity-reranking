@@ -1,0 +1,89 @@
+
+======================================================================
+HEAD PROBE  bge-base   2026-11-18 16:41:24
+======================================================================
+  fit on:      6,131 train records
+  measure on:  758 dev records
+  heads:       linear wide_linear gelu tanh deep
+  weights:     0.0 0.01 0.1 1.0 10.0
+  seeds:       0 1 2
+  device:      cuda
+  negatives:   7 to fit, 15 to measure
+  linear/lam0/seed0            max|d|=0.2857  MRR=0.8793
+  linear/lam0/seed1            max|d|=0.2847  MRR=0.8793
+  linear/lam0/seed2            max|d|=0.2855  MRR=0.8793
+  linear/lam0.01/seed0         max|d|=0.2849  MRR=0.8793
+  linear/lam0.01/seed1         max|d|=0.2842  MRR=0.8793
+  linear/lam0.01/seed2         max|d|=0.2845  MRR=0.8793
+  linear/lam0.1/seed0          max|d|=0.2754  MRR=0.8793
+  linear/lam0.1/seed1          max|d|=0.2752  MRR=0.8793
+  linear/lam0.1/seed2          max|d|=0.2746  MRR=0.8793
+  linear/lam1/seed0            max|d|=0.2453  MRR=0.8793
+  linear/lam1/seed1            max|d|=0.2454  MRR=0.8793
+  linear/lam1/seed2            max|d|=0.2447  MRR=0.8794
+  linear/lam10/seed0           max|d|=0.1875  MRR=0.8793
+  linear/lam10/seed1           max|d|=0.1883  MRR=0.8794
+  linear/lam10/seed2           max|d|=0.1863  MRR=0.8794
+  wide_linear/lam0/seed0       max|d|=0.2839  MRR=0.8793
+  wide_linear/lam0/seed1       max|d|=0.2835  MRR=0.8793
+  wide_linear/lam0/seed2       max|d|=0.2835  MRR=0.8793
+  wide_linear/lam0.01/seed0    max|d|=0.2818  MRR=0.8795
+  wide_linear/lam0.01/seed1    max|d|=0.2816  MRR=0.8795
+  wide_linear/lam0.01/seed2    max|d|=0.2817  MRR=0.8794
+  wide_linear/lam0.1/seed0     max|d|=0.2705  MRR=0.8794
+  wide_linear/lam0.1/seed1     max|d|=0.2710  MRR=0.8795
+  wide_linear/lam0.1/seed2     max|d|=0.2705  MRR=0.8795
+  wide_linear/lam1/seed0       max|d|=0.2392  MRR=0.8794
+  wide_linear/lam1/seed1       max|d|=0.2398  MRR=0.8793
+  wide_linear/lam1/seed2       max|d|=0.2385  MRR=0.8794
+  wide_linear/lam10/seed0      max|d|=0.1852  MRR=0.8794
+  wide_linear/lam10/seed1      max|d|=0.1855  MRR=0.8795
+  wide_linear/lam10/seed2      max|d|=0.1851  MRR=0.8794
+  gelu/lam0/seed0              max|d|=0.2800  MRR=0.8793
+  gelu/lam0/seed1              max|d|=0.2803  MRR=0.8793
+  gelu/lam0/seed2              max|d|=0.2802  MRR=0.8793
+  gelu/lam0.01/seed0           max|d|=0.2789  MRR=0.8794
+  gelu/lam0.01/seed1           max|d|=0.2792  MRR=0.8794
+  gelu/lam0.01/seed2           max|d|=0.2792  MRR=0.8794
+  gelu/lam0.1/seed0            max|d|=0.2671  MRR=0.8793
+  gelu/lam0.1/seed1            max|d|=0.2677  MRR=0.8793
+  gelu/lam0.1/seed2            max|d|=0.2676  MRR=0.8794
+  gelu/lam1/seed0              max|d|=0.2316  MRR=0.8793
+  gelu/lam1/seed1              max|d|=0.2317  MRR=0.8793
+  gelu/lam1/seed2              max|d|=0.2325  MRR=0.8793
+  gelu/lam10/seed0             max|d|=0.1850  MRR=0.8791
+  gelu/lam10/seed1             max|d|=0.1852  MRR=0.8793
+  gelu/lam10/seed2             max|d|=0.1852  MRR=0.8793
+  tanh/lam0/seed0              max|d|=0.2803  MRR=0.8793
+  tanh/lam0/seed1              max|d|=0.2804  MRR=0.8793
+  tanh/lam0/seed2              max|d|=0.2808  MRR=0.8793
+  tanh/lam0.01/seed0           max|d|=0.2790  MRR=0.8793
+  tanh/lam0.01/seed1           max|d|=0.2792  MRR=0.8793
+  tanh/lam0.01/seed2           max|d|=0.2797  MRR=0.8793
+  tanh/lam0.1/seed0            max|d|=0.2675  MRR=0.8793
+  tanh/lam0.1/seed1            max|d|=0.2674  MRR=0.8793
+  tanh/lam0.1/seed2            max|d|=0.2681  MRR=0.8793
+  tanh/lam1/seed0              max|d|=0.2314  MRR=0.8793
+  tanh/lam1/seed1              max|d|=0.2313  MRR=0.8793
+  tanh/lam1/seed2              max|d|=0.2318  MRR=0.8793
+  tanh/lam10/seed0             max|d|=0.1855  MRR=0.8793
+  tanh/lam10/seed1             max|d|=0.1851  MRR=0.8793
+  tanh/lam10/seed2             max|d|=0.1857  MRR=0.8793
+  deep/lam0/seed0              max|d|=0.2800  MRR=0.8793
+  deep/lam0/seed1              max|d|=0.2808  MRR=0.8793
+  deep/lam0/seed2              max|d|=0.2812  MRR=0.8793
+  deep/lam0.01/seed0           max|d|=0.2783  MRR=0.8793
+  deep/lam0.01/seed1           max|d|=0.2794  MRR=0.8793
+  deep/lam0.01/seed2           max|d|=0.2796  MRR=0.8793
+  deep/lam0.1/seed0            max|d|=0.2661  MRR=0.8793
+  deep/lam0.1/seed1            max|d|=0.2676  MRR=0.8793
+  deep/lam0.1/seed2            max|d|=0.2677  MRR=0.8793
+  deep/lam1/seed0              max|d|=0.2300  MRR=0.8793
+  deep/lam1/seed1              max|d|=0.2316  MRR=0.8793
+  deep/lam1/seed2              max|d|=0.2327  MRR=0.8793
+  deep/lam10/seed0             max|d|=0.1887  MRR=0.8794
+  deep/lam10/seed1             max|d|=0.1855  MRR=0.8794
+  deep/lam10/seed2             max|d|=0.1850  MRR=0.8794
+  head sweep in 0:21:30
+
+Saved bge_base frontier results -> data/nq/h2/head_probe/frontier_bge_base.json  (0.3 MB)

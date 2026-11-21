@@ -1,0 +1,15 @@
+
+Saved results -> data/nq/h2/format_geometry/robustness/summary.json  (0.0 MB)
+
+====================================================================================================
+Whitening robustness of the representation study   2026-11-21 01:05:49
+====================================================================================================
+shrinkage   seed  tested  bge-base sep  next lowest  pooled rho  min ratio  directions  sensitivity  mitigation
+---------------------------------------------------------------------------------------------------------------
+0.0001         0     yes         0.094        0.727       +0.38       1.00       holds        holds       holds
+0.001          0     yes         0.053        0.636       +0.39       0.96       holds        holds       holds
+0.01           0     yes         0.078        0.517       +0.40       0.92       holds        holds       holds
+0.1            0     yes         0.087        0.322       +0.46       0.86       holds        holds       FAILS
+0.001          1     yes         0.055        0.629       +0.36       0.95       holds        holds       holds
+0.001          2     yes         0.062        0.629       +0.38       0.95       holds        holds       holds
+1              0      no         0.088        0.149       +0.56       0.78       FAILS        holds       FAILS

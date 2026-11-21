@@ -1,0 +1,66 @@
+
+Saved results -> data/nq/h2/format_geometry/directions/minilm_l6.json  (0.1 MB)
+
+====================================================================================================
+MiniLM-L6: format directions, whitened space   2026-11-18 21:20:51
+====================================================================================================
+format                  condition  consist (null)  common    dims (null)    size  score d
+----------------------------------------------------------------------------------------------------
+yaml                    untrained   0.441 (0.040)   0.176    23.5 (39.5)  0.0693    +0.55
+yaml            lambda 0 held out   0.364 (0.034)   0.112    51.0 (77.0)  0.0905    -0.07
+yaml         lambda 0 in training   0.372 (0.034)   0.117    47.4 (76.7)  0.0919    +0.00
+yaml            lambda 1 held out   0.459 (0.039)   0.192    20.3 (39.4)  0.0714    -0.14
+yaml         lambda 1 in training   0.442 (0.039)   0.177    23.7 (45.7)  0.0703    -0.35
+json                    untrained   0.473 (0.032)   0.195    18.7 (39.7)  0.1316    -0.26
+json         lambda 0 in training   0.392 (0.028)   0.129    39.3 (73.9)  0.1778    +0.31
+json            lambda 0 held out   0.372 (0.028)   0.114    47.7 (85.4)  0.1942    +0.15
+json         lambda 1 in training   0.461 (0.033)   0.189    20.0 (43.2)  0.1376    +0.34
+json            lambda 1 held out   0.453 (0.033)   0.181    21.5 (47.3)  0.1428    +0.26
+toml                    untrained   0.473 (0.032)   0.202    18.3 (38.4)  0.0550    -0.57
+toml         lambda 0 in training   0.372 (0.028)   0.113    49.4 (76.1)  0.0804    -0.08
+toml            lambda 0 held out   0.391 (0.028)   0.126    41.4 (69.4)  0.0786    -0.15
+toml         lambda 1 in training   0.420 (0.032)   0.159    28.0 (42.8)  0.0560    -0.12
+toml            lambda 1 held out   0.419 (0.031)   0.158    28.2 (44.5)  0.0557    -0.12
+inline_kv               untrained   0.482 (0.038)   0.215    16.5 (39.9)  0.0807    -0.01
+inline_kv    lambda 0 in training   0.393 (0.033)   0.135    37.9 (77.5)  0.1087    -0.14
+inline_kv       lambda 0 held out   0.405 (0.033)   0.145    33.6 (71.9)  0.1098    -0.19
+inline_kv    lambda 1 in training   0.451 (0.038)   0.189    20.9 (44.1)  0.0877    -0.26
+inline_kv       lambda 1 held out   0.449 (0.037)   0.187    21.0 (45.8)  0.0904    -0.36
+markdown                untrained   0.547 (0.032)   0.273    10.0 (38.5)  0.0961    +0.30
+markdown     lambda 0 in training   0.466 (0.026)   0.188    19.6 (74.6)  0.1299    -0.13
+markdown        lambda 0 held out   0.463 (0.026)   0.187    19.7 (75.0)  0.1261    -0.20
+markdown     lambda 1 in training   0.529 (0.030)   0.259    10.7 (43.2)  0.1012    +0.26
+markdown        lambda 1 held out   0.546 (0.033)   0.278     9.2 (41.8)  0.1119    -0.03
+
+Saved results -> data/nq/h2/format_geometry/directions/minilm_l12.json  (0.1 MB)
+
+====================================================================================================
+MiniLM-L12: format directions, whitened space   2026-11-18 21:21:20
+====================================================================================================
+format                  condition  consist (null)  common    dims (null)    size  score d
+----------------------------------------------------------------------------------------------------
+yaml                    untrained   0.275 (0.032)   0.040    78.1 (92.1)  0.1246    +0.23
+yaml            lambda 0 held out   0.231 (0.028)   0.036   87.8 (117.3)  0.1097    -0.11
+yaml         lambda 0 in training   0.230 (0.028)   0.035   79.4 (115.4)  0.1080    -0.13
+yaml          lambda 0.1 held out   0.240 (0.031)   0.040   86.0 (110.4)  0.0900    -0.18
+yaml       lambda 0.1 in training   0.250 (0.032)   0.041   67.8 (107.7)  0.0912    -0.29
+json                    untrained   0.283 (0.027)   0.037    78.3 (93.3)  0.2769    +0.12
+json         lambda 0 in training   0.254 (0.024)   0.045   94.7 (115.9)  0.2114    +0.20
+json            lambda 0 held out   0.249 (0.024)   0.040   96.0 (115.6)  0.2226    +0.03
+json       lambda 0.1 in training   0.294 (0.027)   0.059   76.3 (105.9)  0.1798    +0.30
+json          lambda 0.1 held out   0.253 (0.025)   0.042   96.8 (117.4)  0.2064    +0.06
+toml                    untrained   0.268 (0.026)   0.032    79.3 (92.4)  0.1306    -0.46
+toml         lambda 0 in training   0.237 (0.024)   0.036  100.2 (116.4)  0.0893    -0.09
+toml            lambda 0 held out   0.242 (0.024)   0.037  100.7 (117.6)  0.0890    -0.11
+toml       lambda 0.1 in training   0.248 (0.027)   0.039   92.7 (107.7)  0.0715    -0.04
+toml          lambda 0.1 held out   0.262 (0.028)   0.044   91.2 (108.7)  0.0699    -0.03
+inline_kv               untrained   0.284 (0.032)   0.041    82.7 (94.7)  0.1419    -0.27
+inline_kv    lambda 0 in training   0.251 (0.028)   0.044   91.4 (114.2)  0.1188    -0.09
+inline_kv       lambda 0 held out   0.253 (0.028)   0.046   89.6 (111.6)  0.1184    -0.16
+inline_kv  lambda 0.1 in training   0.265 (0.032)   0.049   83.8 (103.7)  0.0991    -0.10
+inline_kv     lambda 0.1 held out   0.260 (0.033)   0.045    83.1 (95.6)  0.0980    -0.19
+markdown                untrained   0.366 (0.027)   0.064    45.0 (92.7)  0.1981    +0.27
+markdown     lambda 0 in training   0.299 (0.024)   0.061   51.7 (113.9)  0.1547    +0.06
+markdown        lambda 0 held out   0.303 (0.024)   0.064   49.6 (114.3)  0.1548    +0.05
+markdown   lambda 0.1 in training   0.335 (0.026)   0.076   45.1 (107.8)  0.1314    +0.04
+markdown      lambda 0.1 held out   0.380 (0.028)   0.095    32.0 (94.0)  0.1270    -0.00

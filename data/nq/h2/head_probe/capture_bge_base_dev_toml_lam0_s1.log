@@ -1,0 +1,32 @@
+
+======================================================================
+FEATURES  bge-base  split=dev   2026-11-19 11:11:40
+======================================================================
+  identifier:  BAAI/bge-reranker-base
+  adapter:     data/nq/h2/train/bge_base_toml_lam0_s1/adapter
+  device:      cuda
+  batch:       16
+  output:      /mnt/faster1/ddf33/head_probe/dev_features_bge_base_toml_lam0_s1.npy
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (711 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (640 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (776 > 512). Running this sequence through the model will result in indexing errors
+
+758 records kept, 29 dropped
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11487.64it/s]
+
+Scoring yaml...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+
+Scoring json...
+
+Scoring toml...
+
+Scoring inline_kv...
+
+Scoring markdown...
+  feature capture in 0:10:03
+
+Saved bge_base dev results -> /mnt/faster1/ddf33/head_probe/dev_features_bge_base_toml_lam0_s1.npy  (186.3 MB)

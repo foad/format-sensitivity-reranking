@@ -1,0 +1,12 @@
+
+Saved results -> data/nq/h2/format_geometry/robustness/summary.json  (0.0 MB)
+
+====================================================================================================
+Whitening robustness of the representation study   2026-11-21 01:19:37
+====================================================================================================
+                           bge_base_separation  other_lowest_separation  pooled_rho  lowest_ratio  highest_ratio
+shrinkage 0.0001, split 0                0.094                    0.727       0.376         1.031          1.279
+shrinkage 0.001, split 0                 0.053                    0.636       0.386         1.004          1.326
+shrinkage 0.01, split 0                  0.078                    0.517       0.399         0.978          1.526
+shrinkage 0.001, split 1                 0.055                    0.629       0.360         0.994          1.382
+shrinkage 0.001, split 2                 0.062                    0.629       0.382         1.000          1.316

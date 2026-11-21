@@ -1,0 +1,32 @@
+
+======================================================================
+FEATURES  MiniLM-L6  split=dev   2026-11-18 23:40:55
+======================================================================
+  identifier:  cross-encoder/ms-marco-MiniLM-L6-v2
+  adapter:     data/nq/h2/train/minilm_l6_inline_kv_lam0_s2/adapter
+  device:      cuda
+  batch:       32
+  output:      /mnt/faster1/ddf33/head_probe/dev_features_minilm_l6_inline_kv_lam0_s2.npy
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (711 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (640 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (517 > 512). Running this sequence through the model will result in indexing errors
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (776 > 512). Running this sequence through the model will result in indexing errors
+
+758 records kept, 29 dropped
+Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 8971.86it/s]
+
+Scoring yaml...
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+
+Scoring json...
+
+Scoring toml...
+
+Scoring inline_kv...
+
+Scoring markdown...
+  feature capture in 0:02:30
+
+Saved minilm_l6 dev results -> /mnt/faster1/ddf33/head_probe/dev_features_minilm_l6_inline_kv_lam0_s2.npy  (93.1 MB)
