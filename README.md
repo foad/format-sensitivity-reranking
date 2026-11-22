@@ -40,6 +40,8 @@ Figures and intervals are in [`notebooks/h2/h2_analysis.ipynb`](notebooks/h2/h2_
 
  - Prose (nonbox) study: determining whether the LoRA training on infobox content has a negative effect on non-infobox, prose-only content. [Notebook](notebooks/h2/h2_ablation_nonbox.ipynb)
 
+ - Standardisation study: determining whether converting every record to a single serialisation, with or without fine-tuning on that serialisation, removes the need to train for format invariance. [Notebook](notebooks/h2/h2_standardisation.ipynb)
+
 ## Repository layout
 
 ```

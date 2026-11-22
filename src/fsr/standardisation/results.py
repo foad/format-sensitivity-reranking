@@ -181,7 +181,6 @@ def _policies(tensor: Any) -> dict[str, np.ndarray]:
     leads = uniform_leads(tensor)
     return {
         "standardised_mean": leads.mean(axis=1),
-        "standardised_best": leads[:, int(leads.mean(axis=0).argmax())].astype(float),
         MIXED: mixed_lead(tensor),
     }
 
@@ -211,6 +210,11 @@ def _mean_policies(loaded: list[Any]) -> dict[str, np.ndarray]:
     """Return each query's outcome under every policy, averaged over seeds."""
     per = [_policies(tensor) for tensor in loaded]
     return {name: np.mean([p[name] for p in per], axis=0) for name in per[0]}
+
+
+def _seed_mean(rows: list[dict[str, Any]]) -> dict[str, float]:
+    """Average a measure that was taken once per seed, key by key."""
+    return {key: float(np.mean([row[key] for row in rows])) for key in rows[0]}
 
 
 def common_training_seeds(
@@ -415,36 +419,48 @@ def format_table(
 
 
 def guardrail_table(
-    data_root: Path, slugs: Sequence[str], split: str = SPLIT
+    data_root: Path,
+    slugs: Sequence[str],
+    split: str = SPLIT,
+    seeds: Sequence[int] = (DEFAULT_TRAINING_SEED,),
 ) -> pd.DataFrame:
-    """Check that mixing the serialisations keeps the ranking quality.
+    """Check that mixing the serialisations keeps the share of queries led.
 
     The best single format is the reference, as the strongest standardisation
-    on offer.
+    on offer. Both sides are the share of queries the gold leads, measured
+    once per seed and averaged.
 
     Args:
         data_root: The corpus directory.
         slugs: The registry slugs to report.
         split: The split the queries come from.
+        seeds: The training seeds to average the trained conditions over.
 
     Returns:
-        One row per model and condition, holding the mean reciprocal rank of
-        the best single format and of the mixed corpus, the change, and
-        whether the change stays inside the margin.
+        One row per model and condition, holding the share the gold leads
+        under the best single format, over the five formats and on the mixed
+        corpus, the change, and whether the change stays inside the margin.
     """
     rows = {}
     for slug in slugs:
-        for condition, tensor in tensors(data_root, slug, split).items():
-            uniform = uniform_table(tensor)["mrr"]
-            best = float(uniform.max())
-            mixed = float(mixed_lead(tensor).mean())
+        for condition, loaded in _seeded(data_root, slug, split, seeds).items():
+            per_seed = []
+            for tensor in loaded:
+                uniform = uniform_table(tensor)["top1"]
+                per_seed.append(
+                    {
+                        "uniform_best_top1": float(uniform.max()),
+                        "uniform_mean_top1": float(uniform.mean()),
+                        "mixed_top1": float(mixed_lead(tensor).mean()),
+                    }
+                )
+            row = _seed_mean(per_seed)
+            delta = row["mixed_top1"] - row["uniform_best_top1"]
             rows[(by_slug(slug).label, condition)] = {
-                "uniform_best_mrr": best,
-                "uniform_mean_mrr": float(uniform.mean()),
-                "mixed_top1": mixed,
-                "delta": mixed - best,
+                **row,
+                "delta": delta,
                 "ni_margin": NI_MARGIN,
-                "kept": bool(mixed - best > -NI_MARGIN),
+                "kept": bool(delta > -NI_MARGIN),
             }
     frame = pd.DataFrame.from_dict(rows, orient="index")
     frame.index = pd.MultiIndex.from_tuples(frame.index, names=["model", "condition"])
@@ -985,6 +1001,7 @@ def inconsistency_table(
     slugs: Sequence[str],
     split: str = SPLIT,
     subset: dict[str, np.ndarray] | None = None,
+    seeds: Sequence[int] = (DEFAULT_TRAINING_SEED,),
 ) -> pd.DataFrame:
     """Measure the disagreement between the five standardisation choices.
 
@@ -993,6 +1010,8 @@ def inconsistency_table(
         slugs: The registry slugs to report.
         split: The split the queries come from.
         subset: The queries to measure, by slug, or None for every query.
+        seeds: The training seeds to average the trained conditions over,
+            each measured on its own before the average.
 
     Returns:
         One row per model and condition, holding the answerable pool and the
@@ -1001,9 +1020,9 @@ def inconsistency_table(
     rows = {}
     for slug in slugs:
         index = slice(None) if subset is None else subset[slug]
-        for condition, tensor in tensors(data_root, slug, split).items():
-            rows[(by_slug(slug).label, condition)] = inconsistency(
-                uniform_leads(tensor)[index]
+        for condition, loaded in _seeded(data_root, slug, split, seeds).items():
+            rows[(by_slug(slug).label, condition)] = _seed_mean(
+                [inconsistency(uniform_leads(tensor)[index]) for tensor in loaded]
             )
     frame = pd.DataFrame.from_dict(rows, orient="index")
     frame.index = pd.MultiIndex.from_tuples(frame.index, names=["model", "condition"])
@@ -1015,6 +1034,7 @@ def oracle_table(
     slugs: Sequence[str],
     split: str = SPLIT,
     subset: dict[str, np.ndarray] | None = None,
+    seeds: Sequence[int] = (DEFAULT_TRAINING_SEED,),
 ) -> pd.DataFrame:
     """Bound what any choice of format can do to the leading passage.
 
@@ -1023,6 +1043,8 @@ def oracle_table(
         slugs: The registry slugs to report.
         split: The split the queries come from.
         subset: The queries to measure, by slug, or None for every query.
+        seeds: The training seeds to average the trained conditions over,
+            each measured on its own before the average.
 
     Returns:
         One row per model and condition, holding the share of queries the
@@ -1032,9 +1054,9 @@ def oracle_table(
     rows = {}
     for slug in slugs:
         index = slice(None) if subset is None else subset[slug]
-        for condition, tensor in tensors(data_root, slug, split).items():
-            rows[(by_slug(slug).label, condition)] = oracle_band(
-                uniform_leads(tensor)[index]
+        for condition, loaded in _seeded(data_root, slug, split, seeds).items():
+            rows[(by_slug(slug).label, condition)] = _seed_mean(
+                [oracle_band(uniform_leads(tensor)[index]) for tensor in loaded]
             )
     frame = pd.DataFrame.from_dict(rows, orient="index")
     frame.index = pd.MultiIndex.from_tuples(frame.index, names=["model", "condition"])

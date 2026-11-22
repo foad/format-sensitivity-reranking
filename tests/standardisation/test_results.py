@@ -122,7 +122,7 @@ class TestLevelsTable:
 
     def test_reports_every_policy(self, root):
         table = mod.levels_table(root, SLUGS)
-        assert set(table.columns) == {"standardised_mean", "standardised_best", "mixed"}
+        assert set(table.columns) == {"standardised_mean", "mixed"}
 
     def test_a_gold_that_always_leads_scores_one(self, root):
         assert (mod.levels_table(root, SLUGS) == 1.0).all().all()
@@ -712,3 +712,87 @@ class TestTrainingLevelContrastTable:
             write_seed(root, 0, slug)
         table = small(mod.training_level_contrast_table, root, SLUGS)
         assert set(table.index.get_level_values("condition")) == {mod.SPECIALIST}
+
+
+def write_second(root, slug, arm_name, share=0.5):
+    """Write a tensor whose gold loses to one negative on a share of queries."""
+    scores = np.zeros((Q, C, F), dtype=np.float32)
+    scores[:, 0, :] = 2.0
+    scores[: int(Q * share), 1, :] = 9.0
+    save_tensor(
+        root,
+        ScoreTensor(
+            scores=scores,
+            query_ids=[f"q{i}" for i in range(Q)],
+            formats=list(FORMATS),
+            model=slug,
+            arm=arm_name,
+            split="test",
+        ),
+    )
+
+
+class TestGuardrailMeasure:
+    def test_compares_the_lead_with_the_lead(self, root):
+        """A gold second in every format has rank 1/2 but no lead."""
+        write_second(root, "bge_base", "base")
+        row = mod.guardrail_table(root, ["bge_base"]).loc[
+            (by_slug("bge_base").label, mod.UNTRAINED)
+        ]
+        assert row["uniform_best_top1"] == 0.5
+        assert row["mixed_top1"] == 0.5
+        assert row["delta"] == 0.0
+        assert row["kept"]
+
+    def test_names_the_measure_in_its_columns(self, root):
+        columns = mod.guardrail_table(root, SLUGS).columns
+        assert {"uniform_best_top1", "uniform_mean_top1", "mixed_top1"} <= set(columns)
+        assert not any("mrr" in name for name in columns)
+
+    def test_a_format_that_loses_shows_in_the_mixed_corpus(self, root):
+        write_tensor(root, "bge_base", "base", bump=(0, 9.0))
+        row = mod.guardrail_table(root, ["bge_base"]).loc[
+            (by_slug("bge_base").label, mod.UNTRAINED)
+        ]
+        assert row["uniform_best_top1"] == 1.0
+        assert row["delta"] < 0
+
+
+class TestSeededRobustnessTables:
+    def bump_one_seed(self, root):
+        write_tensor(root, "bge_base", "5fmt_lam0_s1", bump=(0, 9.0))
+
+    def test_inconsistency_averages_the_seeds(self, two_seeds):
+        self.bump_one_seed(two_seeds)
+        row = mod.inconsistency_table(two_seeds, ["bge_base"], seeds=(0, 1)).loc[
+            (by_slug("bge_base").label, mod.CONTROL)
+        ]
+        assert row["n_inconsistent"] == Q / 2
+        assert row["inconsistency_pct"] == 50.0
+
+    def test_oracle_averages_the_seeds(self, two_seeds):
+        self.bump_one_seed(two_seeds)
+        row = mod.oracle_table(two_seeds, ["bge_base"], seeds=(0, 1)).loc[
+            (by_slug("bge_base").label, mod.CONTROL)
+        ]
+        assert row["floor"] == 0.5
+        assert row["ceiling"] == 1.0
+
+    def test_guardrail_averages_the_seeds(self, two_seeds):
+        self.bump_one_seed(two_seeds)
+        row = mod.guardrail_table(two_seeds, ["bge_base"], seeds=(0, 1)).loc[
+            (by_slug("bge_base").label, mod.CONTROL)
+        ]
+        assert row["uniform_mean_top1"] == pytest.approx(0.9)
+        assert row["uniform_best_top1"] == 1.0
+
+    def test_the_untrained_condition_is_measured_once(self, two_seeds):
+        self.bump_one_seed(two_seeds)
+        table = mod.oracle_table(two_seeds, ["bge_base"], seeds=(0, 1))
+        assert table.loc[(by_slug("bge_base").label, mod.UNTRAINED), "floor"] == 1.0
+
+    def test_the_default_seed_matches_seed_zero(self, two_seeds):
+        self.bump_one_seed(two_seeds)
+        assert mod.oracle_table(two_seeds, SLUGS).equals(
+            mod.oracle_table(two_seeds, SLUGS, seeds=(0,))
+        )
