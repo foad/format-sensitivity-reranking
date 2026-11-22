@@ -560,14 +560,22 @@ def prose_comparison(slug, arm_name, delta, ni_pass=True, ids=None):
     }
 
 
-def write_prose(root, slug, control_delta=0.01, ni_pass=True, ids=None):
+def write_prose(
+    root,
+    slug,
+    control_delta=0.01,
+    ni_pass=True,
+    ids=None,
+    gain=PROSE_GAIN,
+    training_seed=0,
+):
     """Write one model's prose baseline and both arms of every fold."""
     path = result_path(root, "prose", "mrr", slug, "base")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(prose_result(slug, "base", BASE_PROSE_MRR)))
-    for weight, delta in ((0.0, control_delta), (1.0, control_delta + PROSE_GAIN)):
+    for weight, delta in ((0.0, control_delta), (1.0, control_delta + gain)):
         for fold in FORMAT_NAMES:
-            name = arm(fold, weight)
+            name = arm(fold, weight, seed=training_seed)
             out = comparison_path(root, slug, f"prose_{name}")
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(
@@ -877,3 +885,94 @@ class TestPointOnly:
         table = mod.seed_answer_table(seeded, SLUGS, training_seeds=SEEDS, n_boot=0)
         assert (table["delta_pp"] < 0).all()
         assert "ci_lo" not in table
+
+
+SEED_GAIN = {1: 0.01, 2: 0.03}
+
+
+@pytest.fixture
+def seeded_prose(prose_root):
+    """Add two further training seeds to the prose set, each with its own gain."""
+    for slug in SLUGS:
+        for seed, gain in SEED_GAIN.items():
+            write_prose(prose_root, slug, gain=gain, training_seed=seed)
+    return prose_root
+
+
+class TestSeededProse:
+    def test_prose_arms_name_the_seed(self, seeded_prose):
+        names = mod.prose_arms(seeded_prose, "minilm_l6", training_seed=2)
+        assert names["yaml"] == {"control": "yaml_lam0_s2", "winner": "yaml_lam1_s2"}
+
+    def test_prose_table_reads_one_seed(self, seeded_prose):
+        table = mod.prose_table(seeded_prose, SLUGS, n_boot=BOOT, training_seed=2)
+        assert table["winner_gain"].tolist() == pytest.approx([SEED_GAIN[2]] * 2)
+
+    def test_prose_matrix_reads_one_seed(self, seeded_prose):
+        grid = mod.prose_matrix(seeded_prose, SLUGS, training_seed=1)
+        assert grid.to_numpy() == pytest.approx(0.01 + SEED_GAIN[1])
+
+
+class TestSeedProseTable:
+    def table(self, root, n_boot=BOOT):
+        return mod.seed_prose_table(root, SLUGS, training_seeds=SEEDS, n_boot=n_boot)
+
+    def test_each_seed_matches_its_own_table(self, seeded_prose):
+        table = self.table(seeded_prose)
+        for seed in SEEDS:
+            single = mod.prose_table(
+                seeded_prose, SLUGS, n_boot=BOOT, training_seed=seed
+            )
+            assert table[f"seed {seed}"].tolist() == pytest.approx(
+                single["winner_gain"].tolist()
+            )
+
+    def test_gain_is_the_seed_mean(self, seeded_prose):
+        expected = (PROSE_GAIN + SEED_GAIN[1] + SEED_GAIN[2]) / 3
+        assert self.table(seeded_prose)["winner_gain"].tolist() == pytest.approx(
+            [expected] * 2
+        )
+
+    def test_counts_the_arms_kept_over_every_seed(self, seeded_prose):
+        table = self.table(seeded_prose)
+        assert (table["arms_kept"] == 2 * len(FORMAT_NAMES) * len(SEEDS)).all()
+
+    def test_interval_spans_the_seed_gains(self, seeded_prose):
+        table = self.table(seeded_prose)
+        assert (table["gain_lo"] >= min(SEED_GAIN.values()) - 1e-12).all()
+        assert (table["gain_hi"] <= max(SEED_GAIN.values()) + 1e-12).all()
+
+    def test_a_gain_clear_of_zero_holds(self, seeded_prose):
+        """Enough replicates that the smallest p-value survives Holm."""
+        table = self.table(seeded_prose, n_boot=400)
+        assert table["gain_holds"].all()
+        assert (table["holm_p"] >= table["p_gain"]).all()
+
+    def test_no_gain_does_not_hold(self, root):
+        """Winners that match their controls must not read as a gain."""
+        for slug in SLUGS:
+            for seed in SEEDS:
+                write_prose(root, slug, gain=0.0, training_seed=seed)
+        table = self.table(root)
+        assert not table["gain_holds"].any()
+
+    def test_refuses_seeds_over_different_records(self, seeded_prose):
+        write_prose(
+            seeded_prose,
+            "minilm_l6",
+            training_seed=2,
+            ids=[f"q{i}" for i in range(N_PROSE)],
+        )
+        with pytest.raises(ValueError, match="different records"):
+            self.table(seeded_prose)
+
+    def test_point_only_skips_the_interval(self, seeded_prose):
+        table = self.table(seeded_prose, n_boot=0)
+        assert not {"gain_lo", "p_gain", "holm_p", "gain_holds"} & set(table)
+
+
+class TestSeedProseMatrix:
+    def test_is_the_mean_over_seeds(self, seeded_prose):
+        grid = mod.seed_prose_matrix(seeded_prose, SLUGS, training_seeds=SEEDS)
+        expected = 0.01 + (PROSE_GAIN + SEED_GAIN[1] + SEED_GAIN[2]) / 3
+        assert grid.to_numpy() == pytest.approx(expected)

@@ -1131,19 +1131,25 @@ def load_prose_comparison(data_root: Path, model: str, arm_name: str) -> dict[st
     )
 
 
-def prose_arms(data_root: Path, model: str) -> dict[str, dict[str, str]]:
+def prose_arms(
+    data_root: Path, model: str, training_seed: int = DEFAULT_TRAINING_SEED
+) -> dict[str, dict[str, str]]:
     """Return the control arm and the winner arm of every fold.
 
     Args:
         data_root: The corpus directory.
         model: The registry slug.
+        training_seed: The training seed of the arms.
 
     Returns:
         The arm names, by held-out format and then by condition.
     """
     weight = winner_weight(load_selection(data_root, model))
     return {
-        fold: {CONTROL: arm(fold, CONTROL_WEIGHT), WINNER: arm(fold, weight)}
+        fold: {
+            CONTROL: arm(fold, CONTROL_WEIGHT, seed=training_seed),
+            WINNER: arm(fold, weight, seed=training_seed),
+        }
         for fold in FORMAT_NAMES
     }
 
@@ -1186,12 +1192,15 @@ def prose_baseline_mrr(data_root: Path, model: str) -> float:
     return float(load_prose_result(data_root, model, BASE_ARM)["mrr"])
 
 
-def prose_paired_gains(data_root: Path, model: str) -> np.ndarray:
+def prose_paired_gains(
+    data_root: Path, model: str, training_seed: int = DEFAULT_TRAINING_SEED
+) -> np.ndarray:
     """Return the gain of the winner over the control, record by record.
 
     Args:
         data_root: The corpus directory.
         model: The registry slug.
+        training_seed: The training seed of the arms.
 
     Returns:
         One row per held-out format, one column per record.
@@ -1199,7 +1208,7 @@ def prose_paired_gains(data_root: Path, model: str) -> np.ndarray:
     Raises:
         ValueError: If two arms cover different records.
     """
-    names = prose_arms(data_root, model)
+    names = prose_arms(data_root, model, training_seed)
     rows = []
     reference = None
     for fold in FORMAT_NAMES:
@@ -1224,6 +1233,7 @@ def prose_paired_delta(
     n_boot: int = DEFAULT_N_BOOT,
     seed: int = DEFAULT_SEED,
     ci: float = DEFAULT_CI,
+    training_seed: int = DEFAULT_TRAINING_SEED,
 ) -> tuple[float, float, float]:
     """Bound the gain of the winner over the control, over every fold.
 
@@ -1235,29 +1245,33 @@ def prose_paired_delta(
         n_boot: The number of replicates.
         seed: The seed for the resample.
         ci: The interval width.
+        training_seed: The training seed of the arms.
 
     Returns:
         The mean gain and the bounds of its interval.
     """
-    per_record = prose_paired_gains(data_root, model).mean(axis=0)
+    per_record = prose_paired_gains(data_root, model, training_seed).mean(axis=0)
     low, high = bootstrap_ci_of_mean(per_record, n_boot=n_boot, seed=seed, ci=ci)
     return float(per_record.mean()), low, high
 
 
-def prose_fold_frame(data_root: Path, model: str) -> pd.DataFrame:
+def prose_fold_frame(
+    data_root: Path, model: str, training_seed: int = DEFAULT_TRAINING_SEED
+) -> pd.DataFrame:
     """Tabulate the prose ranking of every fold of one model.
 
     Args:
         data_root: The corpus directory.
         model: The registry slug.
+        training_seed: The training seed of the arms.
 
     Returns:
         One row per held-out format, holding each arm's mean reciprocal rank,
         the change against the untrained model with its interval, whether the
         arm kept its quality, and the gain of the winner over the control.
     """
-    names = prose_arms(data_root, model)
-    gains = prose_paired_gains(data_root, model)
+    names = prose_arms(data_root, model, training_seed)
+    gains = prose_paired_gains(data_root, model, training_seed)
     rows = {}
     for index, fold in enumerate(FORMAT_NAMES):
         row: dict[str, Any] = {}
@@ -1282,6 +1296,7 @@ def prose_table(
     n_boot: int = DEFAULT_N_BOOT,
     seed: int = DEFAULT_SEED,
     ci: float = DEFAULT_CI,
+    training_seed: int = DEFAULT_TRAINING_SEED,
 ) -> pd.DataFrame:
     """Summarise prose ranking quality for every model.
 
@@ -1291,6 +1306,7 @@ def prose_table(
         n_boot: The number of replicates.
         seed: The seed for the resample.
         ci: The interval width.
+        training_seed: The training seed of the arms.
 
     Returns:
         The untrained mean reciprocal rank, the fold mean of each arm and its
@@ -1299,9 +1315,14 @@ def prose_table(
     """
     rows = {}
     for slug in slugs:
-        folds = prose_fold_frame(data_root, slug)
+        folds = prose_fold_frame(data_root, slug, training_seed)
         gain, low, high = prose_paired_delta(
-            data_root, slug, n_boot=n_boot, seed=seed, ci=ci
+            data_root,
+            slug,
+            n_boot=n_boot,
+            seed=seed,
+            ci=ci,
+            training_seed=training_seed,
         )
         rows[slug] = {
             "weight": winner_weight(load_selection(data_root, slug)),
@@ -1320,7 +1341,10 @@ def prose_table(
 
 
 def prose_matrix(
-    data_root: Path, slugs: Sequence[str], condition: str = WINNER
+    data_root: Path,
+    slugs: Sequence[str],
+    condition: str = WINNER,
+    training_seed: int = DEFAULT_TRAINING_SEED,
 ) -> pd.DataFrame:
     """Tabulate one arm's prose change against every held-out format.
 
@@ -1328,6 +1352,7 @@ def prose_matrix(
         data_root: The corpus directory.
         slugs: The registry slugs to report.
         condition: The arm to report, one of PROSE_ARMS.
+        training_seed: The training seed of the arms.
 
     Returns:
         One row per model, one column per held-out format.
@@ -1339,6 +1364,136 @@ def prose_matrix(
         raise ValueError(f"unknown arm {condition!r}, expected one of: {PROSE_ARMS}")
     rows = {}
     for slug in slugs:
-        folds = prose_fold_frame(data_root, slug)
+        folds = prose_fold_frame(data_root, slug, training_seed)
         rows[slug] = dict(folds[f"{condition}_delta"])
     return _frame(rows)
+
+
+def seed_prose_gain_replicates(
+    gains: Sequence[np.ndarray], n_boot: int = DEFAULT_N_BOOT, seed: int = DEFAULT_SEED
+) -> np.ndarray:
+    """Return replicates of the seed-mean gain of the winner over the control.
+
+    Each replicate resamples the records, once for every seed since all seeds
+    rank the same records, and then the seeds.
+
+    Args:
+        gains: The fold-mean gain of each record, one array per training seed.
+        n_boot: The number of replicates.
+        seed: The seed for the resample.
+
+    Returns:
+        One gain per replicate.
+    """
+    rng = np.random.default_rng(seed)
+    size = len(gains[0])
+    indices = rng.integers(0, size, (n_boot, size))
+    per_seed = np.column_stack([g[indices].mean(axis=1) for g in gains])
+    return resample_seeds(per_seed, rng)
+
+
+def seed_prose_table(
+    data_root: Path,
+    slugs: Sequence[str],
+    training_seeds: Sequence[int] = TRAINING_SEEDS,
+    n_boot: int = DEFAULT_N_BOOT,
+    seed: int = DEFAULT_SEED,
+    ci: float = DEFAULT_CI,
+    alpha: float = FAMILY_ALPHA,
+) -> pd.DataFrame:
+    """Summarise prose ranking quality of every model over the training seeds.
+
+    The interval and the p-value of the gain come from resampling both the
+    records and the seeds. The p-value is two-sided, since the gain may fall
+    either way, and is corrected with Holm across the models.
+
+    Args:
+        data_root: The corpus directory.
+        slugs: The registry slugs to report.
+        training_seeds: The training seeds to pool.
+        n_boot: The number of replicates. 0 reports the point estimates only,
+            with no interval, p-value or correction.
+        seed: The seed for the resample.
+        ci: The interval width.
+        alpha: The family-wise error rate.
+
+    Returns:
+        One row per model: the untrained mean reciprocal rank, the seed means of
+        each arm and its change, the seed-mean gain of the winner over the
+        control and the gain under each seed, the interval, the raw and adjusted
+        p-values, whether the gain survives, and the arms that kept their
+        quality.
+
+    Raises:
+        ValueError: If two seeds cover different records.
+    """
+    tail = (1.0 - ci) / 2.0 * 100.0
+    rows = {}
+    for slug in slugs:
+        folds = [prose_fold_frame(data_root, slug, t) for t in training_seeds]
+        gains = [
+            prose_paired_gains(data_root, slug, t).mean(axis=0) for t in training_seeds
+        ]
+        if len({g.shape for g in gains}) != 1:
+            raise ValueError(f"{slug}: the training seeds cover different records")
+        per_seed = np.array([g.mean() for g in gains])
+        row: dict[str, Any] = {
+            "weight": winner_weight(load_selection(data_root, slug)),
+            "baseline_mrr": prose_baseline_mrr(data_root, slug),
+            **{
+                column: float(np.mean([f[column].mean() for f in folds]))
+                for column in (
+                    "control_mrr",
+                    "winner_mrr",
+                    "control_delta",
+                    "winner_delta",
+                )
+            },
+            "winner_gain": float(per_seed.mean()),
+            **{
+                f"seed {t}": float(g)
+                for t, g in zip(training_seeds, per_seed, strict=True)
+            },
+        }
+        if n_boot:
+            replicates = seed_prose_gain_replicates(gains, n_boot=n_boot, seed=seed)
+            row["gain_lo"] = float(np.percentile(replicates, tail))
+            row["gain_hi"] = float(np.percentile(replicates, 100 - tail))
+            row["p_gain"] = min(
+                1.0,
+                2
+                * min(
+                    bootstrap_p_above(replicates, 0.0),
+                    bootstrap_p_above(-replicates, 0.0),
+                ),
+            )
+        row["arms_kept"] = int(
+            sum(f["control_kept"].sum() + f["winner_kept"].sum() for f in folds)
+        )
+        rows[slug] = row
+    frame = _frame(rows)
+    if n_boot:
+        frame["holm_p"] = holm(frame["p_gain"])
+        frame["gain_holds"] = frame["holm_p"] < alpha
+    return frame
+
+
+def seed_prose_matrix(
+    data_root: Path,
+    slugs: Sequence[str],
+    condition: str = WINNER,
+    training_seeds: Sequence[int] = TRAINING_SEEDS,
+) -> pd.DataFrame:
+    """Average one arm's prose change against every held-out format over seeds.
+
+    Args:
+        data_root: The corpus directory.
+        slugs: The registry slugs to report.
+        condition: The arm to report, one of PROSE_ARMS.
+        training_seeds: The training seeds to average.
+
+    Returns:
+        One row per model, one column per held-out format.
+    """
+    frames = [prose_matrix(data_root, slugs, condition, t) for t in training_seeds]
+    return sum(frames[1:], frames[0]) / len(frames)
