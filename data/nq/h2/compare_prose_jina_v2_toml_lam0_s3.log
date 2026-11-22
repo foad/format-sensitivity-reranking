@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  jina-v2  toml_lam0_s3   2026-11-21 22:51:14
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.9426
+  trained MRR:    0.9566
+  change:         +0.0141  [+0.0087, +0.0193]
+  kept, margin 0.03: yes
+
+Saved prose toml_lam0_s3 results -> data/nq/h2/comparison/jina_v2_prose_toml_lam0_s3.json  (0.1 MB)

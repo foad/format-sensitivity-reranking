@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  MiniLM-L6  inline_kv_lam0_s2   2026-11-21 23:09:57
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.8961
+  trained MRR:    0.9056
+  change:         +0.0095  [+0.0038, +0.0154]
+  kept, margin 0.03: yes
+
+Saved prose inline_kv_lam0_s2 results -> data/nq/h2/comparison/minilm_l6_prose_inline_kv_lam0_s2.json  (0.1 MB)

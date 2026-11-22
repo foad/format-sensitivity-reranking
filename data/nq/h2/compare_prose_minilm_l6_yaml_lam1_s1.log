@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  MiniLM-L6  yaml_lam1_s1   2026-11-21 17:04:57
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.8961
+  trained MRR:    0.9109
+  change:         +0.0148  [+0.0088, +0.0207]
+  kept, margin 0.03: yes
+
+Saved prose yaml_lam1_s1 results -> data/nq/h2/comparison/minilm_l6_prose_yaml_lam1_s1.json  (0.1 MB)

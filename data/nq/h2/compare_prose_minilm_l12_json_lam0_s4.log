@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  MiniLM-L12  json_lam0_s4   2026-11-21 23:50:49
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.8999
+  trained MRR:    0.9175
+  change:         +0.0176  [+0.0108, +0.0244]
+  kept, margin 0.03: yes
+
+Saved prose json_lam0_s4 results -> data/nq/h2/comparison/minilm_l12_prose_json_lam0_s4.json  (0.1 MB)

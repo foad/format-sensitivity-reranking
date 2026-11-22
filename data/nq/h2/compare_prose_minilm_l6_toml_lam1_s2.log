@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  MiniLM-L6  toml_lam1_s2   2026-11-21 23:10:10
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.8961
+  trained MRR:    0.9103
+  change:         +0.0142  [+0.0081, +0.0203]
+  kept, margin 0.03: yes
+
+Saved prose toml_lam1_s2 results -> data/nq/h2/comparison/minilm_l6_prose_toml_lam1_s2.json  (0.1 MB)

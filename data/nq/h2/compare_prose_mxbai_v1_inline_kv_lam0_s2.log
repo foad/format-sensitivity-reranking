@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  mxbai-v1  inline_kv_lam0_s2   2026-11-22 03:55:19
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.9222
+  trained MRR:    0.9446
+  change:         +0.0224  [+0.0163, +0.0285]
+  kept, margin 0.03: yes
+
+Saved prose inline_kv_lam0_s2 results -> data/nq/h2/comparison/mxbai_v1_prose_inline_kv_lam0_s2.json  (0.1 MB)

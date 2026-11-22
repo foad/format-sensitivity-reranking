@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  bge-base  markdown_lam0_s1   2026-11-21 18:26:16
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.8539
+  trained MRR:    0.9197
+  change:         +0.0658  [+0.0570, +0.0748]
+  kept, margin 0.03: yes
+
+Saved prose markdown_lam0_s1 results -> data/nq/h2/comparison/bge_base_prose_markdown_lam0_s1.json  (0.1 MB)

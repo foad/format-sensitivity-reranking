@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  mxbai-v1  json_lam0.1_s4   2026-11-22 03:51:04
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.9222
+  trained MRR:    0.9434
+  change:         +0.0212  [+0.0153, +0.0274]
+  kept, margin 0.03: yes
+
+Saved prose json_lam0.1_s4 results -> data/nq/h2/comparison/mxbai_v1_prose_json_lam0.1_s4.json  (0.1 MB)

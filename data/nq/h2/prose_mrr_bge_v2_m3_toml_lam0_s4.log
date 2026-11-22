@@ -1,0 +1,18 @@
+
+======================================================================
+PROSE  bge-v2-m3  arm=toml_lam0_s4   2026-11-22 01:10:26
+======================================================================
+  identifier: BAAI/bge-reranker-v2-m3
+  adapter:    data/nq/h2/train/bge_v2_m3_toml_lam0_s4/adapter
+  records:    2,027 against 15 negatives each
+  batch:      16
+  device:     cuda
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights:  39%|███▊      | 152/393 [00:00<00:00, 1519.35it/s]Loading weights:  77%|███████▋  | 304/393 [00:00<00:00, 1472.89it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 1691.33it/s]
+[transformers] `use_return_dict` is deprecated! Use `return_dict` instead!
+
+scored 32,432 pairs in 650.1s
+MRR: 0.9535  over 2,027 records
+
+Saved toml_lam0_s4 results -> data/nq/h2/prose_mrr_bge_v2_m3_toml_lam0_s4.json  (0.1 MB)

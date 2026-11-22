@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  bge-v2-m3  inline_kv_lam1_s4   2026-11-22 02:43:23
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.9481
+  trained MRR:    0.9562
+  change:         +0.0081  [+0.0032, +0.0129]
+  kept, margin 0.03: yes
+
+Saved prose inline_kv_lam1_s4 results -> data/nq/h2/comparison/bge_v2_m3_prose_inline_kv_lam1_s4.json  (0.1 MB)

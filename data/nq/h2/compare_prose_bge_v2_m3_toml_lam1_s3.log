@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  bge-v2-m3  toml_lam1_s3   2026-11-21 20:46:39
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.9481
+  trained MRR:    0.9537
+  change:         +0.0057  [+0.0007, +0.0106]
+  kept, margin 0.03: yes
+
+Saved prose toml_lam1_s3 results -> data/nq/h2/comparison/bge_v2_m3_prose_toml_lam1_s3.json  (0.1 MB)

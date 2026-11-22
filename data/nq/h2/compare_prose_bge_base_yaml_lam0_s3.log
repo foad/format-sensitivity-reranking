@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  bge-base  yaml_lam0_s3   2026-11-21 18:46:05
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.8539
+  trained MRR:    0.9116
+  change:         +0.0577  [+0.0485, +0.0671]
+  kept, margin 0.03: yes
+
+Saved prose yaml_lam0_s3 results -> data/nq/h2/comparison/bge_base_prose_yaml_lam0_s3.json  (0.1 MB)

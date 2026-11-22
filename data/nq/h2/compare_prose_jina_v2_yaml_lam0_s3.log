@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  jina-v2  yaml_lam0_s3   2026-11-21 22:50:55
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.9426
+  trained MRR:    0.9549
+  change:         +0.0124  [+0.0073, +0.0173]
+  kept, margin 0.03: yes
+
+Saved prose yaml_lam0_s3 results -> data/nq/h2/comparison/jina_v2_prose_yaml_lam0_s3.json  (0.1 MB)

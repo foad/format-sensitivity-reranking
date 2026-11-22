@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  MiniLM-L6  markdown_lam1_s2   2026-11-21 23:10:17
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.8961
+  trained MRR:    0.9114
+  change:         +0.0153  [+0.0093, +0.0214]
+  kept, margin 0.03: yes
+
+Saved prose markdown_lam1_s2 results -> data/nq/h2/comparison/minilm_l6_prose_markdown_lam1_s2.json  (0.1 MB)

@@ -1,0 +1,11 @@
+
+======================================================================
+PROSE COMPARE  jina-v2  toml_lam0.1_s4   2026-11-22 04:48:58
+======================================================================
+  paired records: 2,027
+  baseline MRR:   0.9426
+  trained MRR:    0.9565
+  change:         +0.0139  [+0.0087, +0.0191]
+  kept, margin 0.03: yes
+
+Saved prose toml_lam0.1_s4 results -> data/nq/h2/comparison/jina_v2_prose_toml_lam0.1_s4.json  (0.1 MB)
