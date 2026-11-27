@@ -4,8 +4,12 @@ The built corpus and the result artefacts.
 
 Licensed CC BY-SA 3.0 (see [`LICENSE`](LICENSE))
 
-The result JSONs and their run logs are in the repository. The corpus is not:
-download it from the release and unpack into `data/`, or build it manually.
+The result JSONs and their run logs are in the repository. The corpus and the
+trained adapters are not: download them from the release and unpack each archive
+from the repository root, or build them manually. `corpus.tar.gz` holds the
+corpus, `corpus-redraws.tar.gz` the four further split draws, and each
+`adapters-<model>.tar.gz` one model's adapters (see
+[`../adapters/README.md`](../adapters/README.md)).
 
 | Path | Contents | Built by |
 |---|---|---|
@@ -13,9 +17,13 @@ download it from the release and unpack into `data/`, or build it manually.
 | `nq/splits/` | Article-level 80/10/10 splits, and the BM25 hard negatives | `scripts/corpus/split.py`, `negatives.py` |
 | `nq/h1/*.json` | Per-model H1 results, both axes and both modes. Tracked | `scripts/h1/run.sh` |
 | `nq/h1/*_candidates*.json` | Candidate lists, rebuilt by the measurement | `scripts/within_query.py` |
-| `nq/h2_compare/`, `h2_selection/` | H2 result JSONs | H2 sweep scripts |
-| `nq/h2/head_probe/` | Head-probe frontiers, tracked. The cached representations beside them are release assets | `scripts/h2/head_probe.sh` |
-| `nq/matched_{train,validation}.json` | The raw Wikipedia HTML cache (2.9 GB). Only needed to re-parse without re-streaming. | `scripts/corpus/fetch.py` |
+| `nq/prose.json`, `nq/prose_eval.json` | The prose corpus, Wikipedia paragraphs with no metadata | `scripts/corpus/prose.py`, `prose_eval.py` |
+| `nq_s{seed}/splits/` | The four further split draws. Release asset `corpus-redraws.tar.gz` | `scripts/corpus/split.py` |
+| `nq/h2/selection/`, `nq/h2/comparison/` | H2 weight selection and arm comparisons. Tracked | `scripts/h2/run.sh` |
+| `nq/h2/train/*/adapter/` | Trained adapters. Release assets `adapters-<model>.tar.gz` | `scripts/h2/run.sh` and the study drivers |
+| `nq/h2/pooler/`, `format_geometry/`, `standardisation/` | Supporting-study results. Tracked | see [`../docs/reproduction.md`](../docs/reproduction.md) |
+| `nq/h2/head_probe/*.npy` | Cached representations for the representation study. Neither tracked nor released; rebuilt by the capture | `scripts/h2/representation_capture.sh` |
+| `nq/matched_{train,validation}.json` | The raw Wikipedia HTML cache (2.9 GB). Not released; only needed to re-parse without re-streaming | `scripts/corpus/fetch.py` |
 
 ## Result file names
 

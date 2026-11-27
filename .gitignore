@@ -45,3 +45,6 @@ data/**/hold_*.flag
 data/**/hold_*.log
 data/**/hold_*.hare.log
 data/hold_gpu/
+
+# Release archives built by scripts/release/package.sh
+dist/
