@@ -42,6 +42,10 @@ Figures and intervals are in [`notebooks/h2/h2_analysis.ipynb`](notebooks/h2/h2_
 
  - Standardisation study: determining whether converting every record to a single serialisation, with or without fine-tuning on that serialisation, removes the need to train for format invariance. [Notebook](notebooks/h2/h2_standardisation.ipynb)
 
+### Pipeline demo
+
+A constructed upload-limit scenario showing how format sensitivity can change which passages reach the generator in a RAG pipeline, before and after mitigation. It lives on the `demo` branch; tag [`demo-v1`](../../tree/demo-v1) is the version used, with the analysis in `notebooks/demo/demo_pipeline.ipynb`.
+
 ## Repository layout
 
 ```
