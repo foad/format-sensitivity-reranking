@@ -13,7 +13,7 @@ Sensitivity is measured on two axes: the shift in a passage's absolute score, as
 
 ### H1: characterisation
 
-- Format choice shifts a passage's score by up to **Cohen's |d| = 0.94**, above the medium-effect threshold on four of the six models (MiniLM-L6, MiniLM-L12, mxbai-v1, jina-v2). The two BGE models fall below it (|d| < 0.5).
+- Format choice shifts a passage's score by up to **Cohen's |d| = 0.94** on the reported draw of the evaluation sample (0.88–1.17 across five draws for that model, MiniLM-L12), above the medium-effect threshold on four of the six models (MiniLM-L6, MiniLM-L12, mxbai-v1, jina-v2). The two BGE models fall below it (|d| < 0.5).
 - Ranking disturbance does not track that ordering. Conditional inconsistency peaks at **17.7%** on `bge-reranker-base` (the model least sensitive by |d|), and the three most inconsistent models separate from the other three on non-overlapping intervals. The two axes are therefore near-independent across the six models and capture distinct failure modes.
 
 Figures and intervals are in [`notebooks/h1/h1_analysis.ipynb`](notebooks/h1/h1_analysis.ipynb).
