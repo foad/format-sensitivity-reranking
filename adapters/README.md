@@ -13,7 +13,6 @@ Each adapter inherits its base model's licence (see [`../SOURCES.md`](../SOURCES
 | `bge_base_*` | `BAAI/bge-reranker-base` | MIT |
 | `bge_v2_m3_*` | `BAAI/bge-reranker-v2-m3` | Apache-2.0-compatible |
 | `mxbai_v1_*` | `mixedbread-ai/mxbai-rerank-base-v1` | Apache-2.0-compatible |
-| `mxbai_v1_tanh_*` | `mixedbread-ai/mxbai-rerank-base-v1` | Apache-2.0-compatible |
 | `jina_v2_*` | `jinaai/jina-reranker-v2-base-multilingual` | CC BY-NC 4.0, non-commercial |
 
 ## Layout
@@ -21,7 +20,7 @@ Each adapter inherits its base model's licence (see [`../SOURCES.md`](../SOURCES
 ```
 adapters/
   # trained on all five formats (use this to run a fine-tuned model)
-  minilm_l6/  minilm_l12/  bge_base/  bge_v2_m3/  mxbai_v1/  mxbai_v1_tanh/  jina_v2/
+  minilm_l6/  minilm_l12/  bge_base/  bge_v2_m3/  mxbai_v1/  jina_v2/
 
   # five-fold hold-one-out adapters, for reproducing the held-out-format results
   <model>_holdout-<format>/
@@ -39,18 +38,4 @@ base = AutoModelForSequenceClassification.from_pretrained(
     "mixedbread-ai/mxbai-rerank-base-v1"
 )
 model = PeftModel.from_pretrained(base, "adapters/mxbai_v1")
-```
-
-The `mxbai_v1_tanh` adapters were trained on a replaced classifier head. Apply the
-patch to the base model before attaching one:
-
-```python
-from fsr.models.loading import load_model
-
-model = load_model(
-    "mixedbread-ai/mxbai-rerank-base-v1",
-    device="cuda",
-    lora_adapter_path="adapters/mxbai_v1_tanh",
-    tanh_head=True,
-)
 ```

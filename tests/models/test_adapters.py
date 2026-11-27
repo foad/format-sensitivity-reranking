@@ -219,14 +219,6 @@ class TestBuildAdaptedModel:
         assert loaded["model_id"] == "BAAI/bge-reranker-base"
         assert loaded["device"] == "cpu"
 
-    def test_asks_for_no_head_replacement_by_default(self, loaded):
-        build_adapted_model("m", "cpu")
-        assert loaded["tanh_head"] is False
-
-    def test_passes_the_head_replacement_through(self, loaded):
-        build_adapted_model("m", "cpu", tanh_head=True)
-        assert loaded["tanh_head"] is True
-
     def test_passes_the_attention_kernel_choice_through(self, loaded):
         build_adapted_model("m", "cpu", eager_attn=True)
         assert loaded["eager_attn"] is True
@@ -256,49 +248,6 @@ class TestBuildAdaptedModel:
     def test_skips_gradient_checkpointing_on_request(self):
         result = build_adapted_model("m", "cpu", gradient_checkpointing=False)
         assert not result.gradient_checkpointing
-
-
-class TestTanhHeadPath:
-    def test_the_head_is_replaced_before_the_adapter_attaches(self, monkeypatch):
-        order = []
-
-        def fake_load_model(_model_id, _device, **kwargs):
-            base = Base()
-            if kwargs.get("tanh_head"):
-                order.append("patch")
-                base.classifier = nn.Sequential(
-                    nn.Linear(8, 8), nn.Tanh(), nn.Linear(8, 1)
-                )
-            return base
-
-        monkeypatch.setattr(adapters, "load_model", fake_load_model)
-        monkeypatch.setattr(
-            adapters,
-            "get_peft_model",
-            lambda base, config: (order.append("adapt"), get_real(base, config))[1],
-        )
-        from peft import get_peft_model as get_real
-
-        result = build_adapted_model("m", "cpu", tanh_head=True)
-        assert order == ["patch", "adapt"]
-        names = [n for n, p in result.model.named_parameters() if p.requires_grad]
-        assert any("classifier" in n for n in names)
-
-    def test_the_replaced_head_stays_trainable(self, monkeypatch):
-        def fake_load_model(_model_id, _device, **_kwargs):
-            base = Base()
-            base.classifier = nn.Sequential(nn.Linear(8, 8), nn.Tanh(), nn.Linear(8, 1))
-            return base
-
-        monkeypatch.setattr(adapters, "load_model", fake_load_model)
-        result = build_adapted_model("m", "cpu", tanh_head=True)
-        trainable = {n for n, p in result.model.named_parameters() if p.requires_grad}
-        assert any(
-            n.endswith("classifier.modules_to_save.default.0.weight") for n in trainable
-        )
-        assert any(
-            n.endswith("classifier.modules_to_save.default.2.weight") for n in trainable
-        )
 
 
 class TestFp32Guard:

@@ -275,12 +275,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Tokenizers the body budget comes from. The default is the roster",
     )
     ap.add_argument(
-        "--tanh-head",
-        action="store_true",
-        default=None,
-        help="Replace the classifier head. The default is the registry entry",
-    )
-    ap.add_argument(
         "--eager-attn",
         action="store_true",
         help="Request the eager attention kernel in place of the fused one",
@@ -325,7 +319,6 @@ def main() -> None:
         raise SystemExit(f"no adapter at {adapter}; train the arm first.")
 
     batch_size = args.batch_size or entry.eval_batch
-    tanh_head = entry.tanh_head if args.tanh_head is None else args.tanh_head
 
     heading(f"EVAL  {entry.label}  split={args.split}  arm={arm_name}", width=70)
     print(f"  identifier:  {entry.model_id}")
@@ -342,7 +335,6 @@ def main() -> None:
         device,
         lora_adapter_path=str(adapter) if adapter else None,
         eager_attn=args.eager_attn,
-        tanh_head=tanh_head,
     )
 
     records = load_records(args.data_root, args.split, verbose=False)

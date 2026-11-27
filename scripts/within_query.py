@@ -75,21 +75,6 @@ MODES = ("metadata_only", "with_body")
 PARSED_NAME = "parsed_train.json"
 
 
-def resolve_tanh_heads(names: list[str], override: bool | None) -> list[bool]:
-    """Return whether each named model wants the two-layer tanh head.
-
-    Args:
-        names: Registry slugs or HF identifiers.
-        override: The value the caller asked for, or None for the registry.
-
-    Returns:
-        One flag per name, in the order given.
-    """
-    if override is not None:
-        return [override] * len(names)
-    return [False if "/" in name else by_slug(name).tanh_head for name in names]
-
-
 def resolve_models(names: list[str]) -> list[str]:
     """Return the Hugging Face identifier of each named model.
 
@@ -400,12 +385,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="PEFT adapter to load on the base model. Needs exactly one --models entry",
     )
     ap.add_argument(
-        "--tanh-head",
-        action="store_true",
-        default=None,
-        help="Replace the classifier head. The default is the registry entry",
-    )
-    ap.add_argument(
         "--eager-attn",
         action="store_true",
         help="Request the eager attention kernel in place of the fused one",
@@ -490,9 +469,6 @@ def main() -> None:
         )
 
     models = resolve_models(args.models)
-    tanh_heads = resolve_tanh_heads(args.models, args.tanh_head)
-    if len(set(tanh_heads)) > 1:
-        raise SystemExit("one run cannot mix tanh and plain classifier heads")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Device: {device}")
 
@@ -524,7 +500,6 @@ def main() -> None:
                     "split": args.split,
                     "mode": mode,
                     "lora_adapter": args.lora_adapter,
-                    "tanh_head": tanh_heads[0],
                     "budget_models": resolve_models(args.budget_models),
                     "neg_count_per_query": args.negatives,
                     "n_queries": len(prepared),
@@ -541,7 +516,7 @@ def main() -> None:
     counter = ProgressCounter(
         len(models) * len(modes) * len(FORMAT_NAMES), args.progress_file
     )
-    for model_name, tanh_head in zip(models, tanh_heads, strict=True):
+    for model_name in models:
         model_heading(model_name)
         try:
             model = load_model(
@@ -549,10 +524,7 @@ def main() -> None:
                 device,
                 lora_adapter_path=args.lora_adapter,
                 eager_attn=args.eager_attn,
-                tanh_head=tanh_head,
             )
-            if tanh_head:
-                print("  classifier head: dense->tanh->out_proj")
             if args.lora_adapter:
                 print(f"  adapter: {args.lora_adapter}")
         except Exception as error:

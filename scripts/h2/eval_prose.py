@@ -114,12 +114,6 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--arm", default=None, help="The trained arm to rank with")
     ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument(
-        "--tanh-head",
-        action="store_true",
-        default=None,
-        help="Replace the classifier head. The default is the registry entry",
-    )
-    ap.add_argument(
         "--progress-file",
         type=Path,
         default=None,
@@ -167,7 +161,6 @@ def main() -> None:
         print(f"Note: the ranking set carries {k} negatives, not {PROSE_NEGATIVES}.")
 
     batch_size = args.batch_size or entry.eval_batch
-    tanh_head = entry.tanh_head if args.tanh_head is None else args.tanh_head
 
     heading(f"PROSE  {entry.label}  arm={arm_name}", width=70)
     print(f"  identifier: {entry.model_id}")
@@ -184,7 +177,6 @@ def main() -> None:
         device,
         lora_adapter_path=str(adapter) if adapter else None,
         eager_attn=args.eager_attn,
-        tanh_head=tanh_head,
     )
 
     n_pairs = len(records) * (k + 1)

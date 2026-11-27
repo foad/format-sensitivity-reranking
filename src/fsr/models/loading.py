@@ -9,7 +9,6 @@ from peft import PeftModel
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from fsr.models.jina_lora import patch_jina_lora
-from fsr.models.mxbai_tanh_patch import apply_mxbai_tanh_patch
 
 DEFAULT_DTYPE = torch.float32
 
@@ -36,7 +35,6 @@ def load_model(
     lora_adapter_path: str | None = None,
     eager_attn: bool = False,
     dtype: torch.dtype | str = DEFAULT_DTYPE,
-    tanh_head: bool = False,
 ) -> Any:
     """Load a model in evaluation mode, with an optional LoRA adapter.
 
@@ -48,8 +46,6 @@ def load_model(
         eager_attn: Whether to request the eager attention kernel in place of
             the scaled dot-product kernel.
         dtype: The load dtype, default is float32.
-        tanh_head: Whether to replace a single-Linear classifier head with the
-            two-layer tanh head. The mxbai tanh adapters require it.
 
     Returns:
         The model, in evaluation mode.
@@ -72,8 +68,6 @@ def load_model(
         model = AutoModelForSequenceClassification.from_pretrained(
             model_name, **load_kwargs
         ).to(device)
-    if tanh_head:
-        apply_mxbai_tanh_patch(model)
     if lora_adapter_path is not None:
         model = PeftModel.from_pretrained(model, lora_adapter_path)
         patch_jina_lora(model)

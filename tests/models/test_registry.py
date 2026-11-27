@@ -20,7 +20,7 @@ from fsr.models.registry import (
 
 class TestRoster:
     def test_holds_every_variant(self):
-        assert len(MODELS) == 10
+        assert len(MODELS) == 9
 
     def test_slugs_are_unique(self):
         assert len({m.slug for m in MODELS}) == len(MODELS)
@@ -32,9 +32,8 @@ class TestRoster:
         for model in MODELS:
             assert "hex" not in model.slug
 
-    def test_base_models_exclude_the_patched_head(self):
+    def test_the_base_roster_holds_six_models(self):
         assert len(BASE_MODELS) == 6
-        assert all(not m.tanh_head for m in BASE_MODELS)
 
     def test_base_models_exclude_the_trained_poolers(self):
         assert all(not m.head_modules for m in BASE_MODELS)
@@ -62,9 +61,6 @@ class TestRoster:
 
     def test_base_model_ids_are_distinct(self):
         assert len(set(BASE_MODEL_IDS)) == len(BASE_MODEL_IDS)
-
-    def test_the_patched_variant_shares_its_base_identifier(self):
-        assert by_slug("mxbai_v1_tanh").model_id == by_slug("mxbai_v1").model_id
 
     def test_every_model_names_its_lora_targets(self):
         assert all(m.lora_targets for m in MODELS)
@@ -119,13 +115,6 @@ class TestBatchGeometry:
     def test_effective_batch_is_uniform_across_the_roster(self):
         assert {m.effective_batch for m in MODELS} == {16}
 
-    def test_the_patched_variant_matches_its_base_geometry(self):
-        tanh = by_slug("mxbai_v1_tanh")
-        plain = by_slug("mxbai_v1")
-        assert tanh.physical_batch == plain.physical_batch
-        assert tanh.grad_accum == plain.grad_accum
-        assert tanh.eval_batch == plain.eval_batch
-
     def test_the_minilm_pair_share_a_geometry(self):
         l6 = by_slug("minilm_l6")
         l12 = by_slug("minilm_l12")
@@ -142,7 +131,6 @@ class TestConfigLines:
             "PHYSICAL_BATCH",
             "GRAD_ACCUM",
             "EVAL_BATCH",
-            "TANH_HEAD",
             "WEIGHT_FROM",
         ]
 
@@ -153,7 +141,6 @@ class TestConfigLines:
                 "PHYSICAL_BATCH": str(model.physical_batch),
                 "GRAD_ACCUM": str(model.grad_accum),
                 "EVAL_BATCH": str(model.eval_batch),
-                "TANH_HEAD": "1" if model.tanh_head else "0",
                 "WEIGHT_FROM": model.weight_from or "",
             }
             for line in config_lines(model):
@@ -169,14 +156,6 @@ class TestConfigLines:
     def test_a_single_target_stays_an_array(self):
         lines = dict(line.split("=", 1) for line in config_lines(by_slug("jina_v2")))
         assert lines["LORA_TARGETS"] == "(Wqkv)"
-
-    def test_reports_the_patched_head_as_one(self):
-        lines = dict(ln.split("=", 1) for ln in config_lines(by_slug("mxbai_v1_tanh")))
-        assert shlex.split(lines["TANH_HEAD"]) == ["1"]
-
-    def test_reports_an_unpatched_head_as_zero(self):
-        lines = dict(ln.split("=", 1) for ln in config_lines(by_slug("mxbai_v1")))
-        assert shlex.split(lines["TANH_HEAD"]) == ["0"]
 
     def test_reports_the_weight_source(self):
         model = by_slug("mxbai_v1_pooler")

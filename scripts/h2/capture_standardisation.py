@@ -41,12 +41,6 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--split", default=DEFAULT_SPLIT)
     ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument(
-        "--tanh-head",
-        action=argparse.BooleanOptionalAction,
-        default=None,
-        help="Override the classifier head the registry records",
-    )
-    ap.add_argument(
         "--eager-attn",
         action="store_true",
         help="Load with eager attention",
@@ -76,7 +70,6 @@ def main() -> None:
 
     prepared = load_candidates(args.data_root, args.split, args.limit)
     batch_size = args.batch_size or entry.eval_batch
-    tanh_head = entry.tanh_head if args.tanh_head is None else args.tanh_head
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     heading(f"STANDARDISATION  {entry.label}  arm={args.arm}", width=70)
@@ -94,7 +87,6 @@ def main() -> None:
         device,
         lora_adapter_path=str(adapter) if adapter else None,
         eager_attn=args.eager_attn,
-        tanh_head=tanh_head,
     )
 
     counter = ProgressCounter(len(FORMAT_NAMES), args.progress_file)
@@ -122,7 +114,6 @@ def main() -> None:
         extra={
             "model_id": entry.model_id,
             "adapter": str(adapter) if adapter else None,
-            "tanh_head": tanh_head,
             "batch_size": batch_size,
             "device": device,
             "limit": args.limit,

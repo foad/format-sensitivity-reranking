@@ -227,12 +227,6 @@ class TestRun:
             "cross-encoder/ms-marco-MiniLM-L6-v2"
         ]
 
-    def test_takes_the_tanh_head_from_the_registry(
-        self, monkeypatch, data_root, fake_model
-    ):
-        run(monkeypatch, data_root)
-        assert fake_model["tanh_head"] is False
-
     def test_uses_the_fused_kernel_by_default(self, monkeypatch, data_root, fake_model):
         run(monkeypatch, data_root)
         assert fake_model["eager_attn"] is False

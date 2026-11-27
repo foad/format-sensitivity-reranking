@@ -383,7 +383,7 @@ class TestCorrelation:
 
 class TestRoster:
     def test_leaves_out_a_head_variant(self, root, tmp_path):
-        slug = "mxbai_v1_tanh"
+        slug = "mxbai_v1_pooler"
         path = selection_path(tmp_path, slug, "lambda")
         path.write_text(json.dumps(selection()))
         write_within(tmp_path, slug, "base", BASE_LEADS)

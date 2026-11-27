@@ -194,29 +194,6 @@ class TestRun:
         with pytest.raises(SystemExit, match="no adapter at"):
             run(monkeypatch, data_root, "--arm", ARM)
 
-    def test_takes_the_head_choice_from_the_registry(
-        self, monkeypatch, data_root, fake_model
-    ):
-        run(monkeypatch, data_root, "--baseline")
-        assert fake_model["tanh_head"] is False
-
-    def test_the_tanh_variant_needs_no_flag(self, monkeypatch, data_root, fake_model):
-        monkeypatch.setattr(
-            "sys.argv",
-            [
-                "eval_prose.py",
-                "--model",
-                "mxbai_v1_tanh",
-                "--data-root",
-                str(data_root),
-                "--batch-size",
-                "8",
-                "--baseline",
-            ],
-        )
-        mod.main()
-        assert fake_model["tanh_head"] is True
-
     @pytest.mark.usefixtures("fake_model")
     def test_caps_the_records_on_request(self, monkeypatch, data_root):
         run(monkeypatch, data_root, "--baseline", "--limit", "4")

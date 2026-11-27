@@ -124,12 +124,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Request the eager attention kernel in place of the fused one",
     )
     ap.add_argument(
-        "--tanh-head",
-        action="store_true",
-        default=None,
-        help="Replace the classifier head. The default is the registry entry",
-    )
-    ap.add_argument(
         "--arm",
         default=None,
         help="The trained arm whose adapter to load. The default is untrained",
@@ -168,7 +162,6 @@ def main() -> None:
             raise SystemExit(f"no adapter at {adapter}; train the arm first.")
 
     batch_size = args.batch_size or entry.eval_batch
-    tanh_head = entry.tanh_head if args.tanh_head is None else args.tanh_head
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     heading(f"FEATURES  {entry.label}  split={args.split}", width=70)
@@ -203,7 +196,6 @@ def main() -> None:
         device,
         lora_adapter_path=str(adapter) if adapter else None,
         eager_attn=args.eager_attn,
-        tanh_head=tanh_head,
     )
 
     n_candidates = 1 + args.negatives
@@ -246,7 +238,6 @@ def main() -> None:
                 "model_id": entry.model_id,
                 "split": args.split,
                 "arm": arm_name or BASE_ARM,
-                "tanh_head": tanh_head,
                 "formats": list(FORMAT_NAMES),
                 "n_records": len(prepared),
                 "n_candidates": n_candidates,

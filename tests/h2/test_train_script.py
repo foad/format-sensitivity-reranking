@@ -263,20 +263,6 @@ class TestRun:
         run(monkeypatch, data_root, "--lora-target-modules", "Wqkv")
         assert fake_model["lora_targets"] == ["Wqkv"]
 
-    def test_passes_the_registry_head_choice_to_the_loader(
-        self, monkeypatch, data_root, fake_model
-    ):
-        run(monkeypatch, data_root)
-        assert fake_model["tanh_head"] is False
-
-    def test_an_explicit_head_flag_wins(self, monkeypatch, data_root, fake_model):
-        run(monkeypatch, data_root, "--tanh-head")
-        assert fake_model["tanh_head"] is True
-
-    def test_the_tanh_variant_needs_no_flag(self, monkeypatch, data_root, fake_model):
-        run(monkeypatch, data_root, model="mxbai_v1_tanh")
-        assert fake_model["tanh_head"] is True
-
     def test_trains_no_extra_head_module_by_default(
         self, monkeypatch, data_root, fake_model
     ):

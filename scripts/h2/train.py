@@ -153,12 +153,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ap.set_defaults(grad_checkpoint=True)
     ap.add_argument(
-        "--tanh-head",
-        action="store_true",
-        default=None,
-        help="Replace the classifier head. The default is the registry entry",
-    )
-    ap.add_argument(
         "--eager-attn",
         action="store_true",
         help="Request the eager attention kernel in place of the fused one",
@@ -206,7 +200,6 @@ def main() -> None:
     targets = args.lora_target_modules or model_entry.lora_targets
     physical_batch = args.physical_batch or model_entry.physical_batch
     grad_accum = args.grad_accum or model_entry.grad_accum
-    tanh_head = model_entry.tanh_head if args.tanh_head is None else args.tanh_head
     head_modules = model_entry.head_modules
 
     heading(f"TRAIN  {model_entry.label}  arm={arm_name}", width=70)
@@ -236,7 +229,6 @@ def main() -> None:
         model_entry.model_id,
         device,
         lora_targets=targets,
-        tanh_head=tanh_head,
         head_modules=head_modules,
         eager_attn=args.eager_attn,
         gradient_checkpointing=args.grad_checkpoint,
@@ -333,7 +325,6 @@ def main() -> None:
                 warmup_steps=args.warmup_steps,
                 neg_k=args.neg_k,
                 seed=args.seed,
-                tanh_head=tanh_head,
                 head_modules=list(head_modules),
                 train_records=len(records),
                 dev_records=len(dev_records),

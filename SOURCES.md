@@ -11,7 +11,6 @@
 | bge-base adapters | `adapters/bge_base_*` | MIT (inherited) | Base: `BAAI/bge-reranker-base`. |
 | bge-v2-m3 adapters | `adapters/bge_v2_m3_*` | Apache-2.0 (inherited) | Base: `BAAI/bge-reranker-v2-m3`. |
 | mxbai adapters | `adapters/mxbai_v1_*` | Apache-2.0 (inherited) | Base: `mixedbread-ai/mxbai-rerank-base-v1`. |
-| mxbai tanh-head adapters | `adapters/mxbai_v1_tanh_*` | Apache-2.0 (inherited) | Base: `mixedbread-ai/mxbai-rerank-base-v1` with a jina-matched classifier head. |
 | jina adapters | `adapters/jina_v2_*` | CC BY-NC 4.0 (inherited) | Base: `jinaai/jina-reranker-v2-base-multilingual`. |
 
 ## Dataset attribution

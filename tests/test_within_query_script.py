@@ -274,12 +274,9 @@ class TestBuildParser:
         assert args.out_dir is None
 
     def test_parses_an_adapter_run(self):
-        args = mod.build_parser().parse_args(
-            ["--models", "m", "--lora-adapter", "a", "--tanh-head"]
-        )
+        args = mod.build_parser().parse_args(["--models", "m", "--lora-adapter", "a"])
         assert args.models == ["m"]
         assert args.lora_adapter == "a"
-        assert args.tanh_head is True
 
 
 class DualTokenizer(WordTokenizer):
@@ -454,11 +451,10 @@ class TestMain:
         with pytest.raises(SystemExit, match="one --models entry"):
             mod.main()
 
-    def test_reports_the_adapter_and_the_head(self, monkeypatch, tmp_path, capsys):
-        run_main(monkeypatch, tmp_path, "--lora-adapter", "a", "--tanh-head")
+    def test_reports_the_adapter(self, monkeypatch, tmp_path, capsys):
+        run_main(monkeypatch, tmp_path, "--lora-adapter", "a")
         printed = capsys.readouterr().out
         assert "adapter: a" in printed
-        assert "dense->tanh->out_proj" in printed
 
     def test_honours_a_custom_output_directory(self, monkeypatch, tmp_path):
         out_dir = tmp_path / "elsewhere"
@@ -682,45 +678,3 @@ class TestAttentionKernel:
     def test_requests_the_eager_kernel_on_request(self, monkeypatch, tmp_path):
         run_main(monkeypatch, tmp_path, "--eager-attn")
         assert load_kwargs["eager_attn"] is True
-
-
-class TestTanhHead:
-    def test_defers_to_the_registry_for_the_tanh_variant(self):
-        assert mod.resolve_tanh_heads(["mxbai_v1_tanh"], None) == [True]
-
-    def test_defers_to_the_registry_for_a_plain_model(self):
-        assert mod.resolve_tanh_heads(["mxbai_v1"], None) == [False]
-
-    def test_tells_the_two_mxbai_entries_apart(self):
-        assert mod.resolve_models(["mxbai_v1"]) == mod.resolve_models(["mxbai_v1_tanh"])
-        assert mod.resolve_tanh_heads(["mxbai_v1", "mxbai_v1_tanh"], None) == [
-            False,
-            True,
-        ]
-
-    def test_treats_a_bare_identifier_as_plain(self):
-        assert mod.resolve_tanh_heads(["some/model"], None) == [False]
-
-    def test_an_explicit_flag_overrides_the_registry(self):
-        assert mod.resolve_tanh_heads(["mxbai_v1"], True) == [True]
-        assert mod.resolve_tanh_heads(["mxbai_v1_tanh"], False) == [False]
-
-    def test_the_flag_defaults_to_none(self):
-        args = mod.build_parser().parse_args(["--split", "test"])
-        assert args.tanh_head is None
-
-    def test_the_run_records_what_it_resolved(self, monkeypatch, tmp_path):
-        out = json.loads(run_main(monkeypatch, tmp_path).read_text())
-        assert out["tanh_head"] is False
-
-    def test_refuses_a_run_that_mixes_head_shapes(self, monkeypatch, tmp_path):
-        with pytest.raises(SystemExit, match="cannot mix tanh and plain"):
-            run_main(monkeypatch, tmp_path, "--models", "mxbai_v1", "mxbai_v1_tanh")
-
-    def test_allows_a_roster_that_agrees(self, monkeypatch, tmp_path):
-        out = json.loads(
-            run_main(
-                monkeypatch, tmp_path, "--models", "minilm_l6", "mxbai_v1"
-            ).read_text()
-        )
-        assert out["tanh_head"] is False

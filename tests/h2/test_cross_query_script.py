@@ -237,21 +237,6 @@ class TestTrainedRun:
         with pytest.raises(SystemExit, match="no adapter at"):
             run(monkeypatch, data_root, "--lambda-inv", "0.1")
 
-    @pytest.mark.usefixtures("fake_model")
-    def test_passes_the_registry_head_choice(self, monkeypatch, data_root, fake_model):
-        run(monkeypatch, data_root, "--baseline")
-        assert fake_model["tanh_head"] is False
-
-    @pytest.mark.usefixtures("fake_model")
-    def test_an_explicit_head_flag_wins(self, monkeypatch, data_root, fake_model):
-        run(monkeypatch, data_root, "--baseline", "--tanh-head")
-        assert fake_model["tanh_head"] is True
-
-    @pytest.mark.usefixtures("fake_model")
-    def test_the_tanh_variant_needs_no_flag(self, monkeypatch, data_root, fake_model):
-        run(monkeypatch, data_root, "--baseline", model="mxbai_v1_tanh")
-        assert fake_model["tanh_head"] is True
-
 
 class TestPayload:
     @pytest.fixture(autouse=True)

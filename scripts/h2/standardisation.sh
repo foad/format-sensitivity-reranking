@@ -30,8 +30,8 @@ source "$REPO_ROOT/scripts/runners/dispatch.sh"
 
 roster() { PYTHONPATH="$REPO_ROOT/src" python3 -m fsr.models.registry --list; }
 
-# The roster without the tanh variant, which H2-D53 ruled out as an
-# intervention study. Name it in MODELS to score it anyway.
+# The six base models, without the head variants. Name a variant in MODELS to
+# score it anyway.
 base_roster() {
     PYTHONPATH="$REPO_ROOT/src" python3 -c "
 from fsr.models.registry import BASE_MODELS

@@ -513,7 +513,7 @@ class TestWatchFilters:
         assert "finished_long_ago" not in out.getvalue()
 
 
-SLUGS = ["bge_base", "bge_v2_m3", "mxbai_v1", "mxbai_v1_tanh", "minilm_l6"]
+SLUGS = ["bge_base", "bge_v2_m3", "mxbai_v1", "mxbai_v1_pooler", "minilm_l6"]
 
 
 class TestSplitName:
@@ -530,9 +530,9 @@ class TestSplitName:
         )
 
     def test_prefers_the_longest_slug(self):
-        """mxbai_v1 is a prefix of mxbai_v1_tanh."""
-        assert mod.split_name("train_mxbai_v1_tanh_5fmt_lam0", SLUGS)[0] == (
-            "mxbai_v1_tanh"
+        """mxbai_v1 is a prefix of mxbai_v1_pooler."""
+        assert mod.split_name("train_mxbai_v1_pooler_5fmt_lam0", SLUGS)[0] == (
+            "mxbai_v1_pooler"
         )
 
     def test_needs_the_whole_slug(self):
